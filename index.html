@@ -1081,9 +1081,12 @@
       }
 
       recs.forEach(anime => {
-        const card = document.createElement('div');
+        const card = document.createElement('a');
         card.className = 'anime-card fade-up';
         card.tabIndex = 0;
+        card.style.textDecoration = 'none';
+        card.style.cursor = 'pointer';
+        if (anime.malId) card.href = `/anime.html?id=${anime.malId}`;
         const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
         const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
         const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
@@ -1117,10 +1120,13 @@
 
         grid.innerHTML = '';
         trending.slice(0, 5).forEach((anime, i) => {
-          const card = document.createElement('div');
+          const card = document.createElement('a');
           card.className = 'anime-card fade-up';
           card.tabIndex = 0;
           card.style.transitionDelay = `${i * 0.07}s`;
+          card.style.textDecoration = 'none';
+          card.style.cursor = 'pointer';
+          if (anime.malId) card.href = `/anime.html?id=${anime.malId}`;
           const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
           const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
           const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
