@@ -66,6 +66,11 @@ app.post('/api/waitlist', (req, res) => {
   res.json({ message: 'You\'re on the list!', total: list.length });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n  AniScout backend running → http://localhost:${PORT}\n`);
-});
+// Local dev only — Vercel handles its own listener
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`\n  AniScout backend running → http://localhost:${PORT}\n`);
+  });
+}
+
+export default app;
