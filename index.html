@@ -662,6 +662,9 @@
       .genres-header { flex-direction: column; align-items: flex-start; }
     }
 
+    /* ── Results section ── */
+    .results-section { display: none; background: var(--dark); }
+
     /* ── Scroll animations ── */
     .fade-up,
     .fade-left,
@@ -728,6 +731,17 @@
     <div class="hero-scroll">
       <div class="scroll-dot"></div>
       Scroll
+    </div>
+  </section>
+
+  <!-- RESULTS SECTION (hidden until search) -->
+  <section id="results-section" class="results-section">
+    <div class="container">
+      <div class="fade-left" style="opacity:1;transform:none">
+        <div class="section-label">Scout Results</div>
+        <h2 class="section-title" id="results-title">Your Recommendations</h2>
+      </div>
+      <div class="featured-grid" id="results-grid"></div>
     </div>
   </section>
 
@@ -1013,23 +1027,160 @@
 
     document.querySelectorAll('.fade-up, .fade-left, .fade-right, .fade-scale').forEach(el => observer.observe(el));
 
-    // Search input interaction
-    document.querySelector('.hero-search button').addEventListener('click', () => {
-      const val = document.querySelector('.hero-search input').value.trim();
-      if (val) {
-        document.querySelector('.hero-search button').textContent = 'Scouting...';
-        setTimeout(() => {
-          document.querySelector('.hero-search button').textContent = 'Scout →';
-        }, 1500);
+    const API = ''; // same origin — server serves the frontend
+
+    // ── Scout search ──────────────────────────────────────────────────────────
+    const searchInput = document.querySelector('.hero-search input');
+    const searchBtn   = document.querySelector('.hero-search button');
+
+    async function doSearch(query) {
+      if (!query) return;
+      searchBtn.textContent = 'Scouting...';
+      searchBtn.disabled = true;
+
+      try {
+        const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+        renderResults(data);
+        document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        alert('Could not fetch recommendations. Please try again.');
+        console.error(err);
+      } finally {
+        searchBtn.textContent = 'Scout →';
+        searchBtn.disabled = false;
       }
+    }
+
+    searchBtn.addEventListener('click', () => doSearch(searchInput.value.trim()));
+    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(searchInput.value.trim()); });
+
+    // ── Hero tag click → pre-fill search ─────────────────────────────────────
+    document.querySelectorAll('.hero-tags span').forEach(tag => {
+      tag.addEventListener('click', function () {
+        searchInput.value = this.textContent;
+        doSearch(this.textContent);
+      });
     });
 
-    // Genre chip + hero tag click effect
-    [...document.querySelectorAll('.genre-chip, .hero-tags span')].forEach(chip => {
-      chip.addEventListener('click', function() {
-        this.style.borderColor = 'var(--red)';
-        this.style.background = 'rgba(232,39,42,0.1)';
-        this.style.color = 'var(--text)';
+    // ── Render recommendation results ─────────────────────────────────────────
+    function renderResults(data) {
+      const section = document.getElementById('results-section');
+      const grid    = document.getElementById('results-grid');
+      const title   = document.getElementById('results-title');
+
+      title.textContent = `Because you liked "${data.baseAnime?.title || 'that'}"`;
+      grid.innerHTML = '';
+
+      const recs = data.recommendations || [];
+      if (!recs.length) {
+        grid.innerHTML = '<p style="color:var(--muted)">No recommendations found. Try another title.</p>';
+        section.style.display = 'block';
+        return;
+      }
+
+      recs.forEach(anime => {
+        const card = document.createElement('div');
+        card.className = 'anime-card fade-up';
+        card.tabIndex = 0;
+        const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
+        const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
+        const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
+        card.innerHTML = `
+          <div class="card-img">
+            <img src="${poster}" alt="${anime.title}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
+            <div class="card-img-overlay"></div>
+            ${score ? `<span class="card-score">${score}</span>` : ''}
+          </div>
+          <div class="card-body">
+            <div class="card-title">${anime.title || 'Unknown'}</div>
+            <div class="card-meta">${anime.year || ''} ${anime.episodes ? `<span class="card-meta-dot"></span> ${anime.episodes} eps` : ''}</div>
+            <div class="card-genres">${genres}</div>
+          </div>`;
+        grid.appendChild(card);
+        // trigger fade-in
+        requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('visible')));
+      });
+
+      section.style.display = 'block';
+    }
+
+    // ── Load trending on page load ────────────────────────────────────────────
+    async function loadTrending() {
+      try {
+        const res = await fetch(`${API}/api/trending`);
+        if (!res.ok) return;
+        const trending = await res.json();
+        const grid = document.querySelector('.featured-grid');
+        if (!grid || !trending.length) return;
+
+        grid.innerHTML = '';
+        trending.slice(0, 5).forEach((anime, i) => {
+          const card = document.createElement('div');
+          card.className = 'anime-card fade-up';
+          card.tabIndex = 0;
+          card.style.transitionDelay = `${i * 0.07}s`;
+          const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
+          const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
+          const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
+          card.innerHTML = `
+            <div class="card-img">
+              <img src="${poster}" alt="${anime.title}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
+              <div class="card-img-overlay"></div>
+              ${score ? `<span class="card-score">${score}</span>` : ''}
+            </div>
+            <div class="card-body">
+              <div class="card-title">${anime.title || 'Unknown'}</div>
+              <div class="card-meta">${anime.year || ''} ${anime.episodes ? `<span class="card-meta-dot"></span> ${anime.episodes} eps` : ''}</div>
+              <div class="card-genres">${genres}</div>
+            </div>`;
+          grid.appendChild(card);
+          observer.observe(card);
+        });
+      } catch (e) {
+        console.warn('Could not load trending:', e.message);
+      }
+    }
+
+    loadTrending();
+
+    // ── Waitlist / email form ─────────────────────────────────────────────────
+    const ctaForm = document.querySelector('.cta-form');
+    if (ctaForm) {
+      ctaForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const emailInput = ctaForm.querySelector('input[type="email"]');
+        const btn = ctaForm.querySelector('button');
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        btn.textContent = 'Joining...';
+        btn.disabled = true;
+        try {
+          const res = await fetch(`${API}/api/waitlist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const data = await res.json();
+          btn.textContent = data.message || 'You\'re in!';
+          emailInput.value = '';
+        } catch {
+          btn.textContent = 'Try again';
+          btn.disabled = false;
+        }
+      });
+
+      // Also trigger on button click (not just form submit)
+      ctaForm.querySelector('button').addEventListener('click', () => ctaForm.dispatchEvent(new Event('submit')));
+    }
+
+    // ── Genre chip click effect ───────────────────────────────────────────────
+    document.querySelectorAll('.genre-chip').forEach(chip => {
+      chip.addEventListener('click', function () {
+        const genre = this.querySelector('.genre-name')?.textContent;
+        if (genre) { searchInput.value = genre; doSearch(genre); }
       });
     });
   </script>
