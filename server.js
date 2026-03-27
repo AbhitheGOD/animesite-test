@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getRecommendations, getTrendingNow } from './recommender.js';
 import { getAnimeById } from './sources/jikan.js';
+import { getSimilarByMalId } from './sources/anilist.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -44,13 +45,49 @@ app.get('/api/anime', async (req, res) => {
   }
 });
 
-// ── GET /api/recommend?q=Naruto ──────────────────────────────────────────────
+// ── GET /api/similar?id=20&page=1&genres=Action,Adventure ────────────────────
+app.get('/api/similar', async (req, res) => {
+  const malId = parseInt(req.query.id);
+  const page  = parseInt(req.query.page) || 1;
+  if (!malId) return res.status(400).json({ error: 'Missing ?id=' });
+
+  try {
+    let genres = (req.query.genres || '').split(',').filter(Boolean);
+    if (!genres.length) {
+      const anime = await getAnimeById(malId);
+      genres = (anime?.genres || []).map(g => g.name).slice(0, 3);
+    }
+    const result = await getSimilarByMalId(malId, genres, page, 24);
+    res.json({
+      page,
+      hasNextPage: result.hasNextPage,
+      total: result.total,
+      recommendations: result.media.map(a => ({
+        malId: a.idMal,
+        anilistId: a.id,
+        title: a.title?.english || a.title?.romaji,
+        score: a.averageScore ? a.averageScore / 10 : null,
+        year: a.startDate?.year,
+        episodes: a.episodes,
+        genres: a.genres || [],
+        poster: a.coverImage?.large,
+        source: 'anilist',
+      })),
+    });
+  } catch (err) {
+    console.error('[similar]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/recommend?q=Naruto&page=1 ───────────────────────────────────────
 app.get('/api/recommend', async (req, res) => {
   const query = (req.query.q || '').trim();
+  const page  = parseInt(req.query.page) || 1;
   if (!query) return res.status(400).json({ error: 'Missing query param ?q=' });
 
   try {
-    const result = await getRecommendations(query);
+    const result = await getRecommendations(query, page);
     res.json(result);
   } catch (err) {
     console.error('[recommend]', err.message);

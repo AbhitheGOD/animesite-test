@@ -1028,6 +1028,9 @@
     document.querySelectorAll('.fade-up, .fade-left, .fade-right, .fade-scale').forEach(el => observer.observe(el));
 
     const API = ''; // same origin — server serves the frontend
+    let currentQuery = '';
+    let currentPage  = 1;
+    let hasNextPage  = false;
 
     // ── Scout search ──────────────────────────────────────────────────────────
     const searchInput = document.querySelector('.hero-search input');
@@ -1035,14 +1038,17 @@
 
     async function doSearch(query) {
       if (!query) return;
+      currentQuery = query;
+      currentPage  = 1;
       searchBtn.textContent = 'Scouting...';
       searchBtn.disabled = true;
 
       try {
-        const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}&page=1`);
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
-        renderResults(data);
+        hasNextPage = data.hasNextPage ?? false;
+        renderResults(data, false);
         document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
         alert('Could not fetch recommendations. Please try again.');
@@ -1050,6 +1056,25 @@
       } finally {
         searchBtn.textContent = 'Scout →';
         searchBtn.disabled = false;
+      }
+    }
+
+    async function loadMoreResults() {
+      const btn = document.getElementById('load-more-btn');
+      btn.textContent = 'Loading...';
+      btn.disabled = true;
+      currentPage++;
+      try {
+        const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(currentQuery)}&page=${currentPage}`);
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        hasNextPage = data.hasNextPage ?? false;
+        renderResults(data, true);
+      } catch {
+        currentPage--;
+      } finally {
+        btn.textContent = 'Load More';
+        btn.disabled = false;
       }
     }
 
@@ -1065,16 +1090,22 @@
     });
 
     // ── Render recommendation results ─────────────────────────────────────────
-    function renderResults(data) {
+    function renderResults(data, append = false) {
       const section = document.getElementById('results-section');
       const grid    = document.getElementById('results-grid');
       const title   = document.getElementById('results-title');
 
-      title.textContent = `Because you liked "${data.baseAnime?.title || 'that'}"`;
-      grid.innerHTML = '';
+      if (!append) {
+        title.textContent = data.isGenreSearch
+          ? `Top ${data.genreLabel} Anime`
+          : `Because you liked "${data.baseAnime?.title || 'that'}"`;
+        grid.innerHTML = '';
+        // remove old load-more if any
+        document.getElementById('load-more-btn')?.remove();
+      }
 
       const recs = data.recommendations || [];
-      if (!recs.length) {
+      if (!append && !recs.length) {
         grid.innerHTML = '<p style="color:var(--muted)">No recommendations found. Try another title.</p>';
         section.style.display = 'block';
         return;
@@ -1107,6 +1138,17 @@
       });
 
       section.style.display = 'block';
+
+      // Add / update Load More button
+      let loadMoreBtn = document.getElementById('load-more-btn');
+      if (!loadMoreBtn) {
+        loadMoreBtn = document.createElement('div');
+        loadMoreBtn.id = 'load-more-btn';
+        loadMoreBtn.style.cssText = 'text-align:center;margin-top:40px;width:100%;grid-column:1/-1;display:none';
+        loadMoreBtn.innerHTML = `<button onclick="loadMoreResults()" style="padding:14px 40px;background:var(--raised);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='rgba(232,39,42,0.4)'" onmouseout="this.style.borderColor='var(--border)'">Load More</button>`;
+        grid.appendChild(loadMoreBtn);
+      }
+      loadMoreBtn.style.display = hasNextPage ? 'block' : 'none';
     }
 
     // ── Load trending on page load ────────────────────────────────────────────

@@ -70,56 +70,52 @@ function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function getRecommendationsByGenre(label, { anilist: anilistGenre, malId: malGenreId }) {
-  // Fetch top-rated anime for this genre from AniList + Jikan in parallel
+async function getRecommendationsByGenre(label, { anilist: anilistGenre, malId: malGenreId }, page = 1) {
+  const PER_PAGE = 24;
+
   const [anilistResults, jikanResults] = await Promise.allSettled([
-    AniList.getTopByGenre(anilistGenre, 15),
-    Jikan.getByGenre(malGenreId, 15),
+    AniList.getTopByGenre(anilistGenre, page, PER_PAGE),
+    page === 1 ? Jikan.getByGenre(malGenreId, 10) : Promise.resolve([]),
   ]);
 
   const seen = new Set();
   const merged = [];
 
-  // AniList first — higher quality metadata + score filtering already applied
   if (anilistResults.status === 'fulfilled') {
-    for (const a of anilistResults.value) {
+    for (const a of anilistResults.value.media || anilistResults.value) {
       const key = a.idMal || `al-${a.id}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        merged.push({ ...normalizeAniList(a), relevance: 'genre-top' });
-      }
+      if (!seen.has(key)) { seen.add(key); merged.push({ ...normalizeAniList(a), relevance: 'genre-top' }); }
     }
   }
 
-  // Fill gaps from Jikan if needed
-  if (jikanResults.status === 'fulfilled') {
+  if (page === 1 && jikanResults.status === 'fulfilled') {
     for (const a of jikanResults.value) {
-      if (!seen.has(a.mal_id)) {
-        seen.add(a.mal_id);
-        merged.push({ ...normalizeJikan(a), relevance: 'genre-top' });
-      }
+      if (!seen.has(a.mal_id)) { seen.add(a.mal_id); merged.push({ ...normalizeJikan(a), relevance: 'genre-top' }); }
     }
   }
 
-  // Use top result as the "base" for the UI header
-  const top = merged[0] || null;
+  const hasNextPage = anilistResults.status === 'fulfilled'
+    ? (anilistResults.value.hasNextPage ?? true)
+    : false;
+
+  const top = page === 1 ? (merged[0] || null) : null;
 
   return {
     isGenreSearch: true,
     genreLabel: label.charAt(0).toUpperCase() + label.slice(1),
-    baseAnime: top
-      ? { ...top, synopsis: top.synopsis || `Top ${label} anime, ranked by score.` }
-      : null,
-    recommendations: merged.slice(0, 15),
+    page,
+    hasNextPage,
+    baseAnime: top ? { ...top, synopsis: top.synopsis || `Top ${label} anime, ranked by score.` } : null,
+    recommendations: merged,
     trending: [],
   };
 }
 
-export async function getRecommendations(query) {
+export async function getRecommendations(query, page = 1) {
   // 0. Detect if the query is a genre keyword — route to genre path if so
   const genreMatch = detectGenre(query);
   if (genreMatch) {
-    return getRecommendationsByGenre(query, genreMatch);
+    return getRecommendationsByGenre(query, genreMatch, page);
   }
 
   // 1. Search MAL for the input anime
