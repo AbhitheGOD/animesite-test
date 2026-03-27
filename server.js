@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getRecommendations, getTrendingNow } from './recommender.js';
+import { getAnimeById } from './sources/jikan.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -13,6 +14,35 @@ const WAITLIST_FILE = path.join(__dirname, '.tmp', 'waitlist.json');
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname)); // serve the frontend
+
+// ── GET /api/anime?id=20 ─────────────────────────────────────────────────────
+app.get('/api/anime', async (req, res) => {
+  const malId = parseInt(req.query.id);
+  if (!malId) return res.status(400).json({ error: 'Missing ?id=' });
+
+  try {
+    const [anime, anilist] = await Promise.all([
+      getAnimeById(malId),
+      fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `query($malId:Int){Media(idMal:$malId,type:ANIME){bannerImage coverImage{extraLarge large}}}`,
+          variables: { malId }
+        })
+      }).then(r => r.json()).then(d => d.data?.Media || null).catch(() => null),
+    ]);
+    if (!anime) return res.status(404).json({ error: 'Anime not found' });
+    res.json({
+      ...anime,
+      bannerImage: anilist?.bannerImage || null,
+      anilistPoster: anilist?.coverImage?.extraLarge || anilist?.coverImage?.large || null,
+    });
+  } catch (err) {
+    console.error('[anime]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ── GET /api/recommend?q=Naruto ──────────────────────────────────────────────
 app.get('/api/recommend', async (req, res) => {
