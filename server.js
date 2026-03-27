@@ -3,7 +3,7 @@ import cors from 'cors';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getRecommendations, getTrendingNow } from './recommender.js';
+import { getRecommendations, getTrendingNow, normalizeAniList } from './recommender.js';
 import { getAnimeById } from './sources/jikan.js';
 import { getSimilarByMalId } from './sources/anilist.js';
 
@@ -62,17 +62,7 @@ app.get('/api/similar', async (req, res) => {
       page,
       hasNextPage: result.hasNextPage,
       total: result.total,
-      recommendations: result.media.map(a => ({
-        malId: a.idMal,
-        anilistId: a.id,
-        title: a.title?.english || a.title?.romaji,
-        score: a.averageScore ? a.averageScore / 10 : null,
-        year: a.startDate?.year,
-        episodes: a.episodes,
-        genres: a.genres || [],
-        poster: a.coverImage?.large,
-        source: 'anilist',
-      })),
+      recommendations: result.media.map(normalizeAniList),
     });
   } catch (err) {
     console.error('[similar]', err.message);

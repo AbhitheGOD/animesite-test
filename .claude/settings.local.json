@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check server.js)",
+      "Bash(node --check recommender.js)",
+      "Bash(node --check sources/anilist.js)",
+      "Bash(node --check sources/jikan.js)",
+      "Bash(curl -s \"http://localhost:3000/api/anime?id=20\")",
+      "Bash(taskkill //PID 22948 //F)",
+      "Bash(node server.js)",
+      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\); const j=JSON.parse\\(d\\); console.log\\(''''Title:'''', j.title_english||j.title\\); console.log\\(''''Score:'''', j.score\\); console.log\\(''''Banner:'''', !!j.bannerImage\\)\")",
+      "Bash(taskkill //PID 6612 //F)"
+    ]
+  }
+}

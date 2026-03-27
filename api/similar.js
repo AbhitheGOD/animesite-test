@@ -1,5 +1,13 @@
 import { getAnimeById } from '../sources/jikan.js';
 import { getSimilarByMalId } from '../sources/anilist.js';
+import { normalizeAniList } from '../recommender.js';
+
+async function resolveGenres(req, malId) {
+  const genres = (req.query.genres || '').split(',').filter(Boolean);
+  if (genres.length) return genres;
+  const anime = await getAnimeById(malId);
+  return (anime?.genres || []).map(g => g.name).slice(0, 3);
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,31 +16,13 @@ export default async function handler(req, res) {
   if (!malId) return res.status(400).json({ error: 'Missing ?id=' });
 
   try {
-    // Get genres from the anime (page 1 only, cache on client)
-    let genres = (req.query.genres || '').split(',').filter(Boolean);
-
-    if (!genres.length) {
-      const anime = await getAnimeById(malId);
-      genres = (anime?.genres || []).map(g => g.name).slice(0, 3);
-    }
-
+    const genres = await resolveGenres(req, malId);
     const result = await getSimilarByMalId(malId, genres, page, 24);
-
     res.json({
       page,
       hasNextPage: result.hasNextPage,
       total: result.total,
-      recommendations: result.media.map(a => ({
-        malId: a.idMal,
-        anilistId: a.id,
-        title: a.title?.english || a.title?.romaji,
-        score: a.averageScore ? a.averageScore / 10 : null,
-        year: a.startDate?.year,
-        episodes: a.episodes,
-        genres: a.genres || [],
-        poster: a.coverImage?.large,
-        source: 'anilist',
-      })),
+      recommendations: result.media.map(normalizeAniList),
     });
   } catch (err) {
     console.error('[similar]', err.message);

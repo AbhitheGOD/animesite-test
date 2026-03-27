@@ -48,7 +48,7 @@ function normalizeJikan(a) {
   };
 }
 
-function normalizeAniList(a) {
+export function normalizeAniList(a) {
   return {
     malId: a.idMal,
     anilistId: a.id,
@@ -73,16 +73,17 @@ function delay(ms) {
 async function getRecommendationsByGenre(label, { anilist: anilistGenre, malId: malGenreId }, page = 1) {
   const PER_PAGE = 24;
 
-  const [anilistResults, jikanResults] = await Promise.allSettled([
-    AniList.getTopByGenre(anilistGenre, page, PER_PAGE),
-    page === 1 ? Jikan.getByGenre(malGenreId, 10) : Promise.resolve([]),
-  ]);
+  const [anilistResults, jikanResults] = await Promise.allSettled(
+    page === 1
+      ? [AniList.getTopByGenre(anilistGenre, page, PER_PAGE), Jikan.getByGenre(malGenreId, 10)]
+      : [AniList.getTopByGenre(anilistGenre, page, PER_PAGE)]
+  );
 
   const seen = new Set();
   const merged = [];
 
   if (anilistResults.status === 'fulfilled') {
-    for (const a of anilistResults.value.media || anilistResults.value) {
+    for (const a of anilistResults.value.media || []) {
       const key = a.idMal || `al-${a.id}`;
       if (!seen.has(key)) { seen.add(key); merged.push({ ...normalizeAniList(a), relevance: 'genre-top' }); }
     }
@@ -167,7 +168,7 @@ export async function getRecommendations(query, page = 1) {
 
   // AniList similar
   if (anilistSimilar.status === 'fulfilled') {
-    for (const a of anilistSimilar.value) {
+    for (const a of anilistSimilar.value.media || []) {
       if (a.idMal && !seen.has(a.idMal)) {
         seen.add(a.idMal);
         merged.push({ ...normalizeAniList(a), relevance: 'genre-match' });

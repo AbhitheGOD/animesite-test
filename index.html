@@ -622,6 +622,14 @@
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(232,39,42,0.45); }
     .btn-primary:active { transform: translateY(0); }
     .btn-primary:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+    .load-more-wrap { text-align: center; margin-top: 40px; }
+    .load-more-btn {
+      padding: 14px 40px; background: var(--raised); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .load-more-btn:hover { border-color: rgba(232,39,42,0.4); transform: translateY(-2px); }
     .cta-note { margin-top: 14px; font-size: 0.8rem; color: var(--muted); }
 
     /* ── Footer ── */
@@ -742,6 +750,9 @@
         <h2 class="section-title" id="results-title">Your Recommendations</h2>
       </div>
       <div class="featured-grid" id="results-grid"></div>
+      <div id="load-more-btn" class="load-more-wrap" style="display:none">
+        <button type="button" class="load-more-btn" onclick="loadMoreResults()">Load More</button>
+      </div>
     </div>
   </section>
 
@@ -1100,8 +1111,6 @@
           ? `Top ${data.genreLabel} Anime`
           : `Because you liked "${data.baseAnime?.title || 'that'}"`;
         grid.innerHTML = '';
-        // remove old load-more if any
-        document.getElementById('load-more-btn')?.remove();
       }
 
       const recs = data.recommendations || [];
@@ -1138,17 +1147,7 @@
       });
 
       section.style.display = 'block';
-
-      // Add / update Load More button
-      let loadMoreBtn = document.getElementById('load-more-btn');
-      if (!loadMoreBtn) {
-        loadMoreBtn = document.createElement('div');
-        loadMoreBtn.id = 'load-more-btn';
-        loadMoreBtn.style.cssText = 'text-align:center;margin-top:40px;width:100%;grid-column:1/-1;display:none';
-        loadMoreBtn.innerHTML = `<button onclick="loadMoreResults()" style="padding:14px 40px;background:var(--raised);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:DM Sans,sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:border-color 0.2s,transform 0.2s" onmouseover="this.style.borderColor='rgba(232,39,42,0.4)'" onmouseout="this.style.borderColor='var(--border)'">Load More</button>`;
-        grid.appendChild(loadMoreBtn);
-      }
-      loadMoreBtn.style.display = hasNextPage ? 'block' : 'none';
+      document.getElementById('load-more-btn').style.display = hasNextPage ? 'block' : 'none';
     }
 
     // ── Load trending on page load ────────────────────────────────────────────
