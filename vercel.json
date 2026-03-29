@@ -1,26 +1,32 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/anime.js",     "use": "@vercel/node" },
-    { "src": "api/similar.js",   "use": "@vercel/node" },
-    { "src": "api/recommend.js", "use": "@vercel/node" },
-    { "src": "api/trending.js",  "use": "@vercel/node" },
-    { "src": "api/waitlist.js",  "use": "@vercel/node" },
-    { "src": "api/search.js",   "use": "@vercel/node" },
-    { "src": "index.html",       "use": "@vercel/static" },
-    { "src": "anime.html",       "use": "@vercel/static" },
-    { "src": "assets/**",        "use": "@vercel/static" }
+    { "src": "api/anime.js",            "use": "@vercel/node" },
+    { "src": "api/similar.js",          "use": "@vercel/node" },
+    { "src": "api/recommend.js",        "use": "@vercel/node" },
+    { "src": "api/trending.js",         "use": "@vercel/node" },
+    { "src": "api/waitlist.js",         "use": "@vercel/node" },
+    { "src": "api/search.js",           "use": "@vercel/node" },
+    { "src": "api/supabase-config.js",  "use": "@vercel/node" },
+    { "src": "index.html",              "use": "@vercel/static" },
+    { "src": "anime.html",              "use": "@vercel/static" },
+    { "src": "rooms.html",              "use": "@vercel/static" },
+    { "src": "chat.html",               "use": "@vercel/static" },
+    { "src": "assets/**",               "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/anime",     "dest": "/api/anime.js" },
-    { "src": "/api/similar",   "dest": "/api/similar.js" },
-    { "src": "/api/recommend", "dest": "/api/recommend.js" },
-    { "src": "/api/trending",  "dest": "/api/trending.js" },
-    { "src": "/api/waitlist",  "dest": "/api/waitlist.js" },
-    { "src": "/api/search",     "dest": "/api/search.js" },
-    { "src": "/anime.html",    "dest": "/anime.html" },
-    { "src": "/assets/(.*)",   "dest": "/assets/$1" },
-    { "src": "/(.*)",          "dest": "/index.html" }
+    { "src": "/api/anime",            "dest": "/api/anime.js" },
+    { "src": "/api/similar",          "dest": "/api/similar.js" },
+    { "src": "/api/recommend",        "dest": "/api/recommend.js" },
+    { "src": "/api/trending",         "dest": "/api/trending.js" },
+    { "src": "/api/waitlist",         "dest": "/api/waitlist.js" },
+    { "src": "/api/search",           "dest": "/api/search.js" },
+    { "src": "/api/supabase-config",  "dest": "/api/supabase-config.js" },
+    { "src": "/anime.html",           "dest": "/anime.html" },
+    { "src": "/rooms.html",           "dest": "/rooms.html" },
+    { "src": "/chat.html",            "dest": "/chat.html" },
+    { "src": "/assets/(.*)",          "dest": "/assets/$1" },
+    { "src": "/(.*)",                 "dest": "/index.html" }
   ]
 }
 

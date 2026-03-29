@@ -49,6 +49,7 @@
     }
     .nav-back:hover { color: var(--text); }
     .nav-back svg { width: 16px; height: 16px; }
+    .nav-actions { display: flex; align-items: center; gap: 20px; }
 
     /* HERO BANNER */
     .detail-hero {
@@ -266,12 +267,15 @@
 
   <nav>
     <a href="/" class="nav-logo">ANI<span>SCOUT</span></a>
-    <a href="/" class="nav-back">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 12L6 8l4-4"/>
-      </svg>
-      Back to search
-    </a>
+    <div class="nav-actions">
+      <a href="/rooms.html" class="nav-back">Rooms</a>
+      <a href="/" class="nav-back">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 12L6 8l4-4"/>
+        </svg>
+        Back to search
+      </a>
+    </div>
   </nav>
 
   <!-- TRAILER MODAL -->

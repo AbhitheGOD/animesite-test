@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AniScout — Rooms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root {
+      --red:    #E8272A;
+      --orange: #F5A01A;
+      --dark:   #08080E;
+      --surface:#111119;
+      --raised: #18182A;
+      --border: rgba(255,255,255,0.07);
+      --text:   #F0F0F8;
+      --muted:  #7878A0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--dark); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.7; overflow-x: hidden; }
+    h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.03em; line-height: 1.05; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--dark); }
+    ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 64px;
+      background: rgba(8,8,14,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.08em; text-decoration: none; color: var(--text); }
+    .nav-logo span { color: var(--red); }
+    .nav-right { display: flex; align-items: center; gap: 28px; }
+    .nav-link { color: var(--muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-link:hover { color: var(--text); }
+    .nav-link.active { color: var(--text); }
+    .nav-user { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .nav-user-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; box-shadow: 0 0 6px var(--red); }
+
+    /* MODAL BACKDROP */
+    .modal-bd {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(8,8,14,0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center; justify-content: center;
+    }
+    .modal-bd.open { display: flex; }
+    .modal-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; width: min(440px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    }
+    .modal-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+    .modal-title { font-size: 2.2rem; color: var(--text); margin-bottom: 8px; }
+    .modal-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; line-height: 1.65; }
+    .modal-input {
+      width: 100%; padding: 12px 16px; background: var(--raised);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+    }
+    .modal-input:focus { border-color: rgba(232,39,42,0.5); }
+    .modal-input::placeholder { color: var(--muted); }
+    .modal-btn {
+      width: 100%; padding: 13px; background: var(--red); border: none;
+      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+    }
+    .modal-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .modal-ghost {
+      width: 100%; padding: 12px; background: none; border: 1px solid var(--border);
+      border-radius: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; cursor: pointer; margin-top: 10px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .modal-ghost:hover { border-color: rgba(255,255,255,0.18); color: var(--text); }
+    .modal-warn {
+      font-size: 0.8rem; color: var(--muted); margin-top: 18px; padding: 12px 14px;
+      background: rgba(245,160,26,0.06); border-radius: 8px;
+      border: 1px solid rgba(245,160,26,0.15); line-height: 1.6;
+    }
+    .modal-warn strong { color: var(--orange); }
+    .modal-err { color: var(--red); font-size: 0.85rem; margin-bottom: 12px; min-height: 20px; }
+
+    /* MAIN */
+    main { max-width: 920px; margin: 0 auto; padding: 100px 40px 80px; }
+
+    /* PAGE HEADER */
+    .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
+    .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+    .page-title { font-size: 3.2rem; color: var(--text); line-height: 1; }
+    .header-btns { display: flex; gap: 12px; }
+    .btn-primary {
+      padding: 11px 22px; background: var(--red); border: none;
+      border-radius: 8px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 16px rgba(232,39,42,0.3);
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary {
+      padding: 10px 22px; background: none; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 500; cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+
+    /* ROOMS GRID */
+    .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+    .room-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; cursor: pointer;
+      text-decoration: none; display: block;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .room-card:hover { border-color: rgba(232,39,42,0.35); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .room-card-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.65rem; color: var(--text); margin-bottom: 14px; letter-spacing: 0.04em; line-height: 1.1; }
+    .room-card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .room-code {
+      padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 0.1em; background: rgba(232,39,42,0.1);
+      color: var(--red); border: 1px solid rgba(232,39,42,0.25); font-family: monospace;
+    }
+    .room-members { font-size: 0.82rem; color: var(--muted); }
+    .room-arrow { color: var(--muted); transition: transform 0.2s, color 0.2s; font-size: 1.1rem; }
+    .room-card:hover .room-arrow { transform: translateX(4px); color: var(--red); }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 80px 20px; }
+    .empty-icon { font-size: 3.5rem; margin-bottom: 16px; opacity: 0.35; }
+    .empty-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--text); margin-bottom: 8px; }
+    .empty-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 28px; max-width: 380px; margin-left: auto; margin-right: auto; }
+    .empty-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* SPINNER */
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 80px auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 28px 40px; background: var(--dark); }
+    .footer-inner { max-width: 920px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.08em; }
+    .footer-logo span { color: var(--red); }
+    .footer-copy { font-size: 0.8rem; color: rgba(120,120,160,0.45); }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      main { padding: 90px 20px 60px; }
+      .page-title { font-size: 2.4rem; }
+      .header-btns { width: 100%; }
+      .btn-primary, .btn-secondary { flex: 1; text-align: center; }
+      footer { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="nav-logo">ANI<span>SCOUT</span></a>
+    <div class="nav-right">
+      <a href="/" class="nav-link">Discover</a>
+      <a href="/rooms.html" class="nav-link active">Rooms</a>
+      <div class="nav-user" id="nav-user" style="display:none">
+        <span class="nav-user-dot"></span>
+        <span id="nav-username"></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- USERNAME MODAL (shown on first visit) -->
+  <div id="modal-username" class="modal-bd open">
+    <div class="modal-card">
+      <div class="modal-label">Welcome to AniScout</div>
+      <h2 class="modal-title">PICK A USERNAME</h2>
+      <p class="modal-sub">Choose how your friends will see you in rooms. No email or password needed — ever.</p>
+      <div class="modal-err" id="err-username"></div>
+      <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
+      <button class="modal-btn" id="btn-username" onclick="submitUsername()">Enter AniScout →</button>
+      <div class="modal-warn">
+        <strong>⚠ Heads up:</strong> Your username is tied to this browser session. Clearing your browser data means starting fresh with a new username — there's no account recovery.
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE ROOM MODAL -->
+  <div id="modal-create" class="modal-bd" onclick="if(event.target===this)closeCreate()">
+    <div class="modal-card">
+      <div class="modal-label">New Room</div>
+      <h2 class="modal-title">CREATE A ROOM</h2>
+      <p class="modal-sub">Give your room a name. You'll get a 6-character invite code to share with friends.</p>
+      <div class="modal-err" id="err-create"></div>
+      <input class="modal-input" id="input-create" placeholder="e.g. Friday Night Watch Party" maxlength="40" autocomplete="off" />
+      <button class="modal-btn" id="btn-create" onclick="submitCreate()">Create Room</button>
+      <button class="modal-ghost" onclick="closeCreate()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- JOIN ROOM MODAL -->
+  <div id="modal-join" class="modal-bd" onclick="if(event.target===this)closeJoin()">
+    <div class="modal-card">
+      <div class="modal-label">Join Room</div>
+      <h2 class="modal-title">ENTER INVITE CODE</h2>
+      <p class="modal-sub">Get a 6-character code from a friend and paste it below.</p>
+      <div class="modal-err" id="err-join"></div>
+      <input class="modal-input" id="input-join" placeholder="e.g. AB3X9Z" maxlength="6" autocomplete="off" spellcheck="false"
+             style="text-transform:uppercase;letter-spacing:0.18em;font-size:1.15rem;text-align:center" />
+      <button class="modal-btn" id="btn-join" onclick="submitJoin()">Join Room</button>
+      <button class="modal-ghost" onclick="closeJoin()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main>
+    <div class="page-header">
+      <div>
+        <div class="section-label">Community</div>
+        <h1 class="page-title">YOUR ROOMS</h1>
+      </div>
+      <div class="header-btns">
+        <button class="btn-secondary" onclick="openJoin()">Join a Room</button>
+        <button class="btn-primary" onclick="openCreate()">+ Create Room</button>
+      </div>
+    </div>
+    <div id="rooms-container"><div class="spinner"></div></div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo">ANI<span>SCOUT</span></div>
+      <div class="footer-copy">© 2025 AniScout. Private rooms for anime friends.</div>
+    </div>
+  </footer>
+
+  <script>
+    let sb = null;
+    let currentUser = null;
+    let username = null;
+
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
+    async function init() {
+      let config;
+      try {
+        const res = await fetch('/api/supabase-config');
+        config = await res.json();
+      } catch {
+        fatalError('Could not reach server. Please refresh.');
+        return;
+      }
+      if (!config.url || !config.anonKey) {
+        fatalError('Server is not configured yet. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
+        return;
+      }
+
+      sb = supabase.createClient(config.url, config.anonKey);
+
+      // Restore existing session (Supabase persists to localStorage automatically)
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        username = currentUser.user_metadata?.username || localStorage.getItem('aniscout_username');
+        if (username) { onAuthenticated(); return; }
+      }
+
+      // No session — show username picker
+      document.getElementById('modal-username').classList.add('open');
+      setTimeout(() => document.getElementById('input-username').focus(), 50);
+    }
+
+    // ── Anonymous auth ────────────────────────────────────────────────────────
+    async function submitUsername() {
+      const input = document.getElementById('input-username');
+      const btn   = document.getElementById('btn-username');
+      const err   = document.getElementById('err-username');
+      const name  = input.value.trim();
+
+      err.textContent = '';
+      if (name.length < 2) { err.textContent = 'At least 2 characters please.'; return; }
+      if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
+      if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'One sec…';
+
+      try {
+        const { data, error } = await sb.auth.signInAnonymously({
+          options: { data: { username: name } }
+        });
+        if (error) throw error;
+        currentUser = data.user;
+        username = name;
+        localStorage.setItem('aniscout_username', name);
+        document.getElementById('modal-username').classList.remove('open');
+        onAuthenticated();
+      } catch (e) {
+        err.textContent = e.message || 'Sign-in failed. Try again.';
+        btn.disabled = false;
+        btn.textContent = 'Enter AniScout →';
+      }
+    }
+
+    function onAuthenticated() {
+      document.getElementById('nav-user').style.display = 'flex';
+      document.getElementById('nav-username').textContent = username;
+      loadRooms();
+    }
+
+    // ── Load rooms ────────────────────────────────────────────────────────────
+    async function loadRooms() {
+      const el = document.getElementById('rooms-container');
+      el.innerHTML = '<div class="spinner"></div>';
+
+      const { data: memberships, error } = await sb
+        .from('room_members')
+        .select('room_id, rooms(id, name, invite_code, created_at)')
+        .eq('user_id', currentUser.id)
+        .order('joined_at', { ascending: false });
+
+      if (error) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-sub" style="color:var(--red)">${escHtml(error.message)}</div></div>`;
+        return;
+      }
+
+      const rooms = (memberships || []).map(m => m.rooms).filter(Boolean);
+
+      if (!rooms.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🎌</div>
+            <div class="empty-title">No Rooms Yet</div>
+            <div class="empty-sub">Create a room or join one with a friend's invite code to start sharing anime.</div>
+            <div class="empty-btns">
+              <button class="btn-secondary" onclick="openJoin()">Join a Room</button>
+              <button class="btn-primary" onclick="openCreate()">+ Create Room</button>
+            </div>
+          </div>`;
+        return;
+      }
+
+      // Fetch member counts in one query
+      const roomIds = rooms.map(r => r.id);
+      const { data: counts } = await sb
+        .from('room_members').select('room_id').in('room_id', roomIds);
+
+      const countMap = {};
+      (counts || []).forEach(m => { countMap[m.room_id] = (countMap[m.room_id] || 0) + 1; });
+
+      el.innerHTML = `<div class="rooms-grid">
+        ${rooms.map(r => `
+          <a href="/chat.html?room=${r.id}" class="room-card">
+            <div class="room-card-name">${escHtml(r.name)}</div>
+            <div class="room-card-footer">
+              <span class="room-code">${r.invite_code}</span>
+              <span class="room-members">${countMap[r.id] || 1} member${(countMap[r.id] || 1) !== 1 ? 's' : ''}</span>
+              <span class="room-arrow">→</span>
+            </div>
+          </a>`).join('')}
+      </div>`;
+    }
+
+    // ── Create room ───────────────────────────────────────────────────────────
+    function openCreate() {
+      document.getElementById('modal-create').classList.add('open');
+      setTimeout(() => document.getElementById('input-create').focus(), 50);
+    }
+    function closeCreate() {
+      document.getElementById('modal-create').classList.remove('open');
+      document.getElementById('input-create').value = '';
+      document.getElementById('err-create').textContent = '';
+      document.getElementById('btn-create').disabled = false;
+      document.getElementById('btn-create').textContent = 'Create Room';
+    }
+
+    async function submitCreate() {
+      const input = document.getElementById('input-create');
+      const btn   = document.getElementById('btn-create');
+      const err   = document.getElementById('err-create');
+      const name  = input.value.trim();
+
+      err.textContent = '';
+      if (!name) { err.textContent = 'Room name is required.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating…';
+
+      try {
+        // Retry on invite_code collision (extremely rare)
+        let room, attempt = 0;
+        while (attempt < 3) {
+          const { data, error: rErr } = await sb.from('rooms')
+            .insert({ name, invite_code: genCode(), created_by: currentUser.id })
+            .select().single();
+          if (!rErr) { room = data; break; }
+          if (!rErr.message.includes('unique') || attempt === 2) throw rErr;
+          attempt++;
+        }
+
+        const { error: mErr } = await sb.from('room_members')
+          .insert({ room_id: room.id, user_id: currentUser.id, username });
+        if (mErr) throw mErr;
+
+        window.location.href = `/chat.html?room=${room.id}`;
+      } catch (e) {
+        err.textContent = e.message || 'Could not create room.';
+        btn.disabled = false;
+        btn.textContent = 'Create Room';
+      }
+    }
+
+    // ── Join room ─────────────────────────────────────────────────────────────
+    function openJoin() {
+      document.getElementById('modal-join').classList.add('open');
+      setTimeout(() => document.getElementById('input-join').focus(), 50);
+    }
+    function closeJoin() {
+      document.getElementById('modal-join').classList.remove('open');
+      document.getElementById('input-join').value = '';
+      document.getElementById('err-join').textContent = '';
+      document.getElementById('btn-join').disabled = false;
+      document.getElementById('btn-join').textContent = 'Join Room';
+    }
+
+    async function submitJoin() {
+      const input = document.getElementById('input-join');
+      const btn   = document.getElementById('btn-join');
+      const err   = document.getElementById('err-join');
+      const code  = input.value.trim().toUpperCase();
+
+      err.textContent = '';
+      if (code.length !== 6) { err.textContent = 'Code must be exactly 6 characters.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Looking up…';
+
+      try {
+        const { data: room, error: rErr } = await sb
+          .from('rooms').select('id, name').eq('invite_code', code).maybeSingle();
+        if (rErr) throw rErr;
+        if (!room) throw new Error('Room not found. Double-check the code.');
+
+        // Already a member? Just go in.
+        const { data: existing } = await sb
+          .from('room_members').select('id')
+          .eq('room_id', room.id).eq('user_id', currentUser.id).maybeSingle();
+
+        if (!existing) {
+          const { error: mErr } = await sb.from('room_members')
+            .insert({ room_id: room.id, user_id: currentUser.id, username });
+          if (mErr) throw mErr;
+        }
+
+        window.location.href = `/chat.html?room=${room.id}`;
+      } catch (e) {
+        err.textContent = e.message || 'Could not join room.';
+        btn.disabled = false;
+        btn.textContent = 'Join Room';
+      }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function genCode() {
+      const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return Array.from({ length: 6 }, () => c[Math.floor(Math.random() * c.length)]).join('');
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function fatalError(msg) {
+      document.getElementById('modal-username').classList.remove('open');
+      document.getElementById('rooms-container').innerHTML = `
+        <div class="empty-state"><div class="empty-sub" style="color:var(--red)">${msg}</div></div>`;
+    }
+
+    // ── Keyboard shortcuts ────────────────────────────────────────────────────
+    document.getElementById('input-username').addEventListener('keydown', e => { if (e.key === 'Enter') submitUsername(); });
+    document.getElementById('input-create').addEventListener('keydown',  e => { if (e.key === 'Enter') submitCreate(); });
+    document.getElementById('input-join').addEventListener('keydown',    e => { if (e.key === 'Enter') submitJoin(); });
+    document.getElementById('input-join').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCreate(); closeJoin(); } });
+
+    init();
+  </script>
+</body>
+</html>

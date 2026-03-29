@@ -131,6 +131,14 @@ app.get('/api/trending', async (req, res) => {
   }
 });
 
+// ── GET /api/supabase-config ─────────────────────────────────────────────────
+app.get('/api/supabase-config', (req, res) => {
+  res.json({
+    url:     process.env.SUPABASE_URL     || '',
+    anonKey: process.env.SUPABASE_ANON_KEY || '',
+  });
+});
+
 // ── POST /api/waitlist ───────────────────────────────────────────────────────
 app.post('/api/waitlist', (req, res) => {
   const { email } = req.body;
