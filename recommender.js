@@ -61,6 +61,7 @@ export function normalizeAniList(a) {
     synopsis: a.description,
     poster: a.coverImage?.large,
     banner: a.bannerImage,
+    status: a.status,
     source: 'anilist',
   };
 }

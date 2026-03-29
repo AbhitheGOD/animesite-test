@@ -428,7 +428,8 @@
       border-color: rgba(232,39,42,0.35);
       box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 2px 8px rgba(232,39,42,0.12);
     }
-    .genre-chip:active { transform: translateY(-1px); }
+    .genre-chip:active { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(232,39,42,0.2); }
+    .genre-chip:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
     .genre-emoji { font-size: 1.6rem; margin-bottom: 8px; display: block; }
     .genre-name { font-size: 0.9rem; font-weight: 500; color: var(--text); }
     .genre-count { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
@@ -475,14 +476,15 @@
     .card-score {
       position: absolute;
       top: 10px; right: 10px;
-      background: rgba(8,8,14,0.8);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(8,8,14,0.85);
+      border: 1px solid rgba(245,160,26,0.25);
       border-radius: 6px;
       padding: 3px 8px;
       font-size: 0.78rem;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--orange);
       backdrop-filter: blur(8px);
+      letter-spacing: 0.02em;
     }
     .card-body { padding: 14px 16px; }
     .card-title {
@@ -673,6 +675,97 @@
     /* ── Results section ── */
     .results-section { display: none; background: var(--dark); }
 
+    /* ── Skeleton loading ── */
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skel {
+      background: linear-gradient(90deg, var(--raised) 25%, rgba(255,255,255,0.06) 50%, var(--raised) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s linear infinite;
+      border-radius: 4px;
+    }
+    .skeleton-card { pointer-events: none; cursor: default !important; }
+    .skeleton-card .card-img { overflow: hidden; position: relative; aspect-ratio: 3/4; }
+    .skel-img { position: absolute; inset: 0; border-radius: 0; }
+    .skel-text { height: 13px; margin: 10px 16px 0; }
+    .skel-text.short { width: 55%; margin-top: 6px; margin-bottom: 14px; }
+
+    /* ── Airing badge ── */
+    .badge-airing {
+      position: absolute; top: 8px; left: 8px;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 4px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      background: rgba(232,39,42,0.9); color: #fff; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+    }
+    .badge-airing::before {
+      content: ''; display: inline-block; flex-shrink: 0;
+      width: 5px; height: 5px; border-radius: 50%; background: #fff;
+      animation: pulse 1.5s ease infinite;
+    }
+
+    /* ── Card rank ── */
+    .card-rank {
+      font-family: 'Bebas Neue', sans-serif; font-size: 0.78rem;
+      color: var(--red); letter-spacing: 0.05em; margin-bottom: 2px;
+    }
+
+    /* ── Recently viewed bar ── */
+    #recently-viewed-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 40px;
+    }
+    .recent-bar-inner { max-width: 1100px; margin: 0 auto; }
+    .recent-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+    }
+    .recent-row {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+      scrollbar-width: thin; scrollbar-color: var(--raised) transparent;
+    }
+    .recent-row::-webkit-scrollbar { height: 3px; }
+    .recent-row::-webkit-scrollbar-thumb { background: var(--raised); border-radius: 2px; }
+    .recent-item {
+      flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+      background: var(--raised); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 12px 6px 6px;
+      text-decoration: none; color: var(--text);
+      transition: border-color 0.2s; max-width: 170px;
+    }
+    .recent-item:hover { border-color: rgba(232,39,42,0.4); }
+    .recent-thumb { width: 28px; height: 40px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+    .recent-info { min-width: 0; }
+    .recent-title { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 108px; }
+    .recent-year  { font-size: 0.68rem; color: var(--muted); }
+
+    /* ── Surprise Me button ── */
+    .random-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid var(--border);
+      border-radius: 100px; padding: 6px 18px; margin-top: 14px;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .random-btn:hover { border-color: rgba(232,39,42,0.4); color: var(--text); }
+    .random-btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 8px; margin: 0 0 24px; flex-wrap: wrap; }
+    #filter-bar { display: none; }
+    .filter-btn {
+      padding: 5px 14px; border-radius: 100px;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .filter-btn:hover { border-color: rgba(232,39,42,0.4); color: var(--text); }
+    .filter-btn.active { border-color: var(--red); background: rgba(232,39,42,0.1); color: var(--text); }
+
     /* ── Scroll animations ── */
     .fade-up,
     .fade-left,
@@ -726,6 +819,7 @@
         <input type="text" placeholder="Enter an anime you loved (e.g. Naruto, Bleach...)" />
         <button>Scout →</button>
       </div>
+      <button id="random-btn" type="button" class="random-btn" onclick="surpriseMe()">🎲 Surprise me</button>
       <div class="hero-tags">
         <span>Action</span>
         <span>Shonen</span>
@@ -748,6 +842,11 @@
       <div class="fade-left" style="opacity:1;transform:none">
         <div class="section-label">Scout Results</div>
         <h2 class="section-title" id="results-title">Your Recommendations</h2>
+        <div id="filter-bar" class="filter-bar">
+          <button type="button" class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+          <button type="button" class="filter-btn" data-filter="8plus" onclick="setFilter('8plus')">★ 8.0+ Rated</button>
+          <button type="button" class="filter-btn" data-filter="gems" onclick="setFilter('gems')">Hidden Gems</button>
+        </div>
       </div>
       <div class="featured-grid" id="results-grid"></div>
       <div id="load-more-btn" class="load-more-wrap" style="display:none">
@@ -755,6 +854,14 @@
       </div>
     </div>
   </section>
+
+  <!-- RECENTLY VIEWED -->
+  <div id="recently-viewed-bar" style="display:none">
+    <div class="recent-bar-inner">
+      <div class="recent-label">Recently Viewed</div>
+      <div class="recent-row" id="recent-row"></div>
+    </div>
+  </div>
 
   <!-- STATS BAR -->
   <div class="stats-bar">
@@ -843,72 +950,17 @@
         <div class="section-label">Top Picks This Week</div>
         <h2 class="section-title">Trending Across<br />the Community</h2>
       </div>
-      <div class="featured-grid">
-        <!-- Card 1 -->
-        <div class="anime-card fade-up" tabindex="0">
-          <div class="card-img">
-            <img src="https://placehold.co/240x320/111119/E8272A?text=Demon+Slayer" alt="Demon Slayer" />
-            <div class="card-img-overlay"></div>
-            <span class="card-score">★ 9.1</span>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Demon Slayer</div>
-            <div class="card-meta">2019 <span class="card-meta-dot"></span> 26 eps</div>
-            <div class="card-genres"><span class="card-genre-tag">Action</span><span class="card-genre-tag">Shonen</span></div>
-          </div>
-        </div>
-        <!-- Card 2 -->
-        <div class="anime-card fade-up" style="transition-delay:0.07s" tabindex="0">
-          <div class="card-img">
-            <img src="https://placehold.co/240x320/111119/F5A01A?text=Jujutsu+Kaisen" alt="Jujutsu Kaisen" />
-            <div class="card-img-overlay"></div>
-            <span class="card-score">★ 8.9</span>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Jujutsu Kaisen</div>
-            <div class="card-meta">2020 <span class="card-meta-dot"></span> 24 eps</div>
-            <div class="card-genres"><span class="card-genre-tag">Dark</span><span class="card-genre-tag">Shonen</span></div>
-          </div>
-        </div>
-        <!-- Card 3 -->
-        <div class="anime-card fade-up" style="transition-delay:0.14s" tabindex="0">
-          <div class="card-img">
-            <img src="https://placehold.co/240x320/111119/7878A0?text=Vinland+Saga" alt="Vinland Saga" />
-            <div class="card-img-overlay"></div>
-            <span class="card-score">★ 9.0</span>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Vinland Saga</div>
-            <div class="card-meta">2019 <span class="card-meta-dot"></span> 24 eps</div>
-            <div class="card-genres"><span class="card-genre-tag">Historical</span><span class="card-genre-tag">Seinen</span></div>
-          </div>
-        </div>
-        <!-- Card 4 -->
-        <div class="anime-card fade-up" style="transition-delay:0.21s" tabindex="0">
-          <div class="card-img">
-            <img src="https://placehold.co/240x320/111119/E8272A?text=Chainsaw+Man" alt="Chainsaw Man" />
-            <div class="card-img-overlay"></div>
-            <span class="card-score">★ 8.7</span>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Chainsaw Man</div>
-            <div class="card-meta">2022 <span class="card-meta-dot"></span> 12 eps</div>
-            <div class="card-genres"><span class="card-genre-tag">Action</span><span class="card-genre-tag">Dark</span></div>
-          </div>
-        </div>
-        <!-- Card 5 -->
-        <div class="anime-card fade-up" style="transition-delay:0.28s" tabindex="0">
-          <div class="card-img">
-            <img src="https://placehold.co/240x320/111119/F5A01A?text=HxH" alt="Hunter x Hunter" />
-            <div class="card-img-overlay"></div>
-            <span class="card-score">★ 9.4</span>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Hunter × Hunter</div>
-            <div class="card-meta">2011 <span class="card-meta-dot"></span> 148 eps</div>
-            <div class="card-genres"><span class="card-genre-tag">Adventure</span><span class="card-genre-tag">Shonen</span></div>
-          </div>
-        </div>
+      <div class="featured-grid" id="featured-grid">
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
+        <div class="anime-card skeleton-card"><div class="card-img"><div class="skel skel-img"></div></div><div class="card-body"><div class="skel skel-text"></div><div class="skel skel-text short"></div></div></div>
       </div>
     </div>
   </section>
@@ -990,60 +1042,66 @@
     // Hero bg pan on scroll
     const heroBg = document.getElementById('heroBg');
     window.addEventListener('scroll', () => {
-      const offset = window.scrollY * 0.25;
-      heroBg.style.transform = `scale(1.05) translateY(${offset}px)`;
+      heroBg.style.transform = `scale(1.05) translateY(${window.scrollY * 0.25}px)`;
     }, { passive: true });
 
-    // Load animation for hero bg
-    window.addEventListener('load', () => {
-      heroBg.classList.add('loaded');
-    });
+    window.addEventListener('load', () => { heroBg.classList.add('loaded'); });
 
-    // Counter animation helper
+    // Counter animation
     function animateCount(el) {
       const target = parseFloat(el.dataset.count);
       const suffix = el.dataset.suffix || '';
       const isDecimal = target % 1 !== 0;
-      const duration = 1400;
       const start = performance.now();
       function step(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        // Ease out expo
+        const progress = Math.min((now - start) / 1400, 1);
         const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
         const current = target * eased;
-        if (isDecimal) {
-          el.textContent = current.toFixed(1) + suffix;
-        } else if (target >= 1000) {
-          el.textContent = Math.floor(current).toLocaleString() + suffix;
-        } else {
-          el.textContent = Math.floor(current) + suffix;
-        }
+        el.textContent = (isDecimal ? current.toFixed(1) : target >= 1000 ? Math.floor(current).toLocaleString() : Math.floor(current)) + suffix;
         if (progress < 1) requestAnimationFrame(step);
       }
       requestAnimationFrame(step);
     }
 
-    // Intersection Observer for all scroll animations
+    // Scroll animations
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
-          // Trigger counter if this element or a child has data-count
           entry.target.querySelectorAll('[data-count]').forEach(animateCount);
           if (entry.target.dataset.count) animateCount(entry.target);
           observer.unobserve(entry.target);
         }
       });
     }, { threshold: 0.12 });
-
     document.querySelectorAll('.fade-up, .fade-left, .fade-right, .fade-scale').forEach(el => observer.observe(el));
 
-    const API = ''; // same origin — server serves the frontend
+    const API = '';
     let currentQuery = '';
     let currentPage  = 1;
     let hasNextPage  = false;
 
-    // ── Scout search ──────────────────────────────────────────────────────────
+    // ── Recently Viewed ───────────────────────────────────────────────────────
+    function renderRecentlyViewed() {
+      try {
+        const recent = JSON.parse(localStorage.getItem('aniscout_recent') || '[]');
+        if (!recent.length) return;
+        const bar = document.getElementById('recently-viewed-bar');
+        const row = document.getElementById('recent-row');
+        row.innerHTML = recent.map(a => `
+          <a href="/anime.html?id=${a.malId}" class="recent-item">
+            ${a.poster ? `<img class="recent-thumb" src="${a.poster}" alt="${a.title}" loading="lazy" onerror="this.style.display='none'">` : ''}
+            <div class="recent-info">
+              <div class="recent-title">${a.title || 'Unknown'}</div>
+              <div class="recent-year">${a.year || ''}</div>
+            </div>
+          </a>`).join('');
+        bar.style.display = 'block';
+      } catch {}
+    }
+    renderRecentlyViewed();
+
+    // ── Search ────────────────────────────────────────────────────────────────
     const searchInput = document.querySelector('.hero-search input');
     const searchBtn   = document.querySelector('.hero-search button');
 
@@ -1053,7 +1111,6 @@
       currentPage  = 1;
       searchBtn.textContent = 'Scouting...';
       searchBtn.disabled = true;
-
       try {
         const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}&page=1`);
         if (!res.ok) throw new Error('Search failed');
@@ -1071,7 +1128,7 @@
     }
 
     async function loadMoreResults() {
-      const btn = document.getElementById('load-more-btn');
+      const btn = document.querySelector('#load-more-btn button');
       btn.textContent = 'Loading...';
       btn.disabled = true;
       currentPage++;
@@ -1091,26 +1148,59 @@
 
     searchBtn.addEventListener('click', () => doSearch(searchInput.value.trim()));
     searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(searchInput.value.trim()); });
-
-    // ── Hero tag click → pre-fill search ─────────────────────────────────────
     document.querySelectorAll('.hero-tags span').forEach(tag => {
-      tag.addEventListener('click', function () {
-        searchInput.value = this.textContent;
-        doSearch(this.textContent);
-      });
+      tag.addEventListener('click', function () { searchInput.value = this.textContent; doSearch(this.textContent); });
     });
 
-    // ── Render recommendation results ─────────────────────────────────────────
+    // ── Filter ────────────────────────────────────────────────────────────────
+    function setFilter(filter) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+      document.getElementById('results-grid').querySelectorAll('.anime-card').forEach(card => {
+        const score = parseFloat(card.dataset.score) || 0;
+        const year  = parseInt(card.dataset.year)  || 9999;
+        const show = filter === 'all'
+          || (filter === '8plus' && score >= 8.0)
+          || (filter === 'gems'  && score >= 7.5 && year <= 2018);
+        card.style.display = show ? '' : 'none';
+      });
+    }
+
+    // ── Surprise Me ───────────────────────────────────────────────────────────
+    const RANDOM_GENRES = ['action','adventure','comedy','fantasy','mystery','psychological','romance','sci-fi','thriller','isekai','mecha','horror'];
+    async function surpriseMe() {
+      const btn = document.getElementById('random-btn');
+      btn.textContent = '🎲 Rolling...';
+      btn.disabled = true;
+      try {
+        const genre = RANDOM_GENRES[Math.floor(Math.random() * RANDOM_GENRES.length)];
+        const page  = Math.floor(Math.random() * 5) + 1;
+        const res   = await fetch(`${API}/api/recommend?q=${genre}&page=${page}`);
+        if (!res.ok) throw new Error('Failed');
+        const data  = await res.json();
+        const recs  = (data.recommendations || []).filter(a => a.malId);
+        if (recs.length) {
+          window.location.href = `/anime.html?id=${recs[Math.floor(Math.random() * recs.length)].malId}`;
+          return;
+        }
+      } catch {}
+      btn.textContent = '🎲 Surprise me';
+      btn.disabled = false;
+    }
+
+    // ── Render results ────────────────────────────────────────────────────────
     function renderResults(data, append = false) {
-      const section = document.getElementById('results-section');
-      const grid    = document.getElementById('results-grid');
-      const title   = document.getElementById('results-title');
+      const section   = document.getElementById('results-section');
+      const grid      = document.getElementById('results-grid');
+      const title     = document.getElementById('results-title');
+      const filterBar = document.getElementById('filter-bar');
 
       if (!append) {
         title.textContent = data.isGenreSearch
           ? `Top ${data.genreLabel} Anime`
           : `Because you liked "${data.baseAnime?.title || 'that'}"`;
         grid.innerHTML = '';
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === 'all'));
+        filterBar.style.display = 'flex';
       }
 
       const recs = data.recommendations || [];
@@ -1120,12 +1210,13 @@
         return;
       }
 
-      recs.forEach(anime => {
+      recs.forEach((anime, i) => {
         const card = document.createElement('a');
         card.className = 'anime-card fade-up';
         card.tabIndex = 0;
-        card.style.textDecoration = 'none';
-        card.style.cursor = 'pointer';
+        card.style.transitionDelay = `${i * 0.04}s`;
+        card.dataset.score = anime.score || 0;
+        card.dataset.year  = anime.year  || 0;
         if (anime.malId) card.href = `/anime.html?id=${anime.malId}`;
         const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
         const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
@@ -1142,44 +1233,44 @@
             <div class="card-genres">${genres}</div>
           </div>`;
         grid.appendChild(card);
-        // trigger fade-in
-        requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('visible')));
+        requestAnimationFrame(() => card.classList.add('visible'));
       });
 
       section.style.display = 'block';
       document.getElementById('load-more-btn').style.display = hasNextPage ? 'block' : 'none';
     }
 
-    // ── Load trending on page load ────────────────────────────────────────────
+    // ── Load trending (Discover section) ─────────────────────────────────────
     async function loadTrending() {
       try {
         const res = await fetch(`${API}/api/trending`);
         if (!res.ok) return;
         const trending = await res.json();
-        const grid = document.querySelector('.featured-grid');
+        const grid = document.getElementById('featured-grid');
         if (!grid || !trending.length) return;
 
         grid.innerHTML = '';
-        trending.slice(0, 5).forEach((anime, i) => {
+        trending.forEach((anime, i) => {
           const card = document.createElement('a');
           card.className = 'anime-card fade-up';
           card.tabIndex = 0;
-          card.style.transitionDelay = `${i * 0.07}s`;
-          card.style.textDecoration = 'none';
-          card.style.cursor = 'pointer';
+          card.style.transitionDelay = `${i * 0.05}s`;
           if (anime.malId) card.href = `/anime.html?id=${anime.malId}`;
           const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
           const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
           const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
+          const rank   = String(i + 1).padStart(2, '0');
           card.innerHTML = `
             <div class="card-img">
               <img src="${poster}" alt="${anime.title}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
               <div class="card-img-overlay"></div>
               ${score ? `<span class="card-score">${score}</span>` : ''}
+              ${anime.status === 'RELEASING' ? '<span class="badge-airing">Airing</span>' : ''}
             </div>
             <div class="card-body">
+              <div class="card-rank">#${rank}</div>
               <div class="card-title">${anime.title || 'Unknown'}</div>
-              <div class="card-meta">${anime.year || ''} ${anime.episodes ? `<span class="card-meta-dot"></span> ${anime.episodes} eps` : ''}</div>
+              <div class="card-meta">${anime.year || ''} ${anime.episodes ? `<span class="card-meta-dot"></span> ${anime.episodes} eps` : 'Ongoing'}</div>
               <div class="card-genres">${genres}</div>
             </div>`;
           grid.appendChild(card);
@@ -1189,10 +1280,9 @@
         console.warn('Could not load trending:', e.message);
       }
     }
-
     loadTrending();
 
-    // ── Waitlist / email form ─────────────────────────────────────────────────
+    // ── Waitlist ──────────────────────────────────────────────────────────────
     const ctaForm = document.querySelector('.cta-form');
     if (ctaForm) {
       ctaForm.addEventListener('submit', async e => {
@@ -1201,7 +1291,6 @@
         const btn = ctaForm.querySelector('button');
         const email = emailInput.value.trim();
         if (!email) return;
-
         btn.textContent = 'Joining...';
         btn.disabled = true;
         try {
@@ -1211,19 +1300,17 @@
             body: JSON.stringify({ email }),
           });
           const data = await res.json();
-          btn.textContent = data.message || 'You\'re in!';
+          btn.textContent = data.message || "You're in!";
           emailInput.value = '';
         } catch {
           btn.textContent = 'Try again';
           btn.disabled = false;
         }
       });
-
-      // Also trigger on button click (not just form submit)
       ctaForm.querySelector('button').addEventListener('click', () => ctaForm.dispatchEvent(new Event('submit')));
     }
 
-    // ── Genre chip click effect ───────────────────────────────────────────────
+    // ── Genre chip click ──────────────────────────────────────────────────────
     document.querySelectorAll('.genre-chip').forEach(chip => {
       chip.addEventListener('click', function () {
         const genre = this.querySelector('.genre-name')?.textContent;

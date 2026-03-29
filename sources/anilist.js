@@ -126,7 +126,7 @@ async function getTrending(limit = 10) {
         media(type: ANIME, sort: [TRENDING_DESC], status: RELEASING) {
           id idMal title { romaji english }
           coverImage { large }
-          genres averageScore popularity episodes
+          genres averageScore popularity episodes status
           startDate { year }
         }
       }

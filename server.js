@@ -34,6 +34,13 @@ app.get('/api/anime', async (req, res) => {
       }).then(r => r.json()).then(d => d.data?.Media || null).catch(() => null),
     ]);
     if (!anime) return res.status(404).json({ error: 'Anime not found' });
+
+    // Extract YouTube ID from embed_url when youtube_id is missing
+    if (anime.trailer && !anime.trailer.youtube_id && anime.trailer.embed_url) {
+      const m = anime.trailer.embed_url.match(/embed\/([^?/]+)/);
+      if (m) anime.trailer.youtube_id = m[1];
+    }
+
     res.json({
       ...anime,
       bannerImage: anilist?.bannerImage || null,
@@ -45,6 +52,13 @@ app.get('/api/anime', async (req, res) => {
   }
 });
 
+// MAL → AniList genre name mapping
+const MAL_TO_ANILIST = { 'Suspense': 'Thriller', 'Award Winning': null, 'Boys Love': null, 'Girls Love': null, 'Hentai': null, 'Erotica': null, 'Avant Garde': null };
+const ANILIST_GENRES = new Set(['Action','Adventure','Comedy','Drama','Ecchi','Fantasy','Horror','Mahou Shoujo','Mecha','Music','Mystery','Psychological','Romance','Sci-Fi','Slice of Life','Sports','Supernatural','Thriller']);
+function toAniListGenres(raw) {
+  return raw.map(g => g in MAL_TO_ANILIST ? MAL_TO_ANILIST[g] : g).filter(g => g && ANILIST_GENRES.has(g));
+}
+
 // ── GET /api/similar?id=20&page=1&genres=Action,Adventure ────────────────────
 app.get('/api/similar', async (req, res) => {
   const malId = parseInt(req.query.id);
@@ -52,11 +66,14 @@ app.get('/api/similar', async (req, res) => {
   if (!malId) return res.status(400).json({ error: 'Missing ?id=' });
 
   try {
-    let genres = (req.query.genres || '').split(',').filter(Boolean);
-    if (!genres.length) {
+    let rawGenres = (req.query.genres || '').split(',').filter(Boolean);
+    if (!rawGenres.length) {
       const anime = await getAnimeById(malId);
-      genres = (anime?.genres || []).map(g => g.name).slice(0, 3);
+      rawGenres = (anime?.genres || []).map(g => g.name).slice(0, 3);
     }
+    let genres = toAniListGenres(rawGenres);
+    // Fallback: if none matched, use first raw genre anyway
+    if (!genres.length && rawGenres.length) genres = rawGenres.slice(0, 1);
     const result = await getSimilarByMalId(malId, genres, page, 24);
     res.json({
       page,

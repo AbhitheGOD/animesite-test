@@ -27,6 +27,12 @@ export default async function handler(req, res) {
     ]);
     if (!anime) return res.status(404).json({ error: 'Anime not found' });
 
+    // Extract YouTube ID from embed_url if youtube_id is missing
+    if (anime.trailer && !anime.trailer.youtube_id && anime.trailer.embed_url) {
+      const match = anime.trailer.embed_url.match(/embed\/([^?/]+)/);
+      if (match) anime.trailer.youtube_id = match[1];
+    }
+
     res.json({
       ...anime,
       bannerImage: anilist?.bannerImage || null,
