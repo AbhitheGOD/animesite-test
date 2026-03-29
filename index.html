@@ -791,6 +791,84 @@
       opacity: 1;
       transform: none;
     }
+
+    /* ── Autocomplete ── */
+    .hero-search { overflow: visible !important; position: relative; }
+    .hero-search input { border-radius: 12px 0 0 12px; }
+    .autocomplete-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      box-shadow: 0 20px 56px rgba(0,0,0,0.6); z-index: 300; display: none;
+    }
+    .autocomplete-dropdown.open { display: block; }
+    .autocomplete-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; cursor: pointer;
+      transition: background 0.15s; text-decoration: none; color: var(--text);
+    }
+    .autocomplete-item:hover { background: var(--raised); }
+    .autocomplete-thumb { width: 32px; height: 44px; border-radius: 4px; object-fit: cover; flex-shrink: 0; background: var(--raised); }
+    .autocomplete-info { min-width: 0; flex: 1; }
+    .autocomplete-title { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .autocomplete-meta { font-size: 0.75rem; color: var(--muted); }
+
+    /* ── Recently searched ── */
+    .recent-searches-bar {
+      display: none; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px;
+    }
+    .recent-searches-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; width: 100%; text-align: center; }
+    .recent-search-chip {
+      padding: 4px 12px; border-radius: 100px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      font-size: 0.78rem; color: var(--muted); cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .recent-search-chip:hover { border-color: rgba(232,39,42,0.4); color: var(--text); }
+
+    /* ── Score slider ── */
+    .score-filter-wrap { display: flex; align-items: center; gap: 12px; }
+    .score-filter-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+    .score-filter-label strong { color: var(--orange); font-weight: 700; }
+    .score-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 160px; height: 3px; border-radius: 2px;
+      background: var(--border); cursor: pointer; accent-color: var(--red);
+    }
+    .score-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--red); cursor: pointer;
+      box-shadow: 0 0 6px rgba(232,39,42,0.5);
+    }
+
+    /* ── Watchlist button on cards ── */
+    .watchlist-btn {
+      position: absolute; bottom: 8px; right: 8px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(8,8,14,0.85); border: 1px solid rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 0.85rem; backdrop-filter: blur(4px);
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      z-index: 2; color: var(--text); line-height: 1;
+    }
+    .watchlist-btn:hover { background: rgba(232,39,42,0.85); border-color: var(--red); transform: scale(1.15); }
+    .watchlist-btn.saved { background: rgba(232,39,42,0.85); border-color: var(--red); }
+
+    /* ── Watchlist section ── */
+    #watchlist-section {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+    }
+    .watchlist-inner { max-width: 1100px; margin: 0 auto; }
+    .watchlist-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .watchlist-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .watchlist-clear { background: none; border: none; font-size: 0.75rem; color: var(--muted); cursor: pointer; transition: color 0.2s; }
+    .watchlist-clear:hover { color: var(--red); }
+    .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
   </style>
 </head>
 <body>
@@ -816,13 +894,18 @@
       <h1>FIND YOUR<br /><span class="accent">NEXT ANIME</span></h1>
       <p class="hero-subtitle">Enter a series you love. We'll map its DNA and surface titles you've never heard of — but will never forget.</p>
       <div class="hero-search">
-        <input type="text" placeholder="Enter an anime you loved (e.g. Naruto, Bleach...)" />
+        <input type="text" placeholder="Enter an anime you loved (e.g. Naruto, Bleach...)" autocomplete="off" />
         <button>Scout →</button>
+        <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+      </div>
+      <div class="recent-searches-bar" id="recent-searches-bar">
+        <div class="recent-searches-label">Recent searches</div>
       </div>
       <button id="random-btn" type="button" class="random-btn" onclick="surpriseMe()">🎲 Surprise me</button>
       <div class="hero-tags">
         <span>Action</span>
         <span>Shonen</span>
+        <span>Seinen</span>
         <span>Psychological</span>
         <span>Fantasy</span>
         <span>Sports</span>
@@ -843,9 +926,10 @@
         <div class="section-label">Scout Results</div>
         <h2 class="section-title" id="results-title">Your Recommendations</h2>
         <div id="filter-bar" class="filter-bar">
-          <button type="button" class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-          <button type="button" class="filter-btn" data-filter="8plus" onclick="setFilter('8plus')">★ 8.0+ Rated</button>
-          <button type="button" class="filter-btn" data-filter="gems" onclick="setFilter('gems')">Hidden Gems</button>
+          <div class="score-filter-wrap">
+            <span class="score-filter-label">Min score: <strong id="score-val">Any</strong></span>
+            <input type="range" id="score-slider" class="score-slider" min="0" max="9" step="0.5" value="0" oninput="applyScoreFilter(this.value)" />
+          </div>
         </div>
       </div>
       <div class="featured-grid" id="results-grid"></div>
@@ -860,6 +944,17 @@
     <div class="recent-bar-inner">
       <div class="recent-label">Recently Viewed</div>
       <div class="recent-row" id="recent-row"></div>
+    </div>
+  </div>
+
+  <!-- WATCHLIST -->
+  <div id="watchlist-section" style="display:none">
+    <div class="watchlist-inner">
+      <div class="watchlist-header">
+        <div class="watchlist-label">My Watchlist</div>
+        <button type="button" class="watchlist-clear" onclick="clearWatchlist()">Clear all</button>
+      </div>
+      <div class="watchlist-grid" id="watchlist-grid"></div>
     </div>
   </div>
 
@@ -932,7 +1027,7 @@
         <div class="genre-chip fade-scale" style="transition-delay:0.08s"><span class="genre-emoji">🔥</span><div class="genre-name">Shonen</div><div class="genre-count">4,100 titles</div></div>
         <div class="genre-chip fade-scale" style="transition-delay:0.12s"><span class="genre-emoji">🌌</span><div class="genre-name">Fantasy</div><div class="genre-count">2,700 titles</div></div>
         <div class="genre-chip fade-scale" style="transition-delay:0.16s"><span class="genre-emoji">🤖</span><div class="genre-name">Mecha</div><div class="genre-count">620 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.20s"><span class="genre-emoji">💀</span><div class="genre-name">Dark / Seinen</div><div class="genre-count">1,450 titles</div></div>
+        <div class="genre-chip fade-scale" style="transition-delay:0.20s"><span class="genre-emoji">💀</span><div class="genre-name">Seinen</div><div class="genre-count">1,450 titles</div></div>
         <div class="genre-chip fade-scale" style="transition-delay:0.24s"><span class="genre-emoji">🏆</span><div class="genre-name">Sports</div><div class="genre-count">980 titles</div></div>
         <div class="genre-chip fade-scale" style="transition-delay:0.28s"><span class="genre-emoji">🌸</span><div class="genre-name">Romance</div><div class="genre-count">1,600 titles</div></div>
         <div class="genre-chip fade-scale" style="transition-delay:0.32s"><span class="genre-emoji">😂</span><div class="genre-name">Comedy</div><div class="genre-count">2,200 titles</div></div>
@@ -1081,6 +1176,66 @@
     let currentPage  = 1;
     let hasNextPage  = false;
 
+    // ── Watchlist ─────────────────────────────────────────────────────────────
+    function getWatchlist() {
+      try { return JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]'); } catch { return []; }
+    }
+    function saveWatchlistData(list) {
+      localStorage.setItem('aniscout_watchlist', JSON.stringify(list));
+    }
+    function toggleWatchlist(btn) {
+      const malId = parseInt(btn.dataset.malid);
+      const title = btn.dataset.title;
+      const poster = btn.dataset.poster;
+      const score = parseFloat(btn.dataset.score) || 0;
+      const year = parseInt(btn.dataset.year) || 0;
+      let list = getWatchlist();
+      const idx = list.findIndex(a => a.malId === malId);
+      if (idx === -1) {
+        list.unshift({ malId, title, poster, score, year });
+        btn.textContent = '♥'; btn.classList.add('saved');
+        btn.title = 'Remove from watchlist';
+      } else {
+        list.splice(idx, 1);
+        btn.textContent = '♡'; btn.classList.remove('saved');
+        btn.title = 'Add to watchlist';
+      }
+      saveWatchlistData(list);
+      renderWatchlist();
+    }
+    function clearWatchlist() {
+      saveWatchlistData([]);
+      renderWatchlist();
+    }
+    function renderWatchlist() {
+      const list = getWatchlist();
+      const section = document.getElementById('watchlist-section');
+      const grid = document.getElementById('watchlist-grid');
+      if (!section || !grid) return;
+      if (!list.length) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      grid.innerHTML = list.map(a => {
+        const poster = a.poster || `https://placehold.co/130x180/111119/E8272A?text=${encodeURIComponent(a.title||'?')}`;
+        const score  = a.score ? `★ ${parseFloat(a.score).toFixed(1)}` : '';
+        return `<a href="/anime.html?id=${a.malId}" class="anime-card">
+          <div class="card-img">
+            <img src="${poster}" alt="" loading="lazy" onerror="this.src='https://placehold.co/130x180/111119/E8272A?text=?'"/>
+            <div class="card-img-overlay"></div>
+            ${score ? `<span class="card-score">${score}</span>` : ''}
+            <button class="watchlist-btn saved"
+              data-malid="${a.malId}" data-title="${(a.title||'').replace(/"/g,'&quot;')}"
+              data-poster="${a.poster||''}" data-score="${a.score||0}" data-year="${a.year||0}"
+              onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)" title="Remove from watchlist">♥</button>
+          </div>
+          <div class="card-body">
+            <div class="card-title">${a.title||'Unknown'}</div>
+            <div class="card-meta">${a.year||''}</div>
+          </div>
+        </a>`;
+      }).join('');
+    }
+    renderWatchlist();
+
     // ── Recently Viewed ───────────────────────────────────────────────────────
     function renderRecentlyViewed() {
       try {
@@ -1101,6 +1256,31 @@
     }
     renderRecentlyViewed();
 
+    // ── Recently Searched ─────────────────────────────────────────────────────
+    function saveRecentSearch(query) {
+      try {
+        let searches = JSON.parse(localStorage.getItem('aniscout_searches') || '[]');
+        searches = searches.filter(s => s.toLowerCase() !== query.toLowerCase());
+        searches.unshift(query);
+        localStorage.setItem('aniscout_searches', JSON.stringify(searches.slice(0, 5)));
+        renderRecentSearches();
+      } catch {}
+    }
+    function renderRecentSearches() {
+      try {
+        const searches = JSON.parse(localStorage.getItem('aniscout_searches') || '[]');
+        const bar = document.getElementById('recent-searches-bar');
+        if (!bar) return;
+        if (!searches.length) { bar.style.display = 'none'; return; }
+        const chips = searches.map(s =>
+          `<span class="recent-search-chip" onclick="searchInput.value='${s.replace(/'/g,"\\'")}';doSearch('${s.replace(/'/g,"\\'")}')">${s}</span>`
+        ).join('');
+        bar.innerHTML = `<div class="recent-searches-label">Recent searches</div>${chips}`;
+        bar.style.display = 'flex';
+      } catch {}
+    }
+    renderRecentSearches();
+
     // ── Search ────────────────────────────────────────────────────────────────
     const searchInput = document.querySelector('.hero-search input');
     const searchBtn   = document.querySelector('.hero-search button');
@@ -1109,17 +1289,34 @@
       if (!query) return;
       currentQuery = query;
       currentPage  = 1;
+      closeAutocomplete();
       searchBtn.textContent = 'Scouting...';
       searchBtn.disabled = true;
+      // Reset score slider
+      const slider = document.getElementById('score-slider');
+      const scoreVal = document.getElementById('score-val');
+      if (slider) { slider.value = 0; }
+      if (scoreVal) { scoreVal.textContent = 'Any'; }
       try {
         const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}&page=1`);
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
         hasNextPage = data.hasNextPage ?? false;
         renderResults(data, false);
+        saveRecentSearch(query);
         document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
-        alert('Could not fetch recommendations. Please try again.');
+        const section = document.getElementById('results-section');
+        const grid = document.getElementById('results-grid');
+        const filterBar = document.getElementById('filter-bar');
+        grid.innerHTML = `<div style="grid-column:1/-1;padding:48px 0;text-align:center;color:var(--muted)">
+          <div style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+          <div style="font-size:1.1rem;margin-bottom:8px;color:var(--text);font-weight:600">Could not fetch recommendations</div>
+          <div style="font-size:0.9rem">Try a different title or check your connection.</div>
+        </div>`;
+        filterBar.style.display = 'none';
+        section.style.display = 'block';
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         console.error(err);
       } finally {
         searchBtn.textContent = 'Scout →';
@@ -1152,16 +1349,51 @@
       tag.addEventListener('click', function () { searchInput.value = this.textContent; doSearch(this.textContent); });
     });
 
-    // ── Filter ────────────────────────────────────────────────────────────────
-    function setFilter(filter) {
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+    // ── Autocomplete ──────────────────────────────────────────────────────────
+    const dropdown = document.getElementById('autocomplete-dropdown');
+    let acTimeout = null;
+
+    function closeAutocomplete() {
+      if (dropdown) dropdown.classList.remove('open');
+    }
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(acTimeout);
+      const q = searchInput.value.trim();
+      if (q.length < 2) { closeAutocomplete(); return; }
+      acTimeout = setTimeout(() => fetchSuggestions(q), 320);
+    });
+
+    searchInput.addEventListener('blur', () => {
+      setTimeout(closeAutocomplete, 180);
+    });
+
+    async function fetchSuggestions(q) {
+      try {
+        const res = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) return;
+        const results = await res.json();
+        if (!results.length) { closeAutocomplete(); return; }
+        dropdown.innerHTML = results.map(a => `
+          <a class="autocomplete-item" href="/anime.html?id=${a.malId}">
+            <img class="autocomplete-thumb" src="${a.poster || ''}" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="autocomplete-info">
+              <div class="autocomplete-title">${a.title || 'Unknown'}</div>
+              <div class="autocomplete-meta">${a.year || ''}${a.score ? ` · ★ ${parseFloat(a.score).toFixed(1)}` : ''}</div>
+            </div>
+          </a>`).join('');
+        dropdown.classList.add('open');
+      } catch {}
+    }
+
+    // ── Score filter ──────────────────────────────────────────────────────────
+    function applyScoreFilter(val) {
+      const min = parseFloat(val);
+      const label = document.getElementById('score-val');
+      if (label) label.textContent = min === 0 ? 'Any' : `${min}+`;
       document.getElementById('results-grid').querySelectorAll('.anime-card').forEach(card => {
         const score = parseFloat(card.dataset.score) || 0;
-        const year  = parseInt(card.dataset.year)  || 9999;
-        const show = filter === 'all'
-          || (filter === '8plus' && score >= 8.0)
-          || (filter === 'gems'  && score >= 7.5 && year <= 2018);
-        card.style.display = show ? '' : 'none';
+        card.style.display = (min === 0 || score === 0 || score >= min) ? '' : 'none';
       });
     }
 
@@ -1188,6 +1420,34 @@
     }
 
     // ── Render results ────────────────────────────────────────────────────────
+    function makeCardHTML(anime) {
+      const isSaved = getWatchlist().some(a => a.malId === anime.malId);
+      const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
+      const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
+      const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
+      const safeTitle = (anime.title || 'Unknown').replace(/"/g, '&quot;');
+      const safePoster = (poster || '').replace(/"/g, '&quot;');
+      return `
+        <div class="card-img">
+          <img src="${poster}" alt="${safeTitle}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
+          <div class="card-img-overlay"></div>
+          ${score ? `<span class="card-score">${score}</span>` : ''}
+          <button class="watchlist-btn ${isSaved ? 'saved' : ''}"
+            data-malid="${anime.malId || 0}"
+            data-title="${safeTitle}"
+            data-poster="${safePoster}"
+            data-score="${anime.score || 0}"
+            data-year="${anime.year || 0}"
+            onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)"
+            title="${isSaved ? 'Remove from watchlist' : 'Save to watchlist'}">${isSaved ? '♥' : '♡'}</button>
+        </div>
+        <div class="card-body">
+          <div class="card-title">${anime.title || 'Unknown'}</div>
+          <div class="card-meta">${anime.year || ''} ${anime.episodes ? `<span class="card-meta-dot"></span> ${anime.episodes} eps` : ''}</div>
+          <div class="card-genres">${genres}</div>
+        </div>`;
+    }
+
     function renderResults(data, append = false) {
       const section   = document.getElementById('results-section');
       const grid      = document.getElementById('results-grid');
@@ -1199,11 +1459,13 @@
           ? `Top ${data.genreLabel} Anime`
           : `Because you liked "${data.baseAnime?.title || 'that'}"`;
         grid.innerHTML = '';
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === 'all'));
         filterBar.style.display = 'flex';
       }
 
-      const recs = data.recommendations || [];
+      const recs = !append && !data.isGenreSearch && data.baseAnime
+        ? [data.baseAnime, ...(data.recommendations || [])]
+        : (data.recommendations || []);
+
       if (!append && !recs.length) {
         grid.innerHTML = '<p style="color:var(--muted)">No recommendations found. Try another title.</p>';
         section.style.display = 'block';
@@ -1218,20 +1480,7 @@
         card.dataset.score = anime.score || 0;
         card.dataset.year  = anime.year  || 0;
         if (anime.malId) card.href = `/anime.html?id=${anime.malId}`;
-        const poster = anime.poster || `https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}`;
-        const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
-        const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
-        card.innerHTML = `
-          <div class="card-img">
-            <img src="${poster}" alt="${anime.title}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
-            <div class="card-img-overlay"></div>
-            ${score ? `<span class="card-score">${score}</span>` : ''}
-          </div>
-          <div class="card-body">
-            <div class="card-title">${anime.title || 'Unknown'}</div>
-            <div class="card-meta">${anime.year || ''} ${anime.episodes ? `<span class="card-meta-dot"></span> ${anime.episodes} eps` : ''}</div>
-            <div class="card-genres">${genres}</div>
-          </div>`;
+        card.innerHTML = makeCardHTML(anime);
         grid.appendChild(card);
         requestAnimationFrame(() => card.classList.add('visible'));
       });
@@ -1260,12 +1509,23 @@
           const score  = anime.score ? `★ ${parseFloat(anime.score).toFixed(1)}` : '';
           const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
           const rank   = String(i + 1).padStart(2, '0');
+          const isSaved = getWatchlist().some(a => a.malId === anime.malId);
+          const safeTitle = (anime.title || 'Unknown').replace(/"/g, '&quot;');
+          const safePoster = (poster || '').replace(/"/g, '&quot;');
           card.innerHTML = `
             <div class="card-img">
-              <img src="${poster}" alt="${anime.title}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
+              <img src="${poster}" alt="${safeTitle}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
               <div class="card-img-overlay"></div>
               ${score ? `<span class="card-score">${score}</span>` : ''}
               ${anime.status === 'RELEASING' ? '<span class="badge-airing">Airing</span>' : ''}
+              <button class="watchlist-btn ${isSaved ? 'saved' : ''}"
+                data-malid="${anime.malId || 0}"
+                data-title="${safeTitle}"
+                data-poster="${safePoster}"
+                data-score="${anime.score || 0}"
+                data-year="${anime.year || 0}"
+                onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)"
+                title="${isSaved ? 'Remove from watchlist' : 'Save to watchlist'}">${isSaved ? '♥' : '♡'}</button>
             </div>
             <div class="card-body">
               <div class="card-rank">#${rank}</div>

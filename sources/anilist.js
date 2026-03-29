@@ -119,6 +119,36 @@ async function getSimilarByMalId(malId, genres, page = 1, perPage = 24) {
   };
 }
 
+async function getTopByTag(tag, page = 1, perPage = 24) {
+  const query = `
+    query ($tags: [String], $page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        pageInfo { hasNextPage currentPage total }
+        media(
+          tag_in: $tags,
+          type: ANIME,
+          sort: [SCORE_DESC],
+          status_not: NOT_YET_RELEASED,
+          averageScore_greater: 65
+        ) {
+          id idMal title { romaji english }
+          coverImage { large }
+          genres tags { name rank }
+          averageScore popularity episodes
+          startDate { year }
+          description(asHtml: false)
+        }
+      }
+    }
+  `;
+  const data = await gql(query, { tags: [tag], page, perPage });
+  return {
+    media: data.Page?.media || [],
+    hasNextPage: data.Page?.pageInfo?.hasNextPage || false,
+    total: data.Page?.pageInfo?.total || 0,
+  };
+}
+
 async function getTrending(limit = 10) {
   const query = `
     query ($perPage: Int) {
@@ -136,4 +166,4 @@ async function getTrending(limit = 10) {
   return data.Page?.media || [];
 }
 
-export { searchAnime, getSimilarByGenres, getTopByGenre, getSimilarByMalId, getTrending };
+export { searchAnime, getSimilarByGenres, getTopByGenre, getTopByTag, getSimilarByMalId, getTrending };

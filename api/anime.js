@@ -32,6 +32,10 @@ export default async function handler(req, res) {
       const match = anime.trailer.embed_url.match(/embed\/([^?/]+)/);
       if (match) anime.trailer.youtube_id = match[1];
     }
+    if (anime.trailer && !anime.trailer.youtube_id && anime.trailer.url) {
+      const m2 = anime.trailer.url.match(/[?&]v=([^&]+)/);
+      if (m2) anime.trailer.youtube_id = m2[1];
+    }
 
     res.json({
       ...anime,

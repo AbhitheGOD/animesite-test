@@ -1,6 +1,8 @@
 // Aggregates data from Jikan, AniList, and Kitsu to build recommendations
 import * as Jikan from './sources/jikan.js';
 import * as AniList from './sources/anilist.js';
+// Entries with anilistTag use AniList tag queries (demographics) instead of genre queries
+
 
 
 // Genre keyword → { anilistName, malId }
@@ -19,8 +21,8 @@ const GENRE_MAP = {
   sports:        { anilist: 'Sports',       malId: 30 },
   supernatural:  { anilist: 'Supernatural', malId: 37 },
   thriller:      { anilist: 'Thriller',     malId: 41 },
-  shonen:        { anilist: 'Action',       malId: 27 }, // shonen is a demographic, map to Action for AniList
-  seinen:        { anilist: 'Action',       malId: 42 },
+  shonen:        { anilist: 'Action',       malId: 27 },
+  seinen:        { anilistTag: 'Seinen',    malId: 42 },
   isekai:        { anilist: 'Isekai',       malId: 62 },
   mecha:         { anilist: 'Mecha',        malId: 18 },
 };
@@ -71,13 +73,16 @@ function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function getRecommendationsByGenre(label, { anilist: anilistGenre, malId: malGenreId }, page = 1) {
+async function getRecommendationsByGenre(label, { anilist: anilistGenre, anilistTag, malId: malGenreId }, page = 1) {
   const PER_PAGE = 24;
+  const anilistFetch = anilistTag
+    ? AniList.getTopByTag(anilistTag, page, PER_PAGE)
+    : AniList.getTopByGenre(anilistGenre, page, PER_PAGE);
 
   const [anilistResults, jikanResults] = await Promise.allSettled(
     page === 1
-      ? [AniList.getTopByGenre(anilistGenre, page, PER_PAGE), Jikan.getByGenre(malGenreId, 10)]
-      : [AniList.getTopByGenre(anilistGenre, page, PER_PAGE)]
+      ? [anilistFetch, Jikan.getByGenre(malGenreId, 10)]
+      : [anilistFetch]
   );
 
   const seen = new Set();
@@ -204,7 +209,7 @@ export async function getRecommendations(query, page = 1) {
       } : null,
     },
     recommendations: merged.slice(0, 15),
-    trending: (anilistSimilar.status === 'fulfilled' ? anilistSimilar.value : [])
+    trending: (anilistSimilar.status === 'fulfilled' ? anilistSimilar.value?.media || [] : [])
       .slice(0, 6)
       .map(normalizeAniList),
   };

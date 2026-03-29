@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getRecommendations, getTrendingNow, normalizeAniList } from './recommender.js';
-import { getAnimeById } from './sources/jikan.js';
+import { getAnimeById, searchAnime } from './sources/jikan.js';
 import { getSimilarByMalId } from './sources/anilist.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +15,24 @@ const WAITLIST_FILE = path.join(__dirname, '.tmp', 'waitlist.json');
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname)); // serve the frontend
+
+// ── GET /api/search?q=naruto ─────────────────────────────────────────────────
+app.get('/api/search', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.json([]);
+  try {
+    const results = await searchAnime(q);
+    res.json(results.slice(0, 6).map(a => ({
+      malId: a.mal_id,
+      title: a.title_english || a.title,
+      year: a.year || a.aired?.prop?.from?.year,
+      poster: a.images?.jpg?.image_url,
+      score: a.score,
+    })));
+  } catch {
+    res.json([]);
+  }
+});
 
 // ── GET /api/anime?id=20 ─────────────────────────────────────────────────────
 app.get('/api/anime', async (req, res) => {
