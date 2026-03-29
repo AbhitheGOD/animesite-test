@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AniScout — Discover Your Next Obsession</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
@@ -869,6 +870,33 @@
     .watchlist-clear { background: none; border: none; font-size: 0.75rem; color: var(--muted); cursor: pointer; transition: color 0.2s; }
     .watchlist-clear:hover { color: var(--red); }
     .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
+
+    /* SETTINGS */
+    .settings-fab {
+      position: fixed; bottom: 20px; right: 20px; z-index: 200;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--raised); border: 1px solid var(--border);
+      color: var(--muted); font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .settings-fab:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .settings-panel {
+      display: none; position: fixed; bottom: 68px; right: 20px; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; width: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .settings-panel.open { display: block; }
+    .settings-info { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+    .settings-logout-btn {
+      width: 100%; padding: 8px 12px;
+      background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.25);
+      border-radius: 8px; color: var(--red); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
+    #settings-logout-btn { display: none; }
   </style>
 </head>
 <body>
@@ -1578,6 +1606,56 @@
         if (genre) { searchInput.value = genre; doSearch(genre); }
       });
     });
+
+    // ── Settings panel ────────────────────────────────────────────────────────
+    (function() {
+      const session = (() => { try { return JSON.parse(localStorage.getItem('aniscout_session') || 'null'); } catch { return null; } })();
+      const uname = session?.username || localStorage.getItem('aniscout_username');
+      const info = document.getElementById('settings-info');
+      const logoutBtn = document.getElementById('settings-logout-btn');
+      if (uname && info) {
+        info.textContent = `Signed in as ${uname}`;
+        if (logoutBtn) logoutBtn.style.display = 'block';
+      } else if (info) {
+        info.textContent = 'Not signed in';
+      }
+    })();
+
+    function toggleSettings() {
+      document.getElementById('settings-panel').classList.toggle('open');
+    }
+    async function doSignOut() {
+      // Clear local state — Supabase session will expire naturally
+      localStorage.removeItem('aniscout_username');
+      localStorage.removeItem('aniscout_session');
+      // Also sign out from Supabase if we can
+      try {
+        const res = await fetch('/api/supabase-config');
+        const config = await res.json();
+        if (config.url && config.anonKey && window.supabase) {
+          const sb = window.supabase.createClient(config.url, config.anonKey);
+          await sb.auth.signOut();
+        }
+      } catch { /* ignore */ }
+      document.getElementById('settings-panel').classList.remove('open');
+      document.getElementById('settings-info').textContent = 'Not signed in';
+      document.getElementById('settings-logout-btn').style.display = 'none';
+    }
+    document.addEventListener('click', e => {
+      const panel = document.getElementById('settings-panel');
+      const fab = document.querySelector('.settings-fab');
+      if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
+        panel.classList.remove('open');
+      }
+    });
   </script>
+
+  <!-- SETTINGS -->
+  <div id="settings-panel" class="settings-panel">
+    <div id="settings-info" class="settings-info">Not signed in</div>
+    <button type="button" onclick="doSignOut()" id="settings-logout-btn" class="settings-logout-btn">Sign Out</button>
+  </div>
+  <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
+
 </body>
 </html>

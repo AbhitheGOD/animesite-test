@@ -250,6 +250,33 @@
       .messages-area { padding: 16px 16px 8px; }
       .chat-input-bar { padding: 12px 16px; }
     }
+
+    /* SETTINGS */
+    .settings-fab {
+      position: fixed; bottom: 20px; right: 20px; z-index: 200;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--raised); border: 1px solid var(--border);
+      color: var(--muted); font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .settings-fab:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .settings-panel {
+      display: none; position: fixed; bottom: 68px; right: 20px; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; width: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .settings-panel.open { display: block; }
+    .settings-info { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+    .settings-logout-btn {
+      width: 100%; padding: 8px 12px;
+      background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.25);
+      border-radius: 8px; color: var(--red); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
+    #settings-logout-btn { display: none; }
   </style>
 </head>
 <body>
@@ -369,6 +396,7 @@
 
       await Promise.all([loadMessages(), loadMembers()]);
       subscribeToRoom();
+      updateSettingsPanel();
     }
 
     // ── Load initial messages ─────────────────────────────────────────────────
@@ -646,7 +674,45 @@
       if (e.key === 'Escape') closeAnimeModal();
     });
 
+    // ── Settings panel ────────────────────────────────────────────────────────
+    function toggleSettings() {
+      document.getElementById('settings-panel').classList.toggle('open');
+    }
+    function updateSettingsPanel() {
+      const info = document.getElementById('settings-info');
+      const logoutBtn = document.getElementById('settings-logout-btn');
+      if (username) {
+        info.textContent = `Signed in as ${username}`;
+        logoutBtn.style.display = 'block';
+      } else {
+        info.textContent = 'Not signed in';
+        logoutBtn.style.display = 'none';
+      }
+    }
+    async function doSignOut() {
+      if (sb) await sb.auth.signOut();
+      localStorage.removeItem('aniscout_username');
+      localStorage.removeItem('aniscout_session');
+      document.getElementById('settings-panel').classList.remove('open');
+      location.href = '/rooms.html';
+    }
+    document.addEventListener('click', e => {
+      const panel = document.getElementById('settings-panel');
+      const fab = document.querySelector('.settings-fab');
+      if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
+        panel.classList.remove('open');
+      }
+    });
+
     init();
   </script>
+
+  <!-- SETTINGS -->
+  <div id="settings-panel" class="settings-panel">
+    <div id="settings-info" class="settings-info">Not signed in</div>
+    <button type="button" onclick="doSignOut()" id="settings-logout-btn" class="settings-logout-btn">Sign Out</button>
+  </div>
+  <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
+
 </body>
 </html>

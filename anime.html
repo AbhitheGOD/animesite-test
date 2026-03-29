@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AniScout — Anime Details</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
@@ -255,6 +256,85 @@
     }
     .trailer-close:hover { color: var(--red); }
 
+    /* WATCHLIST BUTTON */
+    .watchlist-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 12px; margin-right: 10px; padding: 10px 22px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .watchlist-btn:hover { background: rgba(232,39,42,0.12); border-color: rgba(232,39,42,0.35); }
+    .watchlist-btn.saved { background: rgba(232,39,42,0.15); border-color: rgba(232,39,42,0.5); color: var(--red); }
+    .watchlist-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* USERNAME MODAL */
+    .modal-bd {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(8,8,14,0.92); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center;
+    }
+    .modal-bd.open { display: flex; }
+    .modal-card {
+      background: var(--surface); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; padding: 40px; width: min(440px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    }
+    .modal-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+    .modal-title { font-size: 2.2rem; font-family: 'Bebas Neue', sans-serif; color: var(--text); margin-bottom: 8px; }
+    .modal-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; line-height: 1.65; }
+    .modal-err { color: var(--red); font-size: 0.85rem; margin-bottom: 12px; min-height: 20px; }
+    .modal-input {
+      width: 100%; padding: 12px 16px; background: var(--raised);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+    }
+    .modal-input:focus { border-color: rgba(232,39,42,0.5); }
+    .modal-input::placeholder { color: var(--muted); }
+    .modal-btn {
+      width: 100%; padding: 13px; background: var(--red); border: none;
+      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+    }
+    .modal-btn:hover:not(:disabled) { opacity: 0.9; }
+    .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .modal-warn {
+      font-size: 0.8rem; color: var(--muted); margin-top: 18px; padding: 12px 14px;
+      background: rgba(245,160,26,0.06); border-radius: 8px;
+      border: 1px solid rgba(245,160,26,0.15); line-height: 1.6;
+    }
+    .modal-warn strong { color: var(--orange); }
+
+    /* SETTINGS */
+    .settings-fab {
+      position: fixed; bottom: 20px; right: 20px; z-index: 200;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--raised); border: 1px solid var(--border);
+      color: var(--muted); font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .settings-fab:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .settings-panel {
+      display: none; position: fixed; bottom: 68px; right: 20px; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; width: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .settings-panel.open { display: block; }
+    .settings-info { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+    .settings-logout-btn {
+      width: 100%; padding: 8px 12px;
+      background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.25);
+      border-radius: 8px; color: var(--red); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
+    #settings-logout-btn { display: none; }
+
     @media (max-width: 768px) {
       .detail-hero-content { flex-direction: column; align-items: flex-start; padding: 32px 20px 28px; }
       .detail-poster, .detail-poster-placeholder { width: 130px; height: 190px; }
@@ -277,6 +357,19 @@
       </a>
     </div>
   </nav>
+
+  <!-- USERNAME MODAL (shown only when watchlist is clicked without a session) -->
+  <div id="modal-username" class="modal-bd">
+    <div class="modal-card">
+      <div class="modal-label">Welcome to AniScout</div>
+      <h2 class="modal-title">PICK A USERNAME</h2>
+      <p class="modal-sub">Choose how your friends will see you. No email or password needed — ever.</p>
+      <div class="modal-err" id="err-username"></div>
+      <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
+      <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Save to Watchlist →</button>
+      <div class="modal-warn"><strong>⚠ Heads up:</strong> Your username is tied to this browser session. Clearing browser data means starting fresh.</div>
+    </div>
+  </div>
 
   <!-- TRAILER MODAL -->
   <div id="trailer-modal" onclick="if(event.target===this)closeTrailer()">
@@ -310,10 +403,177 @@
     </div>
   </footer>
 
+  <!-- SETTINGS -->
+  <div id="settings-panel" class="settings-panel">
+    <div id="settings-info" class="settings-info">Not signed in</div>
+    <button type="button" onclick="doSignOut()" id="settings-logout-btn" class="settings-logout-btn">Sign Out</button>
+  </div>
+  <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
+
   <script>
     const API = '';
     const params = new URLSearchParams(location.search);
     const malId = params.get('id');
+
+    // ── Supabase + Auth ───────────────────────────────────────────────────────
+    let sb = null;
+    let currentUser = null;
+    let username = null;
+    let currentAnime = null; // stored after render() for watchlist use
+
+    async function initSupabase() {
+      try {
+        const res = await fetch('/api/supabase-config');
+        const config = await res.json();
+        if (!config.url || !config.anonKey) return;
+        sb = supabase.createClient(config.url, config.anonKey);
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          currentUser = session.user;
+          username = session.user.user_metadata?.username || localStorage.getItem('aniscout_username');
+        }
+        updateSettingsPanel();
+        if (currentAnime) checkWatchlistStatus();
+      } catch { /* silent — watchlist just won't work */ }
+    }
+
+    // ── Watchlist ─────────────────────────────────────────────────────────────
+    async function checkWatchlistStatus() {
+      if (!sb || !currentUser || !currentAnime) return;
+      const { data } = await sb.from('watchlist').select('id')
+        .eq('user_id', currentUser.id).eq('mal_id', currentAnime.mal_id).maybeSingle();
+      setWatchlistState(!!data);
+    }
+
+    function setWatchlistState(saved) {
+      const btn = document.getElementById('watchlist-btn');
+      const txt = document.getElementById('watchlist-btn-text');
+      if (!btn || !txt) return;
+      if (saved) {
+        btn.classList.add('saved');
+        txt.textContent = 'In Watchlist';
+      } else {
+        btn.classList.remove('saved');
+        txt.textContent = 'Add to Watchlist';
+      }
+    }
+
+    function handleWatchlistClick() {
+      if (!sb || !currentUser || !username) {
+        document.getElementById('modal-username').classList.add('open');
+        setTimeout(() => document.getElementById('input-username').focus(), 50);
+        return;
+      }
+      toggleWatchlist();
+    }
+
+    async function toggleWatchlist() {
+      if (!currentAnime) return;
+      const btn = document.getElementById('watchlist-btn');
+      const saved = btn.classList.contains('saved');
+
+      if (saved) {
+        await sb.from('watchlist').delete()
+          .eq('user_id', currentUser.id).eq('mal_id', currentAnime.mal_id);
+        setWatchlistState(false);
+      } else {
+        const a = currentAnime;
+        await sb.from('watchlist').insert({
+          user_id: currentUser.id,
+          username,
+          mal_id: a.mal_id,
+          title: a.title_english || a.title,
+          poster: a.anilistPoster || a.images?.jpg?.large_image_url,
+          score: a.score || null,
+          year: a.year || a.aired?.prop?.from?.year || null
+        });
+        setWatchlistState(true);
+      }
+    }
+
+    // ── Username modal (lazy auth for watchlist) ───────────────────────────────
+    async function submitUsername() {
+      const input = document.getElementById('input-username');
+      const btn   = document.getElementById('btn-username');
+      const err   = document.getElementById('err-username');
+      const name  = input.value.trim();
+
+      err.textContent = '';
+      if (name.length < 2) { err.textContent = 'At least 2 characters please.'; return; }
+      if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
+      if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+
+      try {
+        if (!currentUser) {
+          const { data, error: signInErr } = await sb.auth.signInAnonymously();
+          if (signInErr) throw signInErr;
+          currentUser = data.user;
+        }
+
+        const { error: claimErr } = await sb.from('usernames')
+          .insert({ username: name, user_id: currentUser.id });
+
+        if (claimErr) {
+          err.textContent = claimErr.code === '23505'
+            ? 'Username already taken, try another.'
+            : (claimErr.message || 'Could not claim username.');
+          btn.disabled = false;
+          btn.textContent = 'Save to Watchlist →';
+          return;
+        }
+
+        username = name;
+        localStorage.setItem('aniscout_username', name);
+        localStorage.setItem('aniscout_session', JSON.stringify({ username: name, userId: currentUser.id }));
+        document.getElementById('modal-username').classList.remove('open');
+        updateSettingsPanel();
+        toggleWatchlist();
+
+      } catch (e) {
+        err.textContent = e.message || 'Sign-in failed. Try again.';
+        btn.disabled = false;
+        btn.textContent = 'Save to Watchlist →';
+      }
+    }
+
+    // ── Settings panel ────────────────────────────────────────────────────────
+    function toggleSettings() {
+      document.getElementById('settings-panel').classList.toggle('open');
+    }
+    function updateSettingsPanel() {
+      const info = document.getElementById('settings-info');
+      const logoutBtn = document.getElementById('settings-logout-btn');
+      if (username) {
+        info.textContent = `Signed in as ${username}`;
+        logoutBtn.style.display = 'block';
+      } else {
+        info.textContent = 'Not signed in';
+        logoutBtn.style.display = 'none';
+      }
+    }
+    async function doSignOut() {
+      if (sb) await sb.auth.signOut();
+      localStorage.removeItem('aniscout_username');
+      localStorage.removeItem('aniscout_session');
+      currentUser = null;
+      username = null;
+      document.getElementById('settings-panel').classList.remove('open');
+      updateSettingsPanel();
+      setWatchlistState(false);
+    }
+    document.addEventListener('click', e => {
+      const panel = document.getElementById('settings-panel');
+      const fab = document.querySelector('.settings-fab');
+      if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
+        panel.classList.remove('open');
+      }
+    });
+    document.getElementById('input-username').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitUsername();
+    });
 
     if (!malId) {
       document.getElementById('app').innerHTML = `
@@ -332,8 +592,10 @@
         const anime = await res.json();
         document.title = `${anime.title_english || anime.title} — AniScout`;
         similarGenres = (anime.genres || []).map(g => g.name).slice(0, 3);
+        currentAnime = anime;
         render(anime);
         requestAnimationFrame(initReadMore);
+        initSupabase();
         loadSimilar(malId, similarGenres, 1);
         saveRecentlyViewed({
           malId: parseInt(id),
@@ -413,11 +675,17 @@
                   ★ ${score}
                   <span class="detail-score-sub">by ${scoredBy || '?'} users</span>
                 </div>` : ''}
-              ${a.trailer?.youtube_id ? `
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0;margin-top:4px">
+                <button type="button" id="watchlist-btn" class="watchlist-btn" onclick="handleWatchlistClick()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                  <span id="watchlist-btn-text">Add to Watchlist</span>
+                </button>
+                ${a.trailer?.youtube_id ? `
                 <button type="button" class="trailer-btn" onclick="openTrailer('${a.trailer.youtube_id}')">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                   Watch Trailer
                 </button>` : ''}
+              </div>
             </div>
           </div>
         </div>
