@@ -639,8 +639,15 @@
         .on('postgres_changes', {
           event: 'UPDATE', schema: 'public', table: 'room_members',
           filter: `room_id=eq.${roomId}`
-        }, () => {
+        }, payload => {
           loadMembers(); // Refresh crowns when admin role changes
+          // If current user's own row was updated, sync local admin state
+          if (payload.new && payload.new.user_id === currentUser.id) {
+            isAdmin = payload.new.is_admin === true;
+            const gearBtn = document.getElementById('admin-gear-btn');
+            if (isAdmin) gearBtn.classList.add('visible');
+            else gearBtn.classList.remove('visible');
+          }
         })
         .subscribe();
     }
