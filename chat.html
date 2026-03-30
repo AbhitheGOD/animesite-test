@@ -628,13 +628,23 @@
         .on('postgres_changes', {
           event: 'DELETE', schema: 'public', table: 'room_members',
           filter: `room_id=eq.${roomId}`
-        }, payload => {
-          if (payload.old && payload.old.user_id === currentUser.id) {
+        }, async payload => {
+          // Check if payload.old has data (requires REPLICA IDENTITY FULL)
+          const kickedId = payload.old?.user_id;
+          if (kickedId === currentUser.id) {
             showToast('You have been removed from this room.');
             setTimeout(() => { location.href = '/rooms.html'; }, 1800);
-          } else {
-            loadMembers();
+            return;
           }
+          // Fallback: re-check own membership in case payload.old was empty
+          const { data: still } = await sb.from('room_members')
+            .select('user_id').eq('room_id', roomId).eq('user_id', currentUser.id).maybeSingle();
+          if (!still) {
+            showToast('You have been removed from this room.');
+            setTimeout(() => { location.href = '/rooms.html'; }, 1800);
+            return;
+          }
+          loadMembers();
         })
         .on('postgres_changes', {
           event: 'UPDATE', schema: 'public', table: 'room_members',
