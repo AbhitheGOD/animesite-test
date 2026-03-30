@@ -209,6 +209,7 @@
     .similar-section-title { font-size: 2.2rem; color: var(--text); margin-bottom: 24px; }
     .similar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
     .similar-load-more { text-align: center; margin-top: 36px; }
+    .hidden { display: none; }
     .load-more-btn {
       padding: 14px 40px; background: var(--raised); border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif;
@@ -362,12 +363,13 @@
   <div id="modal-username" class="modal-bd">
     <div class="modal-card">
       <div class="modal-label">Welcome to AniScout</div>
-      <h2 class="modal-title">PICK A USERNAME</h2>
-      <p class="modal-sub">Choose how your friends will see you. No email or password needed — ever.</p>
+      <h2 class="modal-title" id="modal-username-title">PICK A USERNAME</h2>
+      <p class="modal-sub" id="modal-username-sub">Choose how your friends will see you. Save your watchlist across any device.</p>
       <div class="modal-err" id="err-username"></div>
       <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
+      <input class="modal-input" id="input-pin" placeholder="Set a 4–8 digit PIN" maxlength="8" autocomplete="off" inputmode="numeric" type="password" />
       <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Save to Watchlist →</button>
-      <div class="modal-warn"><strong>⚠ Heads up:</strong> Your username is tied to this browser session. Clearing browser data means starting fresh.</div>
+      <div class="modal-warn"><strong>Your PIN</strong> lets you access your watchlist from any device.</div>
     </div>
   </div>
 
@@ -387,11 +389,11 @@
   </div>
 
   <!-- SIMILAR ANIME SECTION -->
-  <div id="similar-section" class="similar-section" style="display:none">
+  <div id="similar-section" class="similar-section hidden">
     <div class="similar-section-label">More Like This</div>
     <h2 class="similar-section-title">Similar Anime</h2>
     <div id="similar-grid" class="similar-grid"></div>
-    <div id="similar-load-more" class="similar-load-more" style="display:none">
+    <div id="similar-load-more" class="similar-load-more hidden">
       <button type="button" id="similar-load-btn" class="load-more-btn" onclick="loadMoreSimilar()">Load More</button>
     </div>
   </div>
@@ -430,7 +432,11 @@
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
           currentUser = session.user;
-          username = session.user.user_metadata?.username || localStorage.getItem('aniscout_username');
+          username = localStorage.getItem('aniscout_username');
+          if (!username) {
+            const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+            if (uRow) { username = uRow.username; localStorage.setItem('aniscout_username', username); }
+          }
         }
         updateSettingsPanel();
         if (currentAnime) checkWatchlistStatus();
@@ -492,42 +498,74 @@
     }
 
     // ── Username modal (lazy auth for watchlist) ───────────────────────────────
+    function usernameToEmail(name) {
+      return name.toLowerCase().replace(/ /g, '~') + '@aniscout.local';
+    }
+
     async function submitUsername() {
-      const input = document.getElementById('input-username');
-      const btn   = document.getElementById('btn-username');
-      const err   = document.getElementById('err-username');
-      const name  = input.value.trim();
+      const input    = document.getElementById('input-username');
+      const pinInput = document.getElementById('input-pin');
+      const btn      = document.getElementById('btn-username');
+      const err      = document.getElementById('err-username');
+      const name     = input.value.trim();
+      const pin      = pinInput.value.trim();
 
       err.textContent = '';
       if (name.length < 2) { err.textContent = 'At least 2 characters please.'; return; }
       if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
       if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+      if (pin.length < 4) { err.textContent = 'PIN must be at least 4 digits.'; return; }
+      if (!/^\d+$/.test(pin)) { err.textContent = 'PIN must be digits only.'; return; }
 
       btn.disabled = true;
       btn.textContent = 'Checking…';
 
+      const email = usernameToEmail(name);
+
       try {
-        if (!currentUser) {
-          const { data, error: signInErr } = await sb.auth.signInAnonymously();
-          if (signInErr) throw signInErr;
-          currentUser = data.user;
+        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
+
+        if (signUpErr || !signUpData?.user) {
+          // Account exists — try signing in (returning user on a new device)
+          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
+          if (signInErr) {
+            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
+            err.textContent = row
+              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
+              : 'Sign-in failed. Try again.';
+            btn.disabled = false;
+            btn.textContent = 'Save to Watchlist →';
+            return;
+          }
+          currentUser = signInData.user;
+          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+          username = uRow?.username || name;
+
+        } else {
+          currentUser = signUpData.user;
+          const { error: claimErr } = await sb.from('usernames')
+            .insert({ username: name, user_id: currentUser.id });
+
+          if (claimErr) {
+            await sb.auth.signOut();
+            currentUser = null;
+            if (claimErr.code === '23505') {
+              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
+              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
+              document.getElementById('input-username').disabled = true;
+              err.textContent = '';
+            } else {
+              err.textContent = claimErr.message || 'Could not claim username.';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Sign In →';
+            return;
+          }
+          username = name;
         }
 
-        const { error: claimErr } = await sb.from('usernames')
-          .insert({ username: name, user_id: currentUser.id });
-
-        if (claimErr) {
-          err.textContent = claimErr.code === '23505'
-            ? 'Username already taken, try another.'
-            : (claimErr.message || 'Could not claim username.');
-          btn.disabled = false;
-          btn.textContent = 'Save to Watchlist →';
-          return;
-        }
-
-        username = name;
-        localStorage.setItem('aniscout_username', name);
-        localStorage.setItem('aniscout_session', JSON.stringify({ username: name, userId: currentUser.id }));
+        localStorage.setItem('aniscout_username', username);
+        localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
         document.getElementById('modal-username').classList.remove('open');
         updateSettingsPanel();
         toggleWatchlist();
@@ -572,6 +610,9 @@
       }
     });
     document.getElementById('input-username').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('input-pin').focus();
+    });
+    document.getElementById('input-pin').addEventListener('keydown', e => {
       if (e.key === 'Enter') submitUsername();
     });
 
@@ -773,8 +814,8 @@
         grid.appendChild(card);
       });
 
-      document.getElementById('similar-section').style.display = 'block';
-      document.getElementById('similar-load-more').style.display = similarHasNext ? 'block' : 'none';
+      document.getElementById('similar-section').classList.remove('hidden');
+      document.getElementById('similar-load-more').classList.toggle('hidden', !similarHasNext);
     }
 
     async function loadMoreSimilar() {

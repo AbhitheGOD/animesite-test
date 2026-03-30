@@ -1432,18 +1432,20 @@
       const btn = document.getElementById('random-btn');
       btn.textContent = '🎲 Rolling...';
       btn.disabled = true;
-      try {
-        const genre = RANDOM_GENRES[Math.floor(Math.random() * RANDOM_GENRES.length)];
-        const page  = Math.floor(Math.random() * 5) + 1;
-        const res   = await fetch(`${API}/api/recommend?q=${genre}&page=${page}`);
-        if (!res.ok) throw new Error('Failed');
-        const data  = await res.json();
-        const recs  = (data.recommendations || []).filter(a => a.malId);
-        if (recs.length) {
-          window.location.href = `/anime.html?id=${recs[Math.floor(Math.random() * recs.length)].malId}`;
-          return;
-        }
-      } catch {}
+      // Shuffle genres and try up to 4 until we get results
+      const shuffled = [...RANDOM_GENRES].sort(() => Math.random() - 0.5);
+      for (const genre of shuffled.slice(0, 4)) {
+        try {
+          const res  = await fetch(`${API}/api/recommend?q=${genre}&page=1`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const recs = (data.recommendations || []).filter(a => a.malId);
+          if (recs.length) {
+            window.location.href = `/anime.html?id=${recs[Math.floor(Math.random() * recs.length)].malId}`;
+            return;
+          }
+        } catch {}
+      }
       btn.textContent = '🎲 Surprise me';
       btn.disabled = false;
     }

@@ -375,7 +375,12 @@
       if (!session) { location.href = '/rooms.html'; return; }
 
       currentUser = session.user;
-      username = currentUser.user_metadata?.username || localStorage.getItem('aniscout_username') || 'Anonymous';
+      username = localStorage.getItem('aniscout_username');
+      if (!username) {
+        const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+        if (uRow) { username = uRow.username; localStorage.setItem('aniscout_username', username); }
+      }
+      username = username || 'Anonymous';
 
       // Check membership
       const { data: membership } = await sb

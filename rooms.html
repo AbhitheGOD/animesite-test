@@ -71,6 +71,8 @@
     }
     .modal-input:focus { border-color: rgba(232,39,42,0.5); }
     .modal-input::placeholder { color: var(--muted); }
+    .modal-input + .modal-input { margin-top: 0; }
+    .modal-input-code { text-transform: uppercase; letter-spacing: 0.18em; font-size: 1.15rem; text-align: center; }
     .modal-btn {
       width: 100%; padding: 13px; background: var(--red); border: none;
       border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
@@ -212,13 +214,14 @@
   <div id="modal-username" class="modal-bd">
     <div class="modal-card">
       <div class="modal-label">Welcome to AniScout</div>
-      <h2 class="modal-title">PICK A USERNAME</h2>
-      <p class="modal-sub">Choose how your friends will see you in rooms. No email or password needed — ever.</p>
+      <h2 class="modal-title" id="modal-username-title">PICK A USERNAME</h2>
+      <p class="modal-sub" id="modal-username-sub">Choose how your friends will see you in rooms.</p>
       <div class="modal-err" id="err-username"></div>
       <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
-      <button class="modal-btn" id="btn-username" onclick="submitUsername()">Enter AniScout →</button>
+      <input class="modal-input" id="input-pin" placeholder="Set a 4–8 digit PIN" maxlength="8" autocomplete="off" inputmode="numeric" type="password" />
+      <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Enter AniScout →</button>
       <div class="modal-warn">
-        <strong>⚠ Heads up:</strong> Your username is tied to this browser session. Clearing your browser data means starting fresh with a new username — there's no account recovery.
+        <strong>Your PIN</strong> lets you sign in from any device with the same username, watchlist, and rooms.
       </div>
     </div>
   </div>
@@ -231,8 +234,8 @@
       <p class="modal-sub">Give your room a name. You'll get a 6-character invite code to share with friends.</p>
       <div class="modal-err" id="err-create"></div>
       <input class="modal-input" id="input-create" placeholder="e.g. Friday Night Watch Party" maxlength="40" autocomplete="off" />
-      <button class="modal-btn" id="btn-create" onclick="submitCreate()">Create Room</button>
-      <button class="modal-ghost" onclick="closeCreate()">Cancel</button>
+      <button type="button" class="modal-btn" id="btn-create" onclick="submitCreate()">Create Room</button>
+      <button type="button" class="modal-ghost" onclick="closeCreate()">Cancel</button>
     </div>
   </div>
 
@@ -243,10 +246,9 @@
       <h2 class="modal-title">ENTER INVITE CODE</h2>
       <p class="modal-sub">Get a 6-character code from a friend and paste it below.</p>
       <div class="modal-err" id="err-join"></div>
-      <input class="modal-input" id="input-join" placeholder="e.g. AB3X9Z" maxlength="6" autocomplete="off" spellcheck="false"
-             style="text-transform:uppercase;letter-spacing:0.18em;font-size:1.15rem;text-align:center" />
-      <button class="modal-btn" id="btn-join" onclick="submitJoin()">Join Room</button>
-      <button class="modal-ghost" onclick="closeJoin()">Cancel</button>
+      <input class="modal-input modal-input-code" id="input-join" placeholder="e.g. AB3X9Z" maxlength="6" autocomplete="off" spellcheck="false" />
+      <button type="button" class="modal-btn" id="btn-join" onclick="submitJoin()">Join Room</button>
+      <button type="button" class="modal-ghost" onclick="closeJoin()">Cancel</button>
     </div>
   </div>
 
@@ -258,8 +260,8 @@
         <h1 class="page-title">YOUR ROOMS</h1>
       </div>
       <div class="header-btns">
-        <button class="btn-secondary" onclick="openJoin()">Join a Room</button>
-        <button class="btn-primary" onclick="openCreate()">+ Create Room</button>
+        <button type="button" class="btn-secondary" onclick="openJoin()">Join a Room</button>
+        <button type="button" class="btn-primary" onclick="openCreate()">+ Create Room</button>
       </div>
     </div>
     <div id="rooms-container"><div class="spinner"></div></div>
@@ -299,7 +301,15 @@
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         currentUser = session.user;
-        username = session.user.user_metadata?.username || localStorage.getItem('aniscout_username');
+        username = localStorage.getItem('aniscout_username');
+        if (!username) {
+          // Fallback: look up username from DB (e.g. after logging in on a new device)
+          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+          if (uRow) {
+            username = uRow.username;
+            localStorage.setItem('aniscout_username', username);
+          }
+        }
         if (username) { onAuthenticated(); return; }
       }
 
@@ -325,58 +335,95 @@
     function openUsernameModal() {
       document.getElementById('err-username').textContent = '';
       document.getElementById('input-username').value = '';
+      document.getElementById('input-pin').value = '';
+      document.getElementById('input-username').disabled = false;
+      document.getElementById('modal-username-title').textContent = 'PICK A USERNAME';
+      document.getElementById('modal-username-sub').textContent = 'Choose how your friends will see you in rooms.';
       document.getElementById('btn-username').disabled = false;
       document.getElementById('btn-username').textContent = 'Enter AniScout →';
       document.getElementById('modal-username').classList.add('open');
       setTimeout(() => document.getElementById('input-username').focus(), 50);
     }
 
+    // Derives a unique fake email from a username for Supabase auth
+    function usernameToEmail(name) {
+      return name.toLowerCase().replace(/ /g, '~') + '@aniscout.local';
+    }
+
     async function submitUsername() {
-      const input = document.getElementById('input-username');
-      const btn   = document.getElementById('btn-username');
-      const err   = document.getElementById('err-username');
-      const name  = input.value.trim();
+      const input    = document.getElementById('input-username');
+      const pinInput = document.getElementById('input-pin');
+      const btn      = document.getElementById('btn-username');
+      const err      = document.getElementById('err-username');
+      const name     = input.value.trim();
+      const pin      = pinInput.value.trim();
 
       err.textContent = '';
       if (name.length < 2) { err.textContent = 'At least 2 characters please.'; return; }
       if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
       if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+      if (pin.length < 4) { err.textContent = 'PIN must be at least 4 digits.'; return; }
+      if (!/^\d+$/.test(pin)) { err.textContent = 'PIN must be digits only.'; return; }
 
       btn.disabled = true;
       btn.textContent = 'Checking…';
 
+      const email = usernameToEmail(name);
+
       try {
-        // Step 1: Sign in anonymously to get a user_id
-        if (!currentUser) {
-          const { data, error: signInErr } = await sb.auth.signInAnonymously();
-          if (signInErr) throw signInErr;
-          currentUser = data.user;
-        }
+        // Attempt to create a new account
+        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
 
-        // Step 2: Claim username in DB — primary key enforces global uniqueness
-        const { error: claimErr } = await sb.from('usernames')
-          .insert({ username: name, user_id: currentUser.id });
-
-        if (claimErr) {
-          if (claimErr.code === '23505') {
-            err.textContent = 'Username already taken, try another.';
-          } else {
-            err.textContent = claimErr.message || 'Could not claim username.';
+        if (signUpErr || !signUpData?.user) {
+          // Account already exists — try signing in (returning user on a new device)
+          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
+          if (signInErr) {
+            // Check if the username exists to give a helpful message
+            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
+            err.textContent = row
+              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
+              : 'Sign-in failed. Try again.';
+            btn.disabled = false;
+            btn.textContent = 'Enter AniScout →';
+            return;
           }
-          btn.disabled = false;
-          btn.textContent = 'Enter AniScout →';
-          return;
+          // Successfully signed in as existing user — get their username from DB
+          currentUser = signInData.user;
+          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+          username = uRow?.username || name;
+
+        } else {
+          // New account created — claim username in DB
+          currentUser = signUpData.user;
+          const { error: claimErr } = await sb.from('usernames')
+            .insert({ username: name, user_id: currentUser.id });
+
+          if (claimErr) {
+            await sb.auth.signOut();
+            currentUser = null;
+            if (claimErr.code === '23505') {
+              // Swap to sign-in mode: username exists, prompt for PIN
+              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
+              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
+              document.getElementById('input-username').disabled = true;
+              err.textContent = '';
+            } else {
+              err.textContent = claimErr.message || 'Could not claim username.';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Sign In →';
+            return;
+          }
+          username = name;
         }
 
-        // Step 3: Store session
-        username = name;
-        localStorage.setItem('aniscout_username', name);
-        localStorage.setItem('aniscout_session', JSON.stringify({ username: name, userId: currentUser.id }));
+        // Store session locally
+        localStorage.setItem('aniscout_username', username);
+        localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
 
         document.getElementById('modal-username').classList.remove('open');
         onAuthenticated();
 
-        // Execute pending action
         if (pendingAction === 'create') { pendingAction = null; openCreate(); }
         if (pendingAction === 'join')   { pendingAction = null; openJoin(); }
 
@@ -593,7 +640,8 @@
     }
 
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
-    document.getElementById('input-username').addEventListener('keydown', e => { if (e.key === 'Enter') submitUsername(); });
+    document.getElementById('input-username').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('input-pin').focus(); });
+    document.getElementById('input-pin').addEventListener('keydown', e => { if (e.key === 'Enter') submitUsername(); });
     document.getElementById('input-create').addEventListener('keydown',  e => { if (e.key === 'Enter') submitCreate(); });
     document.getElementById('input-join').addEventListener('keydown',    e => { if (e.key === 'Enter') submitJoin(); });
     document.getElementById('input-join').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
