@@ -659,6 +659,12 @@
             else gearBtn.classList.remove('visible');
           }
         })
+        .on('broadcast', { event: 'kick' }, payload => {
+          if (payload.payload?.userId === currentUser.id) {
+            showToast('You have been removed from this room.');
+            setTimeout(() => { location.href = '/rooms.html'; }, 1800);
+          }
+        })
         .subscribe();
     }
 
@@ -709,8 +715,10 @@
       if (!confirm(`Remove @${uname} from this room?`)) return;
       const { error } = await sb.from('room_members')
         .delete().eq('room_id', roomId).eq('user_id', userId);
-      if (error) showToast('Could not remove member. Try again.');
-      // Member list refreshes via realtime DELETE event
+      if (error) { showToast('Could not remove member. Try again.'); return; }
+      // Broadcast kick event so the removed user's client redirects immediately
+      await channel.send({ type: 'broadcast', event: 'kick', payload: { userId } });
+      loadMembers();
     }
 
     // ── Transfer admin modal ──────────────────────────────────────────────────
