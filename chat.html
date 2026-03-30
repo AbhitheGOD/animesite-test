@@ -352,6 +352,39 @@
       transition: color 0.2s; line-height: 1; padding: 4px;
     }
     .lightbox-close:hover { color: #fff; }
+
+    /* ── ADMIN FEATURES ─────────────────────────────────────────────────────── */
+    .crown-badge { font-size: 0.75rem; margin-left: 3px; line-height: 1; }
+
+    .member-remove-btn {
+      margin-left: auto; flex-shrink: 0;
+      padding: 3px 9px; background: none;
+      border: 1px solid rgba(232,39,42,0.25); border-radius: 5px;
+      color: var(--red); font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem; font-weight: 600; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .member-remove-btn:hover { background: rgba(232,39,42,0.12); }
+
+    .nav-admin-btn {
+      display: none; align-items: center; justify-content: center;
+      padding: 6px 10px; background: none;
+      border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); font-size: 0.95rem; cursor: pointer; flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s;
+      gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
+    }
+    .nav-admin-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .nav-admin-btn.visible { display: flex; }
+
+    .transfer-member-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; margin-bottom: 14px; }
+    .transfer-member-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      background: var(--raised); border: 1px solid var(--border);
+      cursor: pointer; transition: border-color 0.2s, background 0.15s;
+    }
+    .transfer-member-item:hover { border-color: rgba(232,39,42,0.35); background: rgba(232,39,42,0.06); }
   </style>
 </head>
 <body>
@@ -370,11 +403,25 @@
         <span class="nav-invite-copy" id="copy-hint">📋</span>
       </button>
     </div>
+    <button type="button" id="admin-gear-btn" class="nav-admin-btn" onclick="openTransferModal()" title="Room Admin Settings">
+      ⚙ Admin
+    </button>
     <button type="button" class="nav-members-toggle" onclick="toggleSidebar()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
       Members
     </button>
   </nav>
+
+  <!-- TRANSFER ADMIN MODAL -->
+  <div id="modal-transfer" class="modal-bd" onclick="if(event.target===this)closeTransferModal()">
+    <div class="modal-card">
+      <div class="modal-label">Room Admin</div>
+      <h2 class="modal-title">TRANSFER ADMIN</h2>
+      <p class="modal-sub">Choose a member to become the new room admin. You will lose your admin role.</p>
+      <div class="transfer-member-list" id="transfer-member-list"></div>
+      <button type="button" class="modal-close-btn" onclick="closeTransferModal()">Cancel</button>
+    </div>
+  </div>
 
   <!-- SHARE ANIME MODAL -->
   <div id="modal-anime" class="modal-bd" onclick="if(event.target===this)closeAnimeModal()">
@@ -442,6 +489,9 @@
     let channel = null;
     const renderedIds = new Set();
     let replyingTo = null; // { id, username, preview }
+    let isAdmin = false;
+    const adminUserIds = new Set(); // tracks which user_ids are room admins
+    let transferCandidates = [];
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
     async function init() {
@@ -469,12 +519,13 @@
       }
       username = username || 'Anonymous';
 
-      // Check membership
+      // Check membership and load admin status
       const { data: membership } = await sb
-        .from('room_members').select('user_id')
+        .from('room_members').select('user_id, is_admin')
         .eq('room_id', roomId).eq('user_id', currentUser.id).maybeSingle();
 
       if (!membership) { location.href = '/rooms.html'; return; }
+      isAdmin = membership.is_admin === true;
 
       // Load room data
       const { data: roomData } = await sb
@@ -486,7 +537,11 @@
       document.getElementById('nav-room-name').textContent = room.name;
       document.getElementById('nav-invite-code').textContent = room.invite_code;
 
-      await Promise.all([loadMessages(), loadMembers()]);
+      if (isAdmin) document.getElementById('admin-gear-btn').classList.add('visible');
+
+      // Load members first so adminUserIds is populated before messages render
+      await loadMembers();
+      await loadMessages();
       subscribeToRoom();
       updateSettingsPanel();
     }
@@ -521,19 +576,31 @@
     // ── Load members ─────────────────────────────────────────────────────────
     async function loadMembers() {
       const { data: members } = await sb
-        .from('room_members').select('user_id, username').eq('room_id', roomId);
+        .from('room_members').select('user_id, username, is_admin').eq('room_id', roomId);
       renderMembers(members || []);
     }
 
     function renderMembers(members) {
+      // Rebuild admin tracking so crown shows correctly in messages
+      adminUserIds.clear();
+      members.filter(m => m.is_admin).forEach(m => adminUserIds.add(m.user_id));
+
       const el = document.getElementById('members-list');
       if (!members.length) { el.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">No members</p>'; return; }
-      el.innerHTML = members.map(m => `
-        <div class="member-item">
-          <div class="member-avatar" style="background:${userColor(m.username)}">${escHtml(m.username[0].toUpperCase())}</div>
-          <span class="member-name">${escHtml(m.username)}</span>
-          ${m.user_id === currentUser.id ? '<span class="member-you">(you)</span>' : ''}
-        </div>`).join('');
+      el.innerHTML = members.map(m => {
+        const isYou = m.user_id === currentUser.id;
+        const crown = m.is_admin ? '<span class="crown-badge" title="Room Admin">👑</span>' : '';
+        const removeBtn = isAdmin && !isYou
+          ? `<button type="button" class="member-remove-btn" data-uid="${escAttr(m.user_id)}" data-uname="${escAttr(m.username)}">Remove</button>`
+          : '';
+        return `
+          <div class="member-item">
+            <div class="member-avatar" style="background:${userColor(m.username)}">${escHtml(m.username[0].toUpperCase())}</div>
+            <span class="member-name">${escHtml(m.username)}${crown}</span>
+            ${isYou ? '<span class="member-you">(you)</span>' : ''}
+            ${removeBtn}
+          </div>`;
+      }).join('');
     }
 
     // ── Realtime subscription ─────────────────────────────────────────────────
@@ -556,7 +623,24 @@
           event: 'INSERT', schema: 'public', table: 'room_members',
           filter: `room_id=eq.${roomId}`
         }, () => {
-          loadMembers(); // Refresh member list when someone joins
+          loadMembers();
+        })
+        .on('postgres_changes', {
+          event: 'DELETE', schema: 'public', table: 'room_members',
+          filter: `room_id=eq.${roomId}`
+        }, payload => {
+          if (payload.old && payload.old.user_id === currentUser.id) {
+            showToast('You have been removed from this room.');
+            setTimeout(() => { location.href = '/rooms.html'; }, 1800);
+          } else {
+            loadMembers();
+          }
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'room_members',
+          filter: `room_id=eq.${roomId}`
+        }, () => {
+          loadMembers(); // Refresh crowns when admin role changes
         })
         .subscribe();
     }
@@ -601,6 +685,59 @@
     function clearReply() {
       replyingTo = null;
       document.getElementById('reply-banner').classList.remove('open');
+    }
+
+    // ── Remove member (admin only) ────────────────────────────────────────────
+    async function removeMember(userId, uname) {
+      if (!confirm(`Remove @${uname} from this room?`)) return;
+      const { error } = await sb.from('room_members')
+        .delete().eq('room_id', roomId).eq('user_id', userId);
+      if (error) showToast('Could not remove member. Try again.');
+      // Member list refreshes via realtime DELETE event
+    }
+
+    // ── Transfer admin modal ──────────────────────────────────────────────────
+    async function openTransferModal() {
+      const { data: members } = await sb
+        .from('room_members').select('user_id, username, is_admin').eq('room_id', roomId);
+      transferCandidates = (members || []).filter(m => m.user_id !== currentUser.id);
+
+      const el = document.getElementById('transfer-member-list');
+      if (!transferCandidates.length) {
+        el.innerHTML = '<p style="color:var(--muted);font-size:0.88rem;text-align:center;padding:16px 0">No other members in this room.</p>';
+      } else {
+        el.innerHTML = transferCandidates.map((m, i) => `
+          <div class="transfer-member-item" data-idx="${i}">
+            <div class="member-avatar" style="background:${userColor(m.username)}">${escHtml(m.username[0].toUpperCase())}</div>
+            <span class="member-name">${escHtml(m.username)}</span>
+            ${m.is_admin ? '<span class="crown-badge" title="Current Admin">👑</span>' : ''}
+          </div>`).join('');
+      }
+      document.getElementById('modal-transfer').classList.add('open');
+    }
+
+    function closeTransferModal() {
+      document.getElementById('modal-transfer').classList.remove('open');
+    }
+
+    async function transferAdmin(idx) {
+      const m = transferCandidates[idx];
+      if (!m) return;
+      if (!confirm(`Transfer admin to @${m.username}?\n\nYou will lose your admin role.`)) return;
+
+      const { error: e1 } = await sb.from('room_members')
+        .update({ is_admin: true }).eq('room_id', roomId).eq('user_id', m.user_id);
+      if (e1) { showToast('Transfer failed.'); return; }
+
+      const { error: e2 } = await sb.from('room_members')
+        .update({ is_admin: false }).eq('room_id', roomId).eq('user_id', currentUser.id);
+      if (e2) { showToast('Transfer incomplete — contact support.'); return; }
+
+      isAdmin = false;
+      document.getElementById('admin-gear-btn').classList.remove('visible');
+      closeTransferModal();
+      loadMembers();
+      showToast(`@${m.username} is now the room admin.`);
     }
 
     // ── Image upload ──────────────────────────────────────────────────────────
@@ -693,9 +830,10 @@
       else if (msg.type === 'image')  replyPreview = '[Image]';
       else if (msg.type === 'anime')  replyPreview = `[Anime: ${msg.anime_payload?.title || 'Unknown'}]`;
 
+      const crownHtml = adminUserIds.has(msg.user_id) ? '<span class="crown-badge" title="Room Admin">👑</span>' : '';
       const header = `
         <div class="msg-header">
-          <span class="msg-username">${escHtml(msg.username)}</span>
+          <span class="msg-username">${escHtml(msg.username)}${crownHtml}</span>
           <span class="msg-time">${time}</span>
         </div>`;
 
@@ -860,8 +998,18 @@
       const img = e.target.closest('.img-msg');
       if (img) openLightbox(img.src);
     });
+    // Remove member delegation (admin only)
+    document.getElementById('members-list').addEventListener('click', e => {
+      const btn = e.target.closest('.member-remove-btn');
+      if (btn) removeMember(btn.dataset.uid, btn.dataset.uname);
+    });
+    // Transfer admin delegation
+    document.getElementById('transfer-member-list').addEventListener('click', e => {
+      const item = e.target.closest('.transfer-member-item');
+      if (item) transferAdmin(parseInt(item.dataset.idx));
+    });
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { closeAnimeModal(); closeLightbox(); }
+      if (e.key === 'Escape') { closeAnimeModal(); closeLightbox(); closeTransferModal(); }
     });
 
     // ── Settings panel ────────────────────────────────────────────────────────

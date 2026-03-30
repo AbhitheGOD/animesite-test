@@ -532,7 +532,7 @@
         }
 
         const { error: mErr } = await sb.from('room_members')
-          .insert({ room_id: room.id, user_id: currentUser.id, username });
+          .insert({ room_id: room.id, user_id: currentUser.id, username, is_admin: true });
         if (mErr) throw mErr;
 
         window.location.href = `/chat.html?room=${room.id}`;
@@ -570,22 +570,12 @@
       btn.textContent = 'Looking up…';
 
       try {
-        const { data: room, error: rErr } = await sb
-          .from('rooms').select('id, name').eq('invite_code', code).maybeSingle();
-        if (rErr) throw rErr;
-        if (!room) throw new Error('Room not found. Double-check the code.');
-
-        const { data: existing } = await sb
-          .from('room_members').select('id')
-          .eq('room_id', room.id).eq('user_id', currentUser.id).maybeSingle();
-
-        if (!existing) {
-          const { error: mErr } = await sb.from('room_members')
-            .insert({ room_id: room.id, user_id: currentUser.id, username });
-          if (mErr) throw mErr;
-        }
-
-        window.location.href = `/chat.html?room=${room.id}`;
+        const { data, error: rpcErr } = await sb.rpc('join_room_by_code', {
+          p_code: code, p_username: username
+        });
+        if (rpcErr) throw rpcErr;
+        if (data?.error) throw new Error(data.error);
+        window.location.href = `/chat.html?room=${data.room_id}`;
       } catch (e) {
         err.textContent = e.message || 'Could not join room.';
         btn.disabled = false;
