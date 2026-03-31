@@ -681,19 +681,18 @@
       clearReply();
       btn.disabled = true;
 
-      try {
-        await sb.from('messages').insert({
-          room_id: roomId, user_id: currentUser.id,
-          username, type: 'text', content: text,
-          ...(reply ? { reply_to: reply } : {})
-        });
-      } catch (e) {
+      const { error } = await sb.from('messages').insert({
+        room_id: roomId, user_id: currentUser.id,
+        username, type: 'text', content: text,
+        ...(reply ? { reply_to: reply } : {})
+      });
+      if (error) {
         input.value = text;
-        console.error('[send]', e.message);
-      } finally {
-        btn.disabled = false;
-        input.focus();
+        showToast('Failed to send: ' + error.message);
+        console.error('[send]', error.message);
       }
+      btn.disabled = false;
+      input.focus();
     }
 
     // ── Reply state ───────────────────────────────────────────────────────────
@@ -783,12 +782,13 @@
 
         const { data: { publicUrl } } = sb.storage.from('chat-images').getPublicUrl(path);
 
-        await sb.from('messages').insert({
+        const { error: insErr } = await sb.from('messages').insert({
           room_id: roomId, user_id: currentUser.id,
           username, type: 'image', content: publicUrl
         });
+        if (insErr) throw insErr;
       } catch (err) {
-        showToast('Upload failed. Try again.');
+        showToast('Upload failed: ' + err.message);
         console.error('[upload]', err.message);
       } finally {
         btn.disabled = false;
@@ -809,18 +809,18 @@
     // ── Send anime card message ───────────────────────────────────────────────
     async function sendAnimeMessage(anime) {
       closeAnimeModal();
-      try {
-        await sb.from('messages').insert({
-          room_id: roomId, user_id: currentUser.id,
-          username, type: 'anime',
-          anime_payload: {
-            malId: anime.malId, title: anime.title,
-            poster: anime.poster, score: anime.score,
-            year: anime.year, episodes: anime.episodes
-          }
-        });
-      } catch (e) {
-        console.error('[send-anime]', e.message);
+      const { error } = await sb.from('messages').insert({
+        room_id: roomId, user_id: currentUser.id,
+        username, type: 'anime',
+        anime_payload: {
+          malId: anime.malId, title: anime.title,
+          poster: anime.poster, score: anime.score,
+          year: anime.year, episodes: anime.episodes
+        }
+      });
+      if (error) {
+        showToast('Failed to share anime: ' + error.message);
+        console.error('[send-anime]', error.message);
       }
     }
 
