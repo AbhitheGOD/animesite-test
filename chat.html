@@ -385,6 +385,43 @@
       cursor: pointer; transition: border-color 0.2s, background 0.15s;
     }
     .transfer-member-item:hover { border-color: rgba(232,39,42,0.35); background: rgba(232,39,42,0.06); }
+
+    /* ── NAV PROFILE BUTTON ──────────────────────────────────────────────────── */
+    .nav-profile-wrap { position: relative; flex-shrink: 0; }
+    .nav-profile-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 12px; background: none;
+      border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 500; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav-profile-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .nav-profile-btn svg { width: 14px; height: 14px; }
+    .nav-profile-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px; min-width: 170px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7); z-index: 300;
+    }
+    .nav-profile-dropdown.open { display: block; }
+    .profile-drop-user {
+      padding: 6px 10px 10px; font-size: 0.8rem; color: var(--muted);
+      border-bottom: 1px solid var(--border); margin-bottom: 6px;
+      font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .profile-drop-link {
+      display: block; padding: 8px 10px; font-size: 0.85rem; color: var(--text);
+      text-decoration: none; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-link:hover { background: var(--raised); }
+    .profile-drop-logout {
+      display: block; width: 100%; padding: 8px 10px; font-size: 0.85rem;
+      color: var(--red); background: none; border: none;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      text-align: left; cursor: pointer; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
   </style>
 </head>
 <body>
@@ -406,6 +443,17 @@
     <button type="button" id="admin-gear-btn" class="nav-admin-btn" onclick="openTransferModal()" title="Room Admin Settings">
       ⚙ Admin
     </button>
+    <div class="nav-profile-wrap">
+      <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="nav-profile-label">…</span>
+      </button>
+      <div id="nav-profile-dropdown" class="nav-profile-dropdown">
+        <div class="profile-drop-user" id="profile-drop-user">…</div>
+        <a href="/watchlist.html" class="profile-drop-link">My Watchlist</a>
+        <button type="button" class="profile-drop-logout" onclick="doSignOut()">Logout</button>
+      </div>
+    </div>
     <button type="button" class="nav-members-toggle" onclick="toggleSidebar()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
       Members
@@ -544,6 +592,8 @@
       await loadMessages();
       subscribeToRoom();
       updateSettingsPanel();
+      document.getElementById('nav-profile-label').textContent = username;
+      document.getElementById('profile-drop-user').textContent = username;
     }
 
     // ── Load initial messages ─────────────────────────────────────────────────
@@ -603,6 +653,14 @@
       }).join('');
     }
 
+    // ── Kicked handler ────────────────────────────────────────────────────────
+    function handleKicked() {
+      showToast('You have been removed from this room.');
+      sb.removeAllChannels();
+      localStorage.removeItem('aniscout_current_room');
+      setTimeout(() => { location.href = '/rooms.html'; }, 1500);
+    }
+
     // ── Realtime subscription ─────────────────────────────────────────────────
     function subscribeToRoom() {
       channel = sb.channel(`room:${roomId}`)
@@ -632,17 +690,13 @@
           // Check if payload.old has data (requires REPLICA IDENTITY FULL)
           const kickedId = payload.old?.user_id;
           if (kickedId === currentUser.id) {
-            showToast('You have been removed from this room.');
-            setTimeout(() => { location.href = '/rooms.html'; }, 1800);
-            return;
+            handleKicked(); return;
           }
           // Fallback: re-check own membership in case payload.old was empty
           const { data: still } = await sb.from('room_members')
             .select('user_id').eq('room_id', roomId).eq('user_id', currentUser.id).maybeSingle();
           if (!still) {
-            showToast('You have been removed from this room.');
-            setTimeout(() => { location.href = '/rooms.html'; }, 1800);
-            return;
+            handleKicked(); return;
           }
           loadMembers();
         })
@@ -661,8 +715,7 @@
         })
         .on('broadcast', { event: 'kick' }, payload => {
           if (payload.payload?.userId === currentUser.id) {
-            showToast('You have been removed from this room.');
-            setTimeout(() => { location.href = '/rooms.html'; }, 1800);
+            handleKicked();
           }
         })
         .subscribe();
@@ -1059,11 +1112,20 @@
       document.getElementById('settings-panel').classList.remove('open');
       location.href = '/rooms.html';
     }
+    function toggleProfileDropdown() {
+      document.getElementById('nav-profile-dropdown').classList.toggle('open');
+    }
+
     document.addEventListener('click', e => {
       const panel = document.getElementById('settings-panel');
       const fab = document.querySelector('.settings-fab');
       if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
         panel.classList.remove('open');
+      }
+      const profileWrap = document.querySelector('.nav-profile-wrap');
+      if (profileWrap && !profileWrap.contains(e.target)) {
+        const dd = document.getElementById('nav-profile-dropdown');
+        if (dd) dd.classList.remove('open');
       }
     });
 

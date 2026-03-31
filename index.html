@@ -897,6 +897,84 @@
     }
     .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
     #settings-logout-btn { display: none; }
+
+    /* ── USERNAME MODAL ──────────────────────────────────────────────────────── */
+    .modal-bd {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(8,8,14,0.92);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      align-items: center; justify-content: center;
+    }
+    .modal-bd.open { display: flex; }
+    .modal-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; width: min(440px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    }
+    .modal-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+    .modal-title { font-size: 2.2rem; color: var(--text); margin-bottom: 8px; font-family: 'Bebas Neue', sans-serif; }
+    .modal-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; line-height: 1.65; }
+    .modal-input {
+      width: 100%; padding: 12px 16px; background: var(--raised);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+    }
+    .modal-input:focus { border-color: rgba(232,39,42,0.5); }
+    .modal-input::placeholder { color: var(--muted); }
+    .modal-btn {
+      width: 100%; padding: 13px; background: var(--red); border: none;
+      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+    }
+    .modal-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .modal-warn {
+      font-size: 0.8rem; color: var(--muted); margin-top: 18px; padding: 12px 14px;
+      background: rgba(245,160,26,0.06); border-radius: 8px;
+      border: 1px solid rgba(245,160,26,0.15); line-height: 1.6;
+    }
+    .modal-warn strong { color: #F5A01A; }
+    .modal-err { color: var(--red); font-size: 0.85rem; margin-bottom: 12px; min-height: 20px; }
+
+    /* ── NAV PROFILE BUTTON ──────────────────────────────────────────────────── */
+    .nav-profile-wrap { position: relative; }
+    .nav-profile-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 16px; background: none;
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav-profile-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+    .nav-profile-btn svg { width: 14px; height: 14px; }
+    .nav-profile-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px; min-width: 170px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7); z-index: 300;
+    }
+    .nav-profile-dropdown.open { display: block; }
+    .profile-drop-user {
+      padding: 6px 10px 10px; font-size: 0.8rem; color: var(--muted);
+      border-bottom: 1px solid var(--border); margin-bottom: 6px;
+      font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .profile-drop-link {
+      display: block; padding: 8px 10px; font-size: 0.85rem; color: var(--text);
+      text-decoration: none; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-link:hover { background: var(--raised); }
+    .profile-drop-logout {
+      display: block; width: 100%; padding: 8px 10px; font-size: 0.85rem;
+      color: var(--red); background: none; border: none;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      text-align: left; cursor: pointer; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
   </style>
 </head>
 <body>
@@ -910,8 +988,35 @@
       <a href="#discover">Discover</a>
       <a href="/rooms.html">Rooms</a>
       <a href="#" class="nav-cta">Get Started</a>
+      <div class="nav-profile-wrap">
+        <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="nav-profile-label">Login</span>
+        </button>
+        <div id="nav-profile-dropdown" class="nav-profile-dropdown">
+          <div class="profile-drop-user" id="profile-drop-user"></div>
+          <a href="/watchlist.html" class="profile-drop-link">My Watchlist</a>
+          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Logout</button>
+        </div>
+      </div>
     </div>
   </nav>
+
+  <!-- USERNAME MODAL -->
+  <div id="modal-username" class="modal-bd" onclick="if(event.target===this)document.getElementById('modal-username').classList.remove('open')">
+    <div class="modal-card">
+      <div class="modal-label">Welcome to AniScout</div>
+      <h2 class="modal-title" id="modal-username-title">PICK A USERNAME</h2>
+      <p class="modal-sub" id="modal-username-sub">Choose how your friends will see you in rooms.</p>
+      <div class="modal-err" id="err-username"></div>
+      <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
+      <input class="modal-input" id="input-pin" placeholder="Set a 4–8 digit PIN" maxlength="8" autocomplete="off" inputmode="numeric" type="password" />
+      <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Enter AniScout →</button>
+      <div class="modal-warn">
+        <strong>Your PIN</strong> lets you sign in from any device with the same username, watchlist, and rooms.
+      </div>
+    </div>
+  </div>
 
   <!-- HERO -->
   <section class="hero">
@@ -1609,39 +1714,153 @@
       });
     });
 
-    // ── Settings panel ────────────────────────────────────────────────────────
-    (function() {
-      const session = (() => { try { return JSON.parse(localStorage.getItem('aniscout_session') || 'null'); } catch { return null; } })();
-      const uname = session?.username || localStorage.getItem('aniscout_username');
+    // ── Auth state ────────────────────────────────────────────────────────────
+    let sb = null;
+    let currentUser = null;
+    let authUsername = null;
+
+    function updateProfileButton() {
+      const label = document.getElementById('nav-profile-label');
+      const dropUser = document.getElementById('profile-drop-user');
       const info = document.getElementById('settings-info');
       const logoutBtn = document.getElementById('settings-logout-btn');
-      if (uname && info) {
-        info.textContent = `Signed in as ${uname}`;
+      if (authUsername) {
+        if (label) label.textContent = authUsername;
+        if (dropUser) dropUser.textContent = authUsername;
+        if (info) info.textContent = `Signed in as ${authUsername}`;
         if (logoutBtn) logoutBtn.style.display = 'block';
-      } else if (info) {
-        info.textContent = 'Not signed in';
+      } else {
+        if (label) label.textContent = 'Login';
+        if (dropUser) dropUser.textContent = '';
+        if (info) info.textContent = 'Not signed in';
+        if (logoutBtn) logoutBtn.style.display = 'none';
       }
+    }
+
+    // Initialize from localStorage immediately (no flicker)
+    (function() {
+      const session = (() => { try { return JSON.parse(localStorage.getItem('aniscout_session') || 'null'); } catch { return null; } })();
+      authUsername = session?.username || localStorage.getItem('aniscout_username') || null;
+      updateProfileButton();
     })();
 
+    // Then verify session with Supabase asynchronously
+    (async function initAuth() {
+      try {
+        const res = await fetch('/api/supabase-config');
+        const config = await res.json();
+        if (!config.url || !config.anonKey) return;
+        sb = supabase.createClient(config.url, config.anonKey);
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          currentUser = session.user;
+          if (!authUsername) {
+            const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+            if (uRow) { authUsername = uRow.username; localStorage.setItem('aniscout_username', authUsername); }
+          }
+        } else {
+          currentUser = null;
+          authUsername = null;
+          localStorage.removeItem('aniscout_username');
+          localStorage.removeItem('aniscout_session');
+        }
+        updateProfileButton();
+      } catch { /* silent — auth features just won't work */ }
+    })();
+
+    function usernameToEmail(name) {
+      return name.toLowerCase().replace(/ /g, '~') + '@aniscout.local';
+    }
+
+    function openUsernameModal() {
+      document.getElementById('err-username').textContent = '';
+      document.getElementById('input-username').value = '';
+      document.getElementById('input-pin').value = '';
+      document.getElementById('input-username').disabled = false;
+      document.getElementById('modal-username-title').textContent = 'PICK A USERNAME';
+      document.getElementById('modal-username-sub').textContent = 'Choose how your friends will see you in rooms.';
+      document.getElementById('btn-username').disabled = false;
+      document.getElementById('btn-username').textContent = 'Enter AniScout →';
+      document.getElementById('modal-username').classList.add('open');
+      setTimeout(() => document.getElementById('input-username').focus(), 50);
+    }
+
+    async function submitUsername() {
+      if (!sb) { alert('Still connecting… please try again in a moment.'); return; }
+      const input    = document.getElementById('input-username');
+      const pinInput = document.getElementById('input-pin');
+      const btn      = document.getElementById('btn-username');
+      const err      = document.getElementById('err-username');
+      const name     = input.value.trim();
+      const pin      = pinInput.value.trim();
+      err.textContent = '';
+      if (name.length < 2) { err.textContent = 'At least 2 characters please.'; return; }
+      if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
+      if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+      if (pin.length < 4) { err.textContent = 'PIN must be at least 4 digits.'; return; }
+      if (!/^\d+$/.test(pin)) { err.textContent = 'PIN must be digits only.'; return; }
+      btn.disabled = true; btn.textContent = 'Checking…';
+      const email = usernameToEmail(name);
+      try {
+        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
+        if (signUpErr || !signUpData?.user) {
+          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
+          if (signInErr) {
+            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
+            err.textContent = row
+              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
+              : 'Sign-in failed. Try again.';
+            btn.disabled = false; btn.textContent = 'Enter AniScout →'; return;
+          }
+          currentUser = signInData.user;
+          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+          authUsername = uRow?.username || name;
+        } else {
+          currentUser = signUpData.user;
+          const { error: claimErr } = await sb.from('usernames').insert({ username: name, user_id: currentUser.id });
+          if (claimErr) {
+            await sb.auth.signOut(); currentUser = null;
+            if (claimErr.code === '23505') {
+              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
+              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
+              document.getElementById('input-username').disabled = true;
+              err.textContent = '';
+            } else {
+              err.textContent = claimErr.message || 'Could not claim username.';
+            }
+            btn.disabled = false; btn.textContent = 'Sign In →'; return;
+          }
+          authUsername = name;
+        }
+        localStorage.setItem('aniscout_username', authUsername);
+        localStorage.setItem('aniscout_session', JSON.stringify({ username: authUsername, userId: currentUser.id }));
+        document.getElementById('modal-username').classList.remove('open');
+        updateProfileButton();
+      } catch (e) {
+        err.textContent = e.message || 'Sign-in failed. Try again.';
+        btn.disabled = false; btn.textContent = 'Enter AniScout →';
+      }
+    }
+
+    function toggleProfileDropdown() {
+      if (!currentUser || !authUsername) {
+        openUsernameModal(); return;
+      }
+      document.getElementById('nav-profile-dropdown').classList.toggle('open');
+    }
+
+    // ── Settings panel ────────────────────────────────────────────────────────
     function toggleSettings() {
       document.getElementById('settings-panel').classList.toggle('open');
     }
     async function doSignOut() {
-      // Clear local state — Supabase session will expire naturally
       localStorage.removeItem('aniscout_username');
       localStorage.removeItem('aniscout_session');
-      // Also sign out from Supabase if we can
-      try {
-        const res = await fetch('/api/supabase-config');
-        const config = await res.json();
-        if (config.url && config.anonKey && window.supabase) {
-          const sb = window.supabase.createClient(config.url, config.anonKey);
-          await sb.auth.signOut();
-        }
-      } catch { /* ignore */ }
+      authUsername = null; currentUser = null;
+      if (sb) { try { await sb.auth.signOut(); } catch { /* ignore */ } }
       document.getElementById('settings-panel').classList.remove('open');
-      document.getElementById('settings-info').textContent = 'Not signed in';
-      document.getElementById('settings-logout-btn').style.display = 'none';
+      document.getElementById('nav-profile-dropdown').classList.remove('open');
+      updateProfileButton();
     }
     document.addEventListener('click', e => {
       const panel = document.getElementById('settings-panel');
@@ -1649,6 +1868,17 @@
       if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
         panel.classList.remove('open');
       }
+      const profileWrap = document.querySelector('.nav-profile-wrap');
+      if (profileWrap && !profileWrap.contains(e.target)) {
+        const dd = document.getElementById('nav-profile-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+    });
+    document.getElementById('input-username').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('input-pin').focus();
+    });
+    document.getElementById('input-pin').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitUsername();
     });
   </script>
 

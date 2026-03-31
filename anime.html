@@ -342,6 +342,43 @@
       .detail-body { grid-template-columns: 1fr; padding: 28px 20px; }
       nav { padding: 0 20px; }
     }
+
+    /* ── NAV PROFILE BUTTON ──────────────────────────────────────────────────── */
+    .nav-profile-wrap { position: relative; }
+    .nav-profile-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 12px; background: none;
+      border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 500; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav-profile-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .nav-profile-btn svg { width: 14px; height: 14px; }
+    .nav-profile-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px; min-width: 170px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7); z-index: 300;
+    }
+    .nav-profile-dropdown.open { display: block; }
+    .profile-drop-user {
+      padding: 6px 10px 10px; font-size: 0.8rem; color: var(--muted);
+      border-bottom: 1px solid var(--border); margin-bottom: 6px;
+      font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .profile-drop-link {
+      display: block; padding: 8px 10px; font-size: 0.85rem; color: var(--text);
+      text-decoration: none; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-link:hover { background: var(--raised); }
+    .profile-drop-logout {
+      display: block; width: 100%; padding: 8px 10px; font-size: 0.85rem;
+      color: var(--red); background: none; border: none;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      text-align: left; cursor: pointer; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
   </style>
 </head>
 <body>
@@ -356,6 +393,17 @@
         </svg>
         Back to search
       </a>
+      <div class="nav-profile-wrap">
+        <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="nav-profile-label">Login</span>
+        </button>
+        <div id="nav-profile-dropdown" class="nav-profile-dropdown">
+          <div class="profile-drop-user" id="profile-drop-user"></div>
+          <a href="/watchlist.html" class="profile-drop-link">My Watchlist</a>
+          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Logout</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -584,13 +632,27 @@
     function updateSettingsPanel() {
       const info = document.getElementById('settings-info');
       const logoutBtn = document.getElementById('settings-logout-btn');
+      const profileLabel = document.getElementById('nav-profile-label');
+      const profileUser = document.getElementById('profile-drop-user');
       if (username) {
         info.textContent = `Signed in as ${username}`;
         logoutBtn.style.display = 'block';
+        if (profileLabel) profileLabel.textContent = username;
+        if (profileUser) profileUser.textContent = username;
       } else {
         info.textContent = 'Not signed in';
         logoutBtn.style.display = 'none';
+        if (profileLabel) profileLabel.textContent = 'Login';
+        if (profileUser) profileUser.textContent = '';
       }
+    }
+    function toggleProfileDropdown() {
+      if (!currentUser || !username) {
+        document.getElementById('modal-username').classList.add('open');
+        setTimeout(() => document.getElementById('input-username').focus(), 50);
+        return;
+      }
+      document.getElementById('nav-profile-dropdown').classList.toggle('open');
     }
     async function doSignOut() {
       if (sb) await sb.auth.signOut();
@@ -599,6 +661,7 @@
       currentUser = null;
       username = null;
       document.getElementById('settings-panel').classList.remove('open');
+      document.getElementById('nav-profile-dropdown').classList.remove('open');
       updateSettingsPanel();
       setWatchlistState(false);
     }
@@ -607,6 +670,11 @@
       const fab = document.querySelector('.settings-fab');
       if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
         panel.classList.remove('open');
+      }
+      const profileWrap = document.querySelector('.nav-profile-wrap');
+      if (profileWrap && !profileWrap.contains(e.target)) {
+        const dd = document.getElementById('nav-profile-dropdown');
+        if (dd) dd.classList.remove('open');
       }
     });
     document.getElementById('input-username').addEventListener('keydown', e => {
