@@ -39,8 +39,7 @@ export default async function handler(req, res) {
 
     res.json({
       ...anime,
-      bannerImage: anilist?.bannerImage || null,
-      anilistPoster: anilist?.coverImage?.extraLarge || anilist?.coverImage?.large || null,
+      anilistPoster: anilist?.coverImage?.large || null,
     });
   } catch (err) {
     console.error('[anime]', err.message);

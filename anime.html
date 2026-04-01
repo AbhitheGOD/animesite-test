@@ -550,7 +550,7 @@
           username,
           mal_id: a.mal_id,
           title: a.title_english || a.title,
-          poster: a.anilistPoster || a.images?.jpg?.large_image_url,
+          poster: a.images?.jpg?.large_image_url || a.anilistPoster,
           score: a.score || null,
           year: a.year || a.aired?.prop?.from?.year || null
         });
@@ -722,7 +722,7 @@
         saveRecentlyViewed({
           malId: parseInt(id),
           title: anime.title_english || anime.title,
-          poster: anime.anilistPoster || anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url,
+          poster: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || anime.anilistPoster,
           score: anime.score,
           year: anime.year || anime.aired?.prop?.from?.year,
         });
@@ -738,8 +738,8 @@
     function render(a) {
       const title    = a.title_english || a.title;
       const altTitle = [a.title !== title ? a.title : null, a.title_japanese].filter(Boolean).join(' · ');
-      const poster   = a.anilistPoster || a.images?.jpg?.large_image_url || a.images?.jpg?.image_url;
-      const banner   = a.bannerImage || poster;
+      const poster   = a.images?.jpg?.large_image_url || a.images?.jpg?.image_url || a.anilistPoster || '';
+      const banner   = a.images?.jpg?.large_image_url || a.anilistPoster || poster;
       const score    = a.score ? parseFloat(a.score).toFixed(2) : null;
       const scoredBy = a.scored_by ? a.scored_by.toLocaleString() : null;
 
