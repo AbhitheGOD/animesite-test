@@ -289,35 +289,6 @@
       100% { transform: translateX(-50%) translateY(14px); opacity: 0; }
     }
 
-    /* ── Stats bar ── */
-    .stats-bar {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 28px 40px;
-    }
-    .stats-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      text-align: center;
-    }
-    .stat-item { padding: 8px; }
-    .stat-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 2.2rem;
-      color: var(--red);
-      display: block;
-    }
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
     /* ── Section commons ── */
     section { padding: 100px 24px; }
     .section-label {
@@ -798,42 +769,43 @@
     }
 
     /* ── CTA ── */
-    .cta-section {
-      background: var(--surface);
+    .cta-section { background: var(--dark); padding: 80px 24px; text-align: center; }
+    .cta-inner {
       position: relative;
-      overflow: hidden;
-      text-align: center;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 64px 48px;
+      box-shadow: 0 0 80px rgba(232,39,42,0.06);
     }
-    .cta-section::before {
-      content: '';
-      position: absolute;
-      top: -50%; left: 50%;
-      transform: translateX(-50%);
-      width: 800px; height: 800px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(232,39,42,0.08) 0%, transparent 70%);
-      pointer-events: none;
+    .cta-tagline {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      color: var(--text);
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      margin-bottom: 36px;
     }
-    .cta-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
-    .cta-section h2 { font-size: clamp(2.5rem, 6vw, 5rem); margin-bottom: 16px; }
-    .cta-section p { color: var(--muted); font-size: 1.05rem; margin-bottom: 40px; }
     .cta-buttons {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
+      justify-content: center;
       align-items: center;
       gap: 14px;
-      margin-top: 8px;
     }
     .cta-btn-main {
       display: inline-block;
       text-decoration: none;
-      padding: 16px 40px;
-      font-size: 1.05rem;
+      padding: 14px 36px;
+      font-size: 1rem;
     }
     .cta-btn-browse {
       display: inline-block;
       text-decoration: none;
-      padding: 12px 28px;
+      padding: 13px 28px;
       font-size: 0.9rem;
     }
     .btn-primary {
@@ -1356,28 +1328,6 @@
     </div>
   </div>
 
-  <!-- STATS BAR -->
-  <div class="stats-bar">
-    <div class="stats-inner">
-      <div class="stat-item fade-up">
-        <span class="stat-num" data-count="18000" data-suffix="+">18,000+</span>
-        <span class="stat-label">Anime Indexed</span>
-      </div>
-      <div class="stat-item fade-up" style="transition-delay:0.1s">
-        <span class="stat-num" data-count="2.4" data-suffix="M">2.4M</span>
-        <span class="stat-label">Recommendations Made</span>
-      </div>
-      <div class="stat-item fade-up" style="transition-delay:0.2s">
-        <span class="stat-num" data-count="94" data-suffix="%">94%</span>
-        <span class="stat-label">Match Accuracy</span>
-      </div>
-      <div class="stat-item fade-up" style="transition-delay:0.3s">
-        <span class="stat-num" data-count="120" data-suffix="+">120+</span>
-        <span class="stat-label">Genres & Themes</span>
-      </div>
-    </div>
-  </div>
-
   <!-- HOW IT WORKS -->
   <section id="how">
     <div class="container">
@@ -1477,12 +1427,10 @@
   <section class="cta-section">
     <div class="container">
       <div class="cta-inner fade-up">
-        <div class="section-label">Start Your Journey</div>
-        <h2 class="section-title">YOUR NEXT<br /><span style="color:var(--red)">OBSESSION</span><br />IS ONE SEARCH AWAY</h2>
-        <p>Create a private room, invite your friends with a code, and discover your next watch together.</p>
+        <p class="cta-tagline">Your next obsession is one search away.</p>
         <div class="cta-buttons">
-          <a href="/rooms.html" class="btn-primary cta-btn-main">🎮 Start a Room with Friends</a>
-          <a href="#discover" class="btn-ghost cta-btn-browse">Browse Anime First</a>
+          <a href="#hero" onclick="window.scrollTo({top:0,behavior:'smooth'});document.getElementById('searchInput')?.focus();return false;" class="btn-primary cta-btn-main">Start Scouting →</a>
+          <a href="/rooms.html" class="btn-ghost cta-btn-browse">Start a Room with Friends →</a>
         </div>
       </div>
     </div>
@@ -1518,29 +1466,11 @@
 
     window.addEventListener('load', () => { heroBg.classList.add('loaded'); });
 
-    // Counter animation
-    function animateCount(el) {
-      const target = parseFloat(el.dataset.count);
-      const suffix = el.dataset.suffix || '';
-      const isDecimal = target % 1 !== 0;
-      const start = performance.now();
-      function step(now) {
-        const progress = Math.min((now - start) / 1400, 1);
-        const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-        const current = target * eased;
-        el.textContent = (isDecimal ? current.toFixed(1) : target >= 1000 ? Math.floor(current).toLocaleString() : Math.floor(current)) + suffix;
-        if (progress < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-
     // Scroll animations
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
-          entry.target.querySelectorAll('[data-count]').forEach(animateCount);
-          if (entry.target.dataset.count) animateCount(entry.target);
           observer.unobserve(entry.target);
         }
       });
@@ -1880,13 +1810,13 @@
 
     // ── Discover Section (AniList GraphQL) ───────────────────────────────────
     const ANILIST_URL = 'https://graphql.anilist.co';
-    const MEDIA_FIELDS = `id idMal title{romaji english} coverImage{extraLarge color} bannerImage
+    const MEDIA_FIELDS = `id idMal title{romaji english} coverImage{extraLarge large} bannerImage
       averageScore popularity episodes season seasonYear genres status description(asHtml:false)`;
 
     const DISCOVER_QUERIES = {
-      season:   `{ Page(page:1,perPage:12){ media(type:ANIME,sort:POPULARITY_DESC,status:RELEASING){ ${MEDIA_FIELDS} } } }`,
-      toprated: `{ Page(page:1,perPage:12){ media(type:ANIME,sort:SCORE_DESC,format:TV,popularity_greater:1000){ ${MEDIA_FIELDS} } } }`,
-      popular:  `{ Page(page:1,perPage:12){ media(type:ANIME,sort:POPULARITY_DESC,format:TV){ ${MEDIA_FIELDS} } } }`,
+      season:   `{ Page(page:1,perPage:12){ media(type:ANIME,season:SPRING,seasonYear:2026,sort:POPULARITY_DESC,isAdult:false){ ${MEDIA_FIELDS} } } }`,
+      toprated: `{ Page(page:1,perPage:12){ media(type:ANIME,sort:SCORE_DESC,isAdult:false,format_in:[TV,MOVIE]){ ${MEDIA_FIELDS} } } }`,
+      popular:  `{ Page(page:1,perPage:12){ media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,format_in:[TV,MOVIE]){ ${MEDIA_FIELDS} } } }`,
     };
 
     async function fetchAniListTab(tabKey) {
@@ -1895,6 +1825,7 @@
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ query: DISCOVER_QUERIES[tabKey] }),
       });
+      if (!res.ok) throw new Error(`AniList ${tabKey} failed: ${res.status}`);
       const json = await res.json();
       return json.data?.Page?.media || [];
     }
@@ -1945,7 +1876,7 @@
 
     function buildDiscoverCard(anime, index) {
       const title = anime.title?.english || anime.title?.romaji || 'Unknown';
-      const img = anime.coverImage?.extraLarge || '';
+      const img = anime.coverImage?.extraLarge || anime.coverImage?.large || '';
       const score = anime.averageScore ? `★ ${(anime.averageScore / 10).toFixed(1)}` : '';
       const genres = (anime.genres || []).slice(0, 2);
       const href = anime.idMal ? `/anime.html?id=${anime.idMal}` : `https://anilist.co/anime/${anime.id}`;
@@ -2010,7 +1941,7 @@
 
         grid.style.opacity = '1';
       } catch (e) {
-        console.warn('AniList fetch failed:', e.message);
+        console.warn('Discover fetch failed:', e.message);
         grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:48px 0">Could not load anime. Please check your connection.</p>';
         grid.style.opacity = '1';
       }
