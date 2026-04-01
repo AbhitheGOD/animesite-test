@@ -1842,10 +1842,13 @@
       document.getElementById('load-more-btn').style.display = hasNextPage ? 'block' : 'none';
     }
 
-    // ── Discover Section (AniList GraphQL) ───────────────────────────────────
+    // ── Discover Section ──────────────────────────────────────────────────────
+    // AniList for metadata (scores, genres, descriptions) — one GraphQL call per tab.
+    // Jikan (MAL) for images — publisher-submitted only, no community edits.
     const ANILIST_URL = 'https://graphql.anilist.co';
-    const MEDIA_FIELDS = `id idMal title{romaji english} coverImage{extraLarge large}
-      averageScore popularity episodes season seasonYear genres status description(asHtml:false)`;
+    const JIKAN_BASE  = 'https://api.jikan.moe/v4';
+    const MEDIA_FIELDS = `id idMal title{romaji english}
+      averageScore episodes season seasonYear genres description(asHtml:false)`;
 
     const DISCOVER_QUERIES = {
       season:   `{ Page(page:1,perPage:12){ media(type:ANIME,season:SPRING,seasonYear:2026,sort:POPULARITY_DESC,isAdult:false){ ${MEDIA_FIELDS} } } }`,
@@ -1853,7 +1856,18 @@
       popular:  `{ Page(page:1,perPage:12){ media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,format_in:[TV,MOVIE]){ ${MEDIA_FIELDS} } } }`,
     };
 
+    // Fetch one MAL image; return null on any failure (rate limit, 404, etc.)
+    async function fetchMalImage(malId) {
+      try {
+        const r = await fetch(`${JIKAN_BASE}/anime/${malId}`);
+        if (!r.ok) return null;
+        const d = await r.json();
+        return d.data?.images?.jpg?.large_image_url || d.data?.images?.webp?.large_image_url || null;
+      } catch { return null; }
+    }
+
     async function fetchAniListTab(tabKey) {
+      // 1. Fetch metadata from AniList
       const res = await fetch(ANILIST_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -1861,7 +1875,13 @@
       });
       if (!res.ok) throw new Error(`AniList ${tabKey} failed: ${res.status}`);
       const json = await res.json();
-      return json.data?.Page?.media || [];
+      const list = json.data?.Page?.media || [];
+
+      // 2. Fetch MAL images in parallel (fire all at once; failures return null)
+      const images = await Promise.all(list.map(a => a.idMal ? fetchMalImage(a.idMal) : Promise.resolve(null)));
+
+      // 3. Attach official MAL image to each entry (no AniList image fields used)
+      return list.map((a, i) => ({ ...a, malImage: images[i] || null }));
     }
 
     let discoverCache = {};
@@ -1877,7 +1897,7 @@
 
     function buildBannerSlide(anime) {
       const title  = anime.title?.english || anime.title?.romaji || 'Unknown';
-      const poster = anime.coverImage?.large || anime.coverImage?.extraLarge || '';
+      const poster = anime.malImage || '';
       const genres = (anime.genres || []).slice(0, 3);
       const score  = anime.averageScore ? `★ ${(anime.averageScore / 10).toFixed(1)}` : '';
       const eps    = anime.episodes ? `${anime.episodes} eps` : 'Ongoing';
@@ -1914,7 +1934,7 @@
 
     function buildDiscoverCard(anime, index) {
       const title = anime.title?.english || anime.title?.romaji || 'Unknown';
-      const img = anime.coverImage?.large || '';
+      const img = anime.malImage || '';
       const score = anime.averageScore ? `★ ${(anime.averageScore / 10).toFixed(1)}` : '';
       const genres = (anime.genres || []).slice(0, 2);
       const href = anime.idMal ? `/anime.html?id=${anime.idMal}` : `https://anilist.co/anime/${anime.id}`;
