@@ -1,0 +1,169 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   AniScout shared.css — page transitions, hamburger nav, empty states,
+   button micro-interactions. Loaded by every page.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Page Transitions ─────────────────────────────────────────────────────── */
+body { transition: opacity 0.22s ease; }
+
+/* ── Button micro-interactions ────────────────────────────────────────────── */
+button:not(.hamburger-btn):active,
+[class*="btn-"]:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.08s ease !important;
+}
+
+/* ── Card box-shadow lift (standardised) ──────────────────────────────────── */
+.anime-card,
+.disc-card,
+.how-card,
+.room-card {
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+/* ── Hamburger button ─────────────────────────────────────────────────────── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  z-index: 200;
+  flex-shrink: 0;
+}
+.hamburger-btn:hover { background: rgba(255,255,255,0.06); }
+.hamburger-btn span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text, #F0F0F8);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform-origin: center;
+  pointer-events: none;
+}
+.hamburger-btn.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger-btn.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger-btn.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Mobile nav menu ──────────────────────────────────────────────────────── */
+.mobile-nav-menu {
+  display: none;
+  position: fixed;
+  top: 64px;
+  left: 0; right: 0;
+  background: rgba(8, 8, 14, 0.97);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 8px 24px 20px;
+  z-index: 98;
+  transform: translateY(-6px);
+  opacity: 0;
+  transition: transform 0.26s cubic-bezier(0.25,0.46,0.45,0.94),
+              opacity 0.26s ease;
+  pointer-events: none;
+}
+.mobile-nav-menu.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.mobile-nav-menu a,
+.mobile-nav-menu button.mob-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 14px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--text, #F0F0F8);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.mobile-nav-menu a:last-child,
+.mobile-nav-menu button.mob-nav-item:last-child { border-bottom: none; }
+.mobile-nav-menu a:hover,
+.mobile-nav-menu button.mob-nav-item:hover { color: var(--red, #E8272A); }
+.mob-nav-cta {
+  margin-top: 16px;
+  display: block !important;
+  padding: 13px 20px !important;
+  background: var(--red, #E8272A) !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  border: none !important;
+}
+.mob-nav-cta:hover { opacity: 0.9; color: #fff !important; }
+
+@media (max-width: 768px) {
+  .hamburger-btn { display: flex; }
+}
+
+/* ── Empty state illustrated cards ───────────────────────────────────────── */
+.empty-state-illus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 72px 24px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.empty-illus-wrap {
+  width: 130px;
+  height: 130px;
+  background: var(--raised, #18182A);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.empty-illus-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+  color: var(--text, #F0F0F8);
+  margin-bottom: 10px;
+  line-height: 1.1;
+}
+.empty-illus-sub {
+  font-size: 0.95rem;
+  color: var(--muted, #7878A0);
+  line-height: 1.7;
+  margin-bottom: 28px;
+  max-width: 340px;
+}
+.empty-illus-btns {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Scroll reveal (for pages without their own observer) ─────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.65s cubic-bezier(0.25,0.46,0.45,0.94),
+              transform 0.65s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+.reveal.visible { opacity: 1; transform: none; }

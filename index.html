@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/shared.css" />
+  <meta name="page-reveal" content="native" />
   <style>
     :root {
       --red:    #E8272A;
@@ -339,55 +341,99 @@
     }
     .container { max-width: 1100px; margin: 0 auto; }
 
-    /* ── How it works ── */
+    /* ── How It Works (Premium Redesign) ── */
+    .how-gradient-heading {
+      background: linear-gradient(125deg, var(--red) 0%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
     .how-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 24px;
-      margin-top: 60px;
+      margin-top: 64px;
+      position: relative;
+    }
+    /* Horizontal dashed connector line (desktop) */
+    .how-grid::before {
+      content: '';
+      position: absolute;
+      top: 74px;
+      left: calc(33.33% + 16px);
+      right: calc(33.33% + 16px);
+      height: 0;
+      border-top: 2px dashed rgba(232,39,42,0.28);
+      pointer-events: none;
+      z-index: 0;
     }
     .how-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 36px 32px;
+      background: rgba(17, 17, 25, 0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 40px 32px;
       position: relative;
       overflow: hidden;
-      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      z-index: 1;
     }
     .how-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 2px;
-      background: linear-gradient(to right, transparent, var(--red), transparent);
+      background: linear-gradient(to right, transparent, var(--red) 30%, var(--orange) 70%, transparent);
       opacity: 0;
-      transition: opacity 0.25s ease;
+      transition: opacity 0.3s ease;
     }
     .how-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(232,39,42,0.25);
-      box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 4px 16px rgba(232,39,42,0.1);
+      transform: translateY(-6px);
+      border-color: rgba(232,39,42,0.22);
+      box-shadow: 0 20px 56px rgba(0,0,0,0.5), 0 4px 20px rgba(232,39,42,0.12);
     }
     .how-card:hover::before { opacity: 1; }
+    /* Big watermark step number */
     .step-num {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 5rem;
-      color: rgba(232,39,42,0.08);
+      font-size: 7rem;
       line-height: 1;
-      margin-bottom: 20px;
-      transition: color 0.25s ease;
+      color: rgba(232,39,42,0.07);
+      position: absolute;
+      top: -8px; right: 14px;
+      letter-spacing: -0.02em;
+      pointer-events: none;
+      transition: color 0.3s ease;
+      -webkit-user-select: none;
+      user-select: none;
     }
-    .how-card:hover .step-num { color: rgba(232,39,42,0.15); }
+    .how-card:hover .step-num { color: rgba(232,39,42,0.14); }
+    /* Icon circle with glow ring */
     .how-icon {
-      width: 48px; height: 48px;
-      background: rgba(232,39,42,0.12);
-      border-radius: 12px;
+      width: 64px; height: 64px;
+      background: rgba(232,39,42,0.1);
+      border: 1.5px solid rgba(232,39,42,0.28);
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
-      font-size: 1.4rem;
+      margin-bottom: 18px;
+      font-size: 1.75rem;
+      box-shadow: 0 0 20px rgba(232,39,42,0.1);
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .how-card:hover .how-icon {
+      box-shadow: 0 0 32px rgba(232,39,42,0.24);
+      border-color: rgba(232,39,42,0.5);
+    }
+    .how-step-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 10px;
     }
     .how-card h3 {
       font-size: 1.5rem;
@@ -537,9 +583,13 @@
       position: absolute;
       inset: 0;
       opacity: 0;
+      pointer-events: none;
       transition: opacity 0.8s ease;
     }
-    .discover-banner-slide.active { opacity: 1; }
+    .discover-banner-slide.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
     .discover-banner-bg {
       width: 100%; height: 100%;
       object-fit: cover;
@@ -841,7 +891,13 @@
     @media (max-width: 900px) {
       nav { padding: 16px 20px; }
       .nav-links { display: none; }
-      .how-grid { grid-template-columns: 1fr; }
+      .how-grid {
+        grid-template-columns: 1fr;
+        border-left: 2px dashed rgba(232,39,42,0.25);
+        padding-left: 28px;
+        margin-left: 12px;
+      }
+      .how-grid::before { display: none; }
       .stats-inner { grid-template-columns: repeat(2, 1fr); }
       .footer-inner { flex-direction: column; text-align: center; }
       .footer-links { flex-wrap: wrap; justify-content: center; }
@@ -1043,7 +1099,7 @@
       width: 28px; height: 28px; border-radius: 50%;
       background: rgba(8,8,14,0.85); border: 1px solid rgba(255,255,255,0.15);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 0.85rem; backdrop-filter: blur(4px);
+      cursor: pointer; font-size: 0.85rem; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
       transition: background 0.2s, border-color 0.2s, transform 0.15s;
       z-index: 2; color: var(--text); line-height: 1;
     }
@@ -1194,7 +1250,21 @@
         </div>
       </div>
     </div>
+    <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+
+  <!-- MOBILE NAV MENU -->
+  <div id="mobile-nav-menu" class="mobile-nav-menu">
+    <a href="#how" data-no-transition>How It Works</a>
+    <a href="#genres" data-no-transition>Browse Genres</a>
+    <a href="#discover" data-no-transition>Discover</a>
+    <a href="/rooms.html">Rooms</a>
+    <button type="button" class="mob-nav-item" onclick="document.getElementById('mobile-nav-menu').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');toggleProfileDropdown()">
+      <span id="mob-profile-label">Login / Profile</span>
+    </button>
+  </div>
 
   <!-- USERNAME MODAL -->
   <div id="modal-username" class="modal-bd" onclick="if(event.target===this)document.getElementById('modal-username').classList.remove('open')">
@@ -1313,25 +1383,28 @@
     <div class="container">
       <div class="fade-left">
         <div class="section-label">How It Works</div>
-        <h2 class="section-title">From One Series<br />To Your Next 10</h2>
+        <h2 class="section-title how-gradient-heading">From One Series<br />To Your Next 10</h2>
         <p class="section-desc">AniScout breaks down what makes an anime click for you — and finds others built from the same formula.</p>
       </div>
       <div class="how-grid">
         <div class="how-card fade-up" style="transition-delay:0.05s">
           <div class="step-num">01</div>
           <div class="how-icon">🔍</div>
+          <div class="how-step-tag">Step 01</div>
           <h3>Input What You Love</h3>
           <p>Search any anime you've watched and enjoyed. Add multiple titles for a richer profile.</p>
         </div>
         <div class="how-card fade-up" style="transition-delay:0.15s">
           <div class="step-num">02</div>
           <div class="how-icon">🧬</div>
+          <div class="how-step-tag">Step 02</div>
           <h3>We Decode Its DNA</h3>
           <p>We analyze tone, pacing, power systems, art style, tropes, and 40+ other signals — not just genre tags.</p>
         </div>
         <div class="how-card fade-up" style="transition-delay:0.25s">
           <div class="step-num">03</div>
           <div class="how-icon">⚡</div>
+          <div class="how-step-tag">Step 03</div>
           <h3>Get Matched Instantly</h3>
           <p>Receive a ranked list of titles matched to what you actually respond to, sorted by similarity score.</p>
         </div>
@@ -1772,7 +1845,18 @@
         : (data.recommendations || []);
 
       if (!append && !recs.length) {
-        grid.innerHTML = '<p style="color:var(--muted)">No recommendations found. Try another title.</p>';
+        grid.innerHTML = `<div class="empty-state-illus" style="grid-column:1/-1">
+          <div class="empty-illus-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="30" cy="30" r="18" stroke="rgba(232,39,42,0.45)" stroke-width="2.5" fill="rgba(232,39,42,0.07)"/>
+              <line x1="43" y1="43" x2="60" y2="60" stroke="rgba(232,39,42,0.55)" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="30" cy="30" r="10" stroke="rgba(232,39,42,0.15)" stroke-width="1.5"/>
+              <line x1="24" y1="30" x2="36" y2="30" stroke="rgba(245,160,26,0.55)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="empty-illus-title">No Results Found</div>
+          <div class="empty-illus-sub">We couldn't match that title. Try a different name or browse by genre below.</div>
+        </div>`;
         section.style.display = 'block';
         return;
       }
@@ -2019,16 +2103,19 @@
 
     function updateProfileButton() {
       const label = document.getElementById('nav-profile-label');
+      const mobLabel = document.getElementById('mob-profile-label');
       const dropUser = document.getElementById('profile-drop-user');
       const info = document.getElementById('settings-info');
       const logoutBtn = document.getElementById('settings-logout-btn');
       if (authUsername) {
         if (label) label.textContent = authUsername;
+        if (mobLabel) mobLabel.textContent = authUsername;
         if (dropUser) dropUser.textContent = authUsername;
         if (info) info.textContent = `Signed in as ${authUsername}`;
         if (logoutBtn) logoutBtn.style.display = 'block';
       } else {
         if (label) label.textContent = 'Login';
+        if (mobLabel) mobLabel.textContent = 'Login / Profile';
         if (dropUser) dropUser.textContent = '';
         if (info) info.textContent = 'Not signed in';
         if (logoutBtn) logoutBtn.style.display = 'none';
@@ -2187,5 +2274,6 @@
   </div>
   <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
 
+  <script src="/assets/shared.js"></script>
 </body>
 </html>

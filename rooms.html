@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/shared.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     :root {
@@ -208,7 +209,17 @@
         <span id="nav-username"></span>
       </div>
     </div>
+    <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+
+  <!-- MOBILE NAV MENU -->
+  <div id="mobile-nav-menu" class="mobile-nav-menu">
+    <a href="/">Discover</a>
+    <a href="/rooms.html">Rooms</a>
+    <button type="button" class="mob-nav-item" id="mob-login-btn" onclick="openUsernameModal()">Login / Set Username</button>
+  </div>
 
   <!-- USERNAME MODAL (shown on first visit) -->
   <div id="modal-username" class="modal-bd">
@@ -319,11 +330,21 @@
 
     function showUnauthState() {
       document.getElementById('rooms-container').innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🎌</div>
-          <div class="empty-title">Your Rooms</div>
-          <div class="empty-sub">Pick a username to create or join rooms and start sharing anime with friends. No email or password needed.</div>
-          <div class="empty-btns">
+        <div class="empty-state-illus">
+          <div class="empty-illus-wrap">
+            <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="14" width="42" height="28" rx="8" fill="rgba(232,39,42,0.1)" stroke="rgba(232,39,42,0.35)" stroke-width="1.5"/>
+              <path d="M10 42L6 54L18 47" fill="rgba(232,39,42,0.1)" stroke="rgba(232,39,42,0.35)" stroke-width="1.5" stroke-linejoin="round"/>
+              <rect x="24" y="28" width="42" height="28" rx="8" fill="rgba(245,160,26,0.08)" stroke="rgba(245,160,26,0.3)" stroke-width="1.5"/>
+              <path d="M62 56L66 66L52 60" fill="rgba(245,160,26,0.08)" stroke="rgba(245,160,26,0.3)" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="34" cy="42" r="2.5" fill="rgba(245,160,26,0.5)"/>
+              <circle cx="45" cy="42" r="2.5" fill="rgba(245,160,26,0.5)"/>
+              <circle cx="56" cy="42" r="2.5" fill="rgba(245,160,26,0.5)"/>
+            </svg>
+          </div>
+          <div class="empty-illus-title">Set a Username First</div>
+          <div class="empty-illus-sub">Pick a username to create or join rooms and start sharing anime with friends. No email needed.</div>
+          <div class="empty-illus-btns">
             <button class="btn-secondary" onclick="openJoin()">Join a Room</button>
             <button class="btn-primary" onclick="openCreate()">+ Create Room</button>
           </div>
@@ -461,11 +482,21 @@
 
       if (!rooms.length) {
         el.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">🎌</div>
-            <div class="empty-title">No Rooms Yet</div>
-            <div class="empty-sub">Create a room or join one with a friend's invite code to start sharing anime.</div>
-            <div class="empty-btns">
+          <div class="empty-state-illus">
+            <div class="empty-illus-wrap">
+              <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="6" y="14" width="42" height="28" rx="8" fill="rgba(232,39,42,0.1)" stroke="rgba(232,39,42,0.35)" stroke-width="1.5"/>
+                <path d="M10 42L6 54L18 47" fill="rgba(232,39,42,0.1)" stroke="rgba(232,39,42,0.35)" stroke-width="1.5" stroke-linejoin="round"/>
+                <rect x="24" y="28" width="42" height="28" rx="8" fill="rgba(245,160,26,0.08)" stroke="rgba(245,160,26,0.3)" stroke-width="1.5"/>
+                <path d="M62 56L66 66L52 60" fill="rgba(245,160,26,0.08)" stroke="rgba(245,160,26,0.3)" stroke-width="1.5" stroke-linejoin="round"/>
+                <circle cx="34" cy="42" r="2.5" fill="rgba(245,160,26,0.5)"/>
+                <circle cx="45" cy="42" r="2.5" fill="rgba(245,160,26,0.5)"/>
+                <circle cx="56" cy="42" r="2.5" fill="rgba(245,160,26,0.5)"/>
+              </svg>
+            </div>
+            <div class="empty-illus-title">No Rooms Yet</div>
+            <div class="empty-illus-sub">Create a room or join one with a friend's invite code to start sharing anime.</div>
+            <div class="empty-illus-btns">
               <button class="btn-secondary" onclick="openJoin()">Join a Room</button>
               <button class="btn-primary" onclick="openCreate()">+ Create Room</button>
             </div>
@@ -646,5 +677,6 @@
   </div>
   <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
 
+  <script src="/assets/shared.js"></script>
 </body>
 </html>

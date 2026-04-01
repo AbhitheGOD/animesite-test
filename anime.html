@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/shared.css" />
   <style>
     :root {
       --red:    #E8272A;
@@ -405,7 +406,19 @@
         </div>
       </div>
     </div>
+    <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+
+  <!-- MOBILE NAV MENU -->
+  <div id="mobile-nav-menu" class="mobile-nav-menu">
+    <a href="/">Home / Search</a>
+    <a href="/rooms.html">Rooms</a>
+    <button type="button" class="mob-nav-item" onclick="document.getElementById('mobile-nav-menu').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');toggleProfileDropdown()">
+      <span id="mob-anime-profile-label">Login / Profile</span>
+    </button>
+  </div>
 
   <!-- USERNAME MODAL (shown only when watchlist is clicked without a session) -->
   <div id="modal-username" class="modal-bd">
@@ -950,5 +963,6 @@
       } catch {}
     }
   </script>
+  <script src="/assets/shared.js"></script>
 </body>
 </html>
