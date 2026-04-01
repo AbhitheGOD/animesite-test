@@ -1876,7 +1876,7 @@
 
     function buildDiscoverCard(anime, index) {
       const title = anime.title?.english || anime.title?.romaji || 'Unknown';
-      const img = anime.coverImage?.extraLarge || anime.coverImage?.large || '';
+      const img = anime.coverImage?.large || '';
       const score = anime.averageScore ? `★ ${(anime.averageScore / 10).toFixed(1)}` : '';
       const genres = (anime.genres || []).slice(0, 2);
       const href = anime.idMal ? `/anime.html?id=${anime.idMal}` : `https://anilist.co/anime/${anime.id}`;
@@ -1890,7 +1890,8 @@
       if (!anime.idMal) { card.target = '_blank'; card.rel = 'noopener'; }
       card.style.transitionDelay = `${index * 0.04}s`;
       card.innerHTML = `
-        <img src="${img}" alt="${safeTitle}" loading="lazy" onerror="this.src='https://placehold.co/240x360/111119/E8272A?text=?'">
+        <img src="${img}" alt="${safeTitle}" loading="lazy"
+          onerror="this.style.display='none';this.parentElement.style.background='var(--raised)';this.parentElement.querySelector('.disc-card-title').style.cssText='position:absolute;bottom:16px;left:12px;right:12px;font-size:0.85rem'">
         <div class="disc-card-gradient"></div>
         ${score ? `<div class="disc-card-score">${score}</div>` : ''}
         <div class="disc-card-genres">${genres.map(g => `<span class="disc-card-genre">${g}</span>`).join('')}</div>
