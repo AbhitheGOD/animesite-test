@@ -317,6 +317,17 @@
     .msg-reply-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
     .msg-item:hover .msg-reply-btn { display: flex; align-items: center; gap: 4px; }
 
+    /* ── DELETE BUTTON (own messages only, appears on hover) ─────────────────── */
+    .msg-delete-btn {
+      display: none; align-self: center; flex-shrink: 0;
+      background: var(--raised); border: 1px solid rgba(232,39,42,0.2);
+      border-radius: 7px; color: rgba(232,39,42,0.6); font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem; font-weight: 500; padding: 5px 9px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .msg-delete-btn:hover { color: var(--red); border-color: rgba(232,39,42,0.5); background: rgba(232,39,42,0.08); }
+    .msg-item.msg-own:hover .msg-delete-btn { display: flex; align-items: center; }
+
     /* ── IMAGE MESSAGES ─────────────────────────────────────────────────────── */
     .img-msg {
       max-width: 280px; max-height: 300px; width: 100%;
@@ -718,6 +729,14 @@
             handleKicked();
           }
         })
+        .on('broadcast', { event: 'msg_delete' }, payload => {
+          const id = payload.payload?.msgId;
+          if (id) {
+            const el = document.querySelector(`.msg-item[data-id="${id}"]`);
+            if (el) el.remove();
+            renderedIds.delete(id);
+          }
+        })
         .subscribe();
     }
 
@@ -818,23 +837,16 @@
     }
 
     // ── Image upload ──────────────────────────────────────────────────────────
-    async function handleImageSelect(e) {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file) return;
+    async function uploadImageFile(file) {
       if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return; }
-
       const btn = document.getElementById('img-upload-btn');
       btn.disabled = true;
-
       try {
-        const ext  = file.name.split('.').pop().toLowerCase();
+        const ext  = file.name ? file.name.split('.').pop().toLowerCase() : (file.type.split('/')[1] || 'png');
         const path = `${roomId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: upErr } = await sb.storage.from('chat-images').upload(path, file, { cacheControl: '3600', upsert: false });
         if (upErr) throw upErr;
-
         const { data: { publicUrl } } = sb.storage.from('chat-images').getPublicUrl(path);
-
         const { error: insErr } = await sb.from('messages').insert({
           room_id: roomId, user_id: currentUser.id,
           username, type: 'image', content: publicUrl
@@ -846,6 +858,32 @@
       } finally {
         btn.disabled = false;
       }
+    }
+
+    async function handleImageSelect(e) {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      await uploadImageFile(file);
+    }
+
+    // ── Delete own message ────────────────────────────────────────────────────
+    async function deleteMessage(msgId, type, content) {
+      if (!confirm('Delete this message?')) return;
+      const { error } = await sb.from('messages')
+        .delete().eq('id', msgId).eq('user_id', currentUser.id);
+      if (error) { showToast('Could not delete message.'); return; }
+      // Delete image from storage too
+      if (type === 'image' && content) {
+        const parts = content.split('/chat-images/');
+        if (parts[1]) await sb.storage.from('chat-images').remove([parts[1]]);
+      }
+      // Remove from own DOM immediately
+      const el = document.querySelector(`.msg-item[data-id="${msgId}"]`);
+      if (el) el.remove();
+      renderedIds.delete(msgId);
+      // Broadcast so other clients remove it too
+      await channel.send({ type: 'broadcast', event: 'msg_delete', payload: { msgId } });
     }
 
     // ── Lightbox ──────────────────────────────────────────────────────────────
@@ -940,13 +978,17 @@
           <div class="msg-bubble">${replyHtml}${safeContent}</div>`;
       }
 
+      const deleteBtn = isOwn
+        ? `<button type="button" class="msg-delete-btn" data-id="${escAttr(msg.id)}" data-type="${escAttr(msg.type)}" data-content="${escAttr(msg.content||'')}">🗑</button>`
+        : '';
       el.innerHTML = `
         <div class="msg-avatar" style="background:${color}">${initial}</div>
         <div class="msg-content">${bodyHtml}</div>
         <button type="button" class="msg-reply-btn"
           data-id="${escAttr(msg.id)}"
           data-user="${escAttr(msg.username)}"
-          data-preview="${escAttr(replyPreview)}">↩ Reply</button>`;
+          data-preview="${escAttr(replyPreview)}">↩ Reply</button>
+        ${deleteBtn}`;
       return el;
     }
 
@@ -1070,6 +1112,24 @@
     document.getElementById('messages-area').addEventListener('click', e => {
       const btn = e.target.closest('.msg-reply-btn');
       if (btn) setReply(btn.dataset.id, btn.dataset.user, btn.dataset.preview);
+    });
+    // Delete button delegation (own messages)
+    document.getElementById('messages-area').addEventListener('click', e => {
+      const btn = e.target.closest('.msg-delete-btn');
+      if (btn) deleteMessage(btn.dataset.id, btn.dataset.type, btn.dataset.content);
+    });
+    // Paste image from clipboard
+    msgInput.addEventListener('paste', e => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file && sb) uploadImageFile(file);
+          return;
+        }
+      }
     });
     // Lightbox clicks on images
     document.getElementById('messages-area').addEventListener('click', e => {
