@@ -12,6 +12,8 @@
     { "src": "anime.html",              "use": "@vercel/static" },
     { "src": "rooms.html",              "use": "@vercel/static" },
     { "src": "chat.html",               "use": "@vercel/static" },
+    { "src": "history.html",            "use": "@vercel/static" },
+    { "src": "watchlist.html",          "use": "@vercel/static" },
     { "src": "assets/**",               "use": "@vercel/static" }
   ],
   "routes": [
@@ -25,6 +27,8 @@
     { "src": "/anime.html",           "dest": "/anime.html" },
     { "src": "/rooms.html",           "dest": "/rooms.html" },
     { "src": "/chat.html",            "dest": "/chat.html" },
+    { "src": "/history.html",         "dest": "/history.html" },
+    { "src": "/watchlist.html",       "dest": "/watchlist.html" },
     { "src": "/assets/(.*)",          "dest": "/assets/$1" },
     { "src": "/(.*)",                 "dest": "/index.html" }
   ]
