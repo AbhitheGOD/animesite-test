@@ -104,6 +104,19 @@
       margin-bottom: 3px;
     }
     .h-card-year { font-size: 0.72rem; color: var(--muted); }
+    .h-card-del {
+      position: absolute; top: 6px; right: 6px;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(8,8,14,0.8); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted); font-size: 0.9rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; pointer-events: none;
+      transition: opacity 0.15s ease, background 0.15s, color 0.15s;
+      z-index: 3;
+    }
+    .h-card:hover .h-card-del { opacity: 1; pointer-events: auto; }
+    .h-card-del:hover { background: rgba(232,39,42,0.85); border-color: var(--red); color: #fff; }
 
     /* EMPTY */
     .empty-state {
@@ -180,6 +193,7 @@
               ${poster ? `<img src="${poster}" alt="${(a.title||'').replace(/"/g,'&quot;')}" loading="lazy" onerror="this.style.display='none'">` : ''}
               <div class="h-card-overlay"></div>
               ${score ? `<div class="h-card-score">${score}</div>` : ''}
+              <button type="button" class="h-card-del" onclick="event.preventDefault();event.stopPropagation();removeItem(${a.malId})" title="Remove from history">✕</button>
             </div>
             <div class="h-card-body">
               <div class="h-card-title">${a.title || 'Unknown'}</div>
@@ -187,6 +201,12 @@
             </div>
           </a>`;
       }).join('')}</div>`;
+    }
+
+    function removeItem(malId) {
+      const list = getHistory().filter(a => a.malId !== malId);
+      localStorage.setItem('aniscout_recent', JSON.stringify(list));
+      render();
     }
 
     function clearHistory() {
