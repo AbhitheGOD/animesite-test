@@ -430,6 +430,10 @@
       } catch { showUnauthState(); }
     }
 
+    function getLocalWatchlist() {
+      try { return JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]'); } catch { return []; }
+    }
+
     // ── Load watchlist ───────────────────────────────────────────────────────
     async function loadWatchlist() {
       const { data: items } = await sb.from('watchlist')
@@ -437,7 +441,33 @@
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
-      allItems = items || [];
+      // If Supabase is empty but localStorage has items, push them up first
+      if ((!items || items.length === 0)) {
+        const local = getLocalWatchlist();
+        if (local.length > 0) {
+          const rows = local.map(a => ({
+            user_id: currentUser.id,
+            username: username || '',
+            mal_id: a.malId,
+            title: a.title,
+            poster: a.poster || '',
+            score: a.score || 0,
+            year: a.year || 0,
+            status: a.status || 'plan_to_watch'
+          }));
+          await sb.from('watchlist').upsert(rows, { onConflict: 'user_id,mal_id' });
+          const { data: synced } = await sb.from('watchlist')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+          allItems = synced || [];
+        } else {
+          allItems = [];
+        }
+      } else {
+        allItems = items;
+      }
+
       document.getElementById('wl-state').style.display = 'none';
       document.getElementById('wl-header').classList.remove('wl-hidden');
       document.getElementById('wl-filter-bar').classList.remove('wl-hidden');

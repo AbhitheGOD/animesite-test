@@ -1604,7 +1604,7 @@
         if (currentUser && sb) {
           sb.from('watchlist').upsert({
             user_id: currentUser.id, username: authUsername || '',
-            mal_id: malId, title, poster, score, year
+            mal_id: malId, title, poster, score, year, status: 'plan_to_watch'
           }, { onConflict: 'user_id,mal_id' }).then(() => {});
         }
       } else {
@@ -1661,7 +1661,7 @@
         if (error || !data) return;
         const list = data.map(r => ({
           malId: r.mal_id, title: r.title, poster: r.poster,
-          score: r.score || 0, year: r.year || 0
+          score: r.score || 0, year: r.year || 0, status: r.status || 'plan_to_watch'
         }));
         saveWatchlistData(list);
         renderWatchlist();

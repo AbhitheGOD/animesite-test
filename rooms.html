@@ -102,7 +102,17 @@
     main { max-width: 920px; margin: 0 auto; padding: 100px 40px 80px; }
 
     /* PAGE HEADER */
-    .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
+    .page-header {
+      display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 16px;
+      background: repeating-linear-gradient(
+        135deg,
+        transparent,
+        transparent 18px,
+        rgba(255,255,255,0.018) 18px,
+        rgba(255,255,255,0.018) 19px
+      );
+      padding: 28px 28px 20px; border-radius: 16px; margin-left: -28px; margin-right: -28px;
+    }
     .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
     .page-title { font-size: 3.2rem; color: var(--text); line-height: 1; }
     .header-btns { display: flex; gap: 12px; }
@@ -125,13 +135,19 @@
     /* ROOMS GRID */
     .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
     .room-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 24px; cursor: pointer;
+      position: relative; background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--red);
+      border-radius: 16px; padding: 24px; padding-left: 21px; cursor: pointer;
       text-decoration: none; display: block;
       transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     }
-    .room-card:hover { border-color: rgba(232,39,42,0.35); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
-    .room-card-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.65rem; color: var(--text); margin-bottom: 14px; letter-spacing: 0.04em; line-height: 1.1; }
+    .room-card:hover { border-color: rgba(232,39,42,0.35); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 16px rgba(232,39,42,0.12); }
+    .room-card-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.65rem; color: var(--text); letter-spacing: 0.04em; line-height: 1.1; }
+    .room-card-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .room-last-msg { font-size: 0.78rem; color: var(--muted); margin: 8px 0 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .room-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; margin-left: 8px; box-shadow: 0 0 6px var(--red); flex-shrink: 0; }
+    .room-online-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 4px; box-shadow: 0 0 5px #22c55e; }
+    .room-online-count { font-size: 0.82rem; color: #22c55e; display: inline-flex; align-items: center; margin-left: 8px; }
     .room-card-footer { display: flex; align-items: center; justify-content: space-between; }
     .room-code {
       padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;
@@ -187,6 +203,27 @@
     .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
     #settings-logout-btn { display: none; }
 
+    /* TOAST */
+    #toast-container {
+      position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+      z-index: 999; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--red);
+      border-radius: 10px; padding: 10px 18px;
+      font-size: 0.88rem; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      animation: toastIn 0.3s ease forwards;
+      pointer-events: auto; max-width: 340px; text-align: center;
+    }
+    .toast.dismissing { animation: toastOut 0.3s ease forwards; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-12px); } }
+
     @media (max-width: 640px) {
       nav { padding: 0 20px; }
       main { padding: 90px 20px 60px; }
@@ -198,6 +235,7 @@
   </style>
 </head>
 <body>
+  <div id="toast-container"></div>
 
   <nav>
     <a href="/" class="nav-logo">ANI<span>SCOUT</span></a>
@@ -290,6 +328,7 @@
     let currentUser = null;
     let username = null;
     let pendingAction = null; // 'create' | 'join'
+    let allRooms = [];
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
     async function init() {
@@ -512,17 +551,91 @@
       const countMap = {};
       (counts || []).forEach(m => { countMap[m.room_id] = (countMap[m.room_id] || 0) + 1; });
 
+      allRooms = rooms;
+
+      const accentColors = ['var(--red)', 'var(--orange)', '#7C3AED', '#0EA5E9'];
       el.innerHTML = `<div class="rooms-grid">
-        ${rooms.map(r => `
-          <a href="/chat.html?room=${r.id}" class="room-card">
-            <div class="room-card-name">${escHtml(r.name)}</div>
+        ${rooms.map((r, i) => {
+          const accent = accentColors[i % 4];
+          const memberCount = countMap[r.id] || 1;
+          return `
+          <a href="/chat.html?room=${r.id}" class="room-card" data-room-id="${r.id}"
+             style="border-left-color:${accent}"
+             onclick="localStorage.setItem('aniscout_last_read_${r.id}', Date.now())">
+            <div class="room-card-name-row">
+              <div class="room-card-name" style="color:${accent}">${escHtml(r.name)}</div>
+            </div>
+            <div class="room-last-msg" id="room-last-msg-${r.id}">Loading preview…</div>
             <div class="room-card-footer">
               <span class="room-code">${r.invite_code}</span>
-              <span class="room-members">${countMap[r.id] || 1} member${(countMap[r.id] || 1) !== 1 ? 's' : ''}</span>
+              <span class="room-members" id="room-members-${r.id}">${memberCount} member${memberCount !== 1 ? 's' : ''}</span>
               <span class="room-arrow">→</span>
             </div>
-          </a>`).join('')}
+          </a>`;
+        }).join('')}
       </div>`;
+
+      enrichRoomCards(rooms, roomIds, countMap);
+      subscribeToRoomNotifications(roomIds);
+    }
+
+    async function enrichRoomCards(rooms, roomIds, countMap) {
+      // Fetch last message per room in parallel
+      await Promise.all(rooms.map(async (r) => {
+        const { data: msgs } = await sb.from('messages')
+          .select('content, username, created_at')
+          .eq('room_id', r.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const msgEl = document.getElementById(`room-last-msg-${r.id}`);
+        if (!msgEl) return;
+
+        if (msgs && msgs.length > 0) {
+          const msg = msgs[0];
+          const preview = (msg.content || '').slice(0, 45);
+          msgEl.textContent = `${msg.username}: ${preview}`;
+
+          const lastRead = parseInt(localStorage.getItem(`aniscout_last_read_${r.id}`) || '0');
+          const msgTime = new Date(msg.created_at).getTime();
+          if (msgTime > lastRead) {
+            const card = document.querySelector(`[data-room-id="${r.id}"]`);
+            if (card) {
+              const nameRow = card.querySelector('.room-card-name-row');
+              if (nameRow && !nameRow.querySelector('.room-unread-dot')) {
+                nameRow.insertAdjacentHTML('beforeend', '<span class="room-unread-dot"></span>');
+              }
+            }
+          }
+        } else {
+          msgEl.textContent = 'No messages yet';
+        }
+      }));
+
+      // Fetch online members (active in last 10 minutes)
+      const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: recentMsgs } = await sb.from('messages')
+        .select('room_id, user_id')
+        .in('room_id', roomIds)
+        .gte('created_at', tenMinsAgo);
+
+      const onlineMap = {};
+      (recentMsgs || []).forEach(m => {
+        if (!onlineMap[m.room_id]) onlineMap[m.room_id] = new Set();
+        onlineMap[m.room_id].add(m.user_id);
+      });
+
+      rooms.forEach(r => {
+        const membersEl = document.getElementById(`room-members-${r.id}`);
+        if (!membersEl) return;
+        const total = countMap[r.id] || 1;
+        const online = onlineMap[r.id] ? onlineMap[r.id].size : 0;
+        let html = `${total} member${total !== 1 ? 's' : ''}`;
+        if (online > 0) {
+          html += ` <span class="room-online-count"><span class="room-online-dot"></span>${online} online</span>`;
+        }
+        membersEl.innerHTML = html;
+      });
     }
 
     // ── Create room ───────────────────────────────────────────────────────────
@@ -658,6 +771,39 @@
     function showFatalError(msg) {
       document.getElementById('rooms-container').innerHTML = `
         <div class="empty-state"><div class="empty-sub" style="color:var(--red)">${msg}</div></div>`;
+    }
+
+    // ── Toast notifications ───────────────────────────────────────────────────
+    function showToast(msg, duration = 4000) {
+      const container = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      container.appendChild(t);
+      setTimeout(() => {
+        t.classList.add('dismissing');
+        setTimeout(() => t.remove(), 300);
+      }, duration);
+    }
+
+    function subscribeToRoomNotifications(roomIds) {
+      roomIds.forEach(roomId => {
+        sb.channel(`notify-${roomId}`)
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, payload => {
+            const msg = payload.new;
+            if (msg.user_id === currentUser.id) return;
+            const room = allRooms.find(r => r.id === roomId);
+            const roomName = room?.name || 'a room';
+            const preview = (msg.content || '').slice(0, 40);
+            showToast(`💬 ${msg.username || 'Someone'} in ${roomName}: "${preview}"`);
+            const card = document.querySelector(`[data-room-id="${roomId}"]`);
+            if (card && !card.querySelector('.room-unread-dot')) {
+              const nameRow = card.querySelector('.room-card-name-row');
+              if (nameRow) nameRow.insertAdjacentHTML('beforeend', '<span class="room-unread-dot"></span>');
+            }
+          })
+          .subscribe();
+      });
     }
 
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
