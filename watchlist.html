@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Watchlist — AniScout</title>
+  <title>AniScout — My Watchlist</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -32,12 +32,17 @@
     }
     h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.03em; line-height: 1.05; }
 
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--dark); }
+    ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
     /* NAV */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 40px; height: 64px;
-      background: rgba(8,8,14,0.85);
+      background: rgba(8,8,14,0.92);
       -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
@@ -51,9 +56,8 @@
       transition: color 0.2s;
     }
     .nav-back:hover { color: var(--text); }
-    .nav-back svg { width: 16px; height: 16px; }
 
-    /* NAV PROFILE BUTTON */
+    /* NAV PROFILE */
     .nav-profile-wrap { position: relative; }
     .nav-profile-btn {
       display: flex; align-items: center; gap: 7px;
@@ -90,151 +94,11 @@
     }
     .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
 
-    /* PAGE */
-    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 100px 40px 80px; }
-
-    /* PAGE HEADER */
-    .page-header { margin-bottom: 36px; }
-    .page-title { font-size: clamp(2.4rem, 6vw, 4rem); color: var(--text); line-height: 1; }
-    .page-subtitle { font-size: 0.92rem; color: var(--muted); margin-top: 6px; }
-
-    /* FILTER BAR */
-    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
-    .filter-pill {
-      padding: 7px 18px; border-radius: 40px; font-size: 0.85rem; font-weight: 600;
-      border: 1px solid var(--border); background: var(--raised);
-      color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-    }
-    .filter-pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-    .filter-pill.active { background: var(--red); border-color: var(--red); color: #fff; }
-
-    /* CARD GRID */
-    .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-
-    /* CARD */
-    .wl-card { position: relative; }
-    .wl-card-img-link { display: block; text-decoration: none; }
-    .wl-card-img {
-      position: relative; border-radius: 10px; overflow: hidden;
-      aspect-ratio: 2/3;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    .wl-card:hover .wl-card-img {
-      transform: translateY(-5px);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(232,39,42,0.1);
-    }
-    .wl-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
-    .wl-card:hover .wl-card-img img { transform: scale(1.06); }
-    .wl-card-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(8,8,14,0.85) 0%, transparent 55%);
-      pointer-events: none;
-    }
-    .wl-no-img {
-      width: 100%; height: 100%; background: var(--raised);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--muted); font-size: 0.75rem;
-    }
-
-    /* Score badge */
-    .wl-score {
-      position: absolute; top: 8px; left: 8px;
-      background: rgba(8,8,14,0.85); color: var(--orange);
-      font-size: 0.75rem; font-weight: 700; padding: 3px 7px; border-radius: 5px;
-      pointer-events: none;
-    }
-
-    /* Status badge */
-    .wl-status-badge {
-      position: absolute; top: 8px; right: 8px;
-      font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 5px;
-      text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none;
-    }
-    .wl-status-badge.s-watching  { background: rgba(59,130,246,0.25); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); }
-    .wl-status-badge.s-completed { background: rgba(34,197,94,0.2);   color: #86efac; border: 1px solid rgba(34,197,94,0.35); }
-    .wl-status-badge.s-plan      { background: rgba(245,160,26,0.18); color: var(--orange); border: 1px solid rgba(245,160,26,0.35); }
-
-    /* Remove button */
-    .wl-remove {
-      position: absolute; bottom: 8px; right: 8px; z-index: 10;
-      width: 26px; height: 26px; border-radius: 50%;
-      background: rgba(8,8,14,0.8); border: 1px solid rgba(255,255,255,0.12);
-      color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
-    }
-    .wl-card:hover .wl-remove { opacity: 1; }
-    .wl-remove:hover { background: rgba(232,39,42,0.85); color: #fff; border-color: transparent; }
-
-    /* Status dropdown — slides up on card hover */
-    .wl-status-dropdown {
-      position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
-      background: rgba(8,8,14,0.96);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      border-radius: 0 0 10px 10px;
-      padding: 4px 0;
-      opacity: 0; transform: translateY(6px);
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      pointer-events: none;
-    }
-    .wl-card:hover .wl-status-dropdown {
-      opacity: 1; transform: translateY(0);
-      pointer-events: auto;
-    }
-    .wl-status-option {
-      display: block; width: 100%; padding: 7px 12px;
-      background: none; border: none; text-align: left;
-      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
-      color: var(--muted); cursor: pointer;
-      transition: color 0.15s, background 0.15s;
-    }
-    .wl-status-option:hover { color: var(--text); background: rgba(255,255,255,0.06); }
-    .wl-status-option.current { color: var(--text); font-weight: 600; }
-
-    /* Card body */
-    .wl-card-body { padding: 10px 4px 0; text-decoration: none; display: block; }
-    .wl-card-title {
-      font-weight: 600; font-size: 0.88rem; color: var(--text); line-height: 1.3;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .wl-card-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
-
-    /* LOADING / ERROR */
-    .state-center {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-height: 60vh; gap: 16px; color: var(--muted); text-align: center;
-    }
-    .spinner {
-      width: 40px; height: 40px; border: 3px solid var(--border);
-      border-top-color: var(--red); border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* BUTTONS */
-    .cta-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 12px 28px; background: var(--red); border: none;
-      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none;
-      transition: opacity 0.2s; box-shadow: 0 4px 20px rgba(232,39,42,0.3);
-    }
-    .cta-btn:hover { opacity: 0.88; }
-    .cta-btn-ghost {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 26px; background: none; border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none;
-      transition: border-color 0.2s;
-    }
-    .cta-btn-ghost:hover { border-color: rgba(255,255,255,0.25); }
-
     /* USERNAME MODAL */
     .modal-bd {
       display: none; position: fixed; inset: 0; z-index: 500;
-      background: rgba(8,8,14,0.92); backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center;
+      background: rgba(8,8,14,0.92); -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px); align-items: center; justify-content: center;
     }
     .modal-bd.open { display: flex; }
     .modal-card {
@@ -269,7 +133,7 @@
     }
     .modal-warn strong { color: var(--orange); }
 
-    /* SETTINGS */
+    /* SETTINGS FAB */
     .settings-fab {
       position: fixed; bottom: 20px; right: 20px; z-index: 200;
       width: 40px; height: 40px; border-radius: 50%;
@@ -295,11 +159,158 @@
     }
     .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
     #settings-logout-btn { display: none; }
+    .wl-hidden { display: none; }
+
+    /* SPINNER / STATE */
+    .state-center {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 60vh; gap: 12px; color: var(--muted); text-align: center;
+      padding: 24px;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid var(--border);
+      border-top-color: var(--red); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-icon { font-size: 3rem; margin-bottom: 4px; }
+    .state-title { font-size: 1.6rem; font-family: 'Bebas Neue', sans-serif; color: var(--text); }
+    .state-desc { font-size: 0.9rem; color: var(--muted); max-width: 340px; }
+    .state-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 28px; background: var(--red); border: none;
+      border-radius: 8px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s; box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+    }
+    .state-btn:hover { opacity: 0.88; }
+
+    /* PAGE HEADER */
+    .wl-header {
+      padding-top: 96px; padding-bottom: 28px;
+      max-width: 1100px; margin: 0 auto;
+      padding-left: 40px; padding-right: 40px;
+    }
+    .wl-header h1 { font-size: clamp(2.8rem, 6vw, 4.5rem); color: var(--text); margin-bottom: 4px; }
+    .wl-subtitle { font-size: 0.92rem; color: var(--muted); }
+
+    /* FILTER PILLS */
+    .wl-filter-bar {
+      max-width: 1100px; margin: 0 auto 28px;
+      padding: 0 40px;
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .wl-filter-pill {
+      padding: 7px 18px; border-radius: 100px;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .wl-filter-pill:hover { border-color: rgba(255,255,255,0.18); color: var(--text); }
+    .wl-filter-pill.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+    /* CARD GRID */
+    .wl-grid {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 40px 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
+    }
+
+    /* WATCHLIST CARD */
+    .wl-card {
+      position: relative; border-radius: 10px; overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.3s;
+    }
+    .wl-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(232,39,42,0.1);
+    }
+    .wl-card-img {
+      position: relative; aspect-ratio: 2/3; overflow: hidden;
+    }
+    .wl-card-img img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transition: transform 0.4s ease;
+    }
+    .wl-card:hover .wl-card-img img { transform: scale(1.06); }
+    .wl-card-img-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(8,8,14,0.75) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .card-img-placeholder {
+      width: 100%; height: 100%; background: var(--raised);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 0.75rem;
+    }
+
+    /* SCORE BADGE */
+    .card-score {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(8,8,14,0.85);
+      border: 1px solid rgba(245,160,26,0.25);
+      border-radius: 5px; padding: 3px 7px;
+      font-size: 0.78rem; font-weight: 700; color: var(--orange);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    }
+
+    /* STATUS BADGE */
+    .wl-status-badge {
+      position: absolute; bottom: 8px; left: 8px;
+      border-radius: 5px; padding: 3px 8px;
+      font-size: 0.72rem; font-weight: 700; color: #fff;
+      letter-spacing: 0.02em; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    }
+    .wl-status-watching      { background: rgba(59,130,246,0.85); }
+    .wl-status-completed     { background: rgba(34,197,94,0.85); }
+    .wl-status-plan_to_watch { background: rgba(245,160,26,0.85); }
+
+    /* HOVER ACTION BAR */
+    .wl-action-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(8,8,14,0.93); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+      border-top: 1px solid var(--border);
+      padding: 8px; display: flex; flex-direction: column; gap: 6px;
+      transform: translateY(100%); transition: transform 0.25s ease;
+    }
+    .wl-card:hover .wl-action-bar { transform: translateY(0); }
+    .wl-action-status-row { display: flex; gap: 4px; }
+    .wl-action-btn {
+      flex: 1; padding: 5px 3px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 0.65rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+      white-space: nowrap; text-align: center;
+    }
+    .wl-action-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); border-color: rgba(255,255,255,0.18); }
+    .wl-action-btn.btn-watching:hover  { background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+    .wl-action-btn.btn-completed:hover { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.5); color: #86efac; }
+    .wl-action-btn.btn-plan:hover      { background: rgba(245,160,26,0.2); border-color: rgba(245,160,26,0.5); color: var(--orange); }
+    .wl-remove-btn {
+      width: 100%; padding: 5px;
+      background: rgba(232,39,42,0.08); border: 1px solid rgba(232,39,42,0.2);
+      border-radius: 6px; color: var(--red);
+      font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .wl-remove-btn:hover { background: rgba(232,39,42,0.22); }
+
+    /* CARD BODY */
+    .wl-card-body { padding: 10px 10px 12px; }
+    .wl-card-title {
+      font-weight: 600; font-size: 0.88rem; color: var(--text); line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .wl-card-year { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
 
     /* FOOTER */
     footer {
-      border-top: 1px solid var(--border); padding: 32px 40px;
-      background: var(--dark); margin-top: 60px;
+      border-top: 1px solid var(--border); padding: 32px 40px; background: var(--dark);
     }
     .footer-inner {
       max-width: 1100px; margin: 0 auto;
@@ -311,8 +322,9 @@
 
     @media (max-width: 768px) {
       nav { padding: 0 20px; }
-      .page-wrap { padding: 90px 20px 60px; }
-      .watchlist-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+      .wl-header { padding-left: 20px; padding-right: 20px; padding-top: 84px; }
+      .wl-filter-bar { padding: 0 20px; }
+      .wl-grid { padding: 0 20px 60px; gap: 14px; }
     }
   </style>
 </head>
@@ -321,12 +333,7 @@
   <nav>
     <a href="/" class="nav-logo">ANI<span>SCOUT</span></a>
     <div class="nav-actions">
-      <a href="/" class="nav-back">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 12L6 8l4-4"/>
-        </svg>
-        Browse Anime
-      </a>
+      <a href="/" class="nav-back">Browse</a>
       <div class="nav-profile-wrap">
         <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -339,19 +346,7 @@
         </div>
       </div>
     </div>
-    <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
   </nav>
-
-  <!-- MOBILE NAV MENU -->
-  <div id="mobile-nav-menu" class="mobile-nav-menu">
-    <a href="/">Home / Search</a>
-    <a href="/watchlist.html">My Watchlist</a>
-    <button type="button" class="mob-nav-item" onclick="document.getElementById('mobile-nav-menu').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');toggleProfileDropdown()">
-      <span id="mob-profile-label">Login / Profile</span>
-    </button>
-  </div>
 
   <!-- USERNAME MODAL -->
   <div id="modal-username" class="modal-bd">
@@ -362,49 +357,61 @@
       <div class="modal-err" id="err-username"></div>
       <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
       <input class="modal-input" id="input-pin" placeholder="Set a 4–8 digit PIN" maxlength="8" autocomplete="off" inputmode="numeric" type="password" />
-      <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Save to Watchlist →</button>
+      <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Sign In →</button>
       <div class="modal-warn"><strong>Your PIN</strong> lets you access your watchlist from any device.</div>
     </div>
   </div>
 
-  <!-- SETTINGS -->
+  <!-- PAGE HEADER (hidden until auth resolves) -->
+  <div class="wl-header wl-hidden" id="wl-header">
+    <h1>MY WATCHLIST</h1>
+    <p class="wl-subtitle" id="wl-subtitle">0 titles tracked</p>
+  </div>
+
+  <!-- FILTER PILLS (hidden until auth resolves) -->
+  <div class="wl-filter-bar wl-hidden" id="wl-filter-bar">
+    <button type="button" class="wl-filter-pill active" data-filter="all"           onclick="setFilter('all')">All</button>
+    <button type="button" class="wl-filter-pill"        data-filter="watching"      onclick="setFilter('watching')">Watching</button>
+    <button type="button" class="wl-filter-pill"        data-filter="completed"     onclick="setFilter('completed')">Completed</button>
+    <button type="button" class="wl-filter-pill"        data-filter="plan_to_watch" onclick="setFilter('plan_to_watch')">Plan to Watch</button>
+  </div>
+
+  <!-- CARD GRID -->
+  <div class="wl-grid" id="wl-grid"></div>
+
+  <!-- LOADING / EMPTY / UNAUTH STATE -->
+  <div id="wl-state" class="state-center">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo">ANI<span>SCOUT</span></div>
+      <div class="footer-copy">© 2025 AniScout. Data from MyAnimeList &amp; AniList.</div>
+    </div>
+  </footer>
+
+  <!-- SETTINGS FAB -->
   <div id="settings-panel" class="settings-panel">
     <div id="settings-info" class="settings-info">Not signed in</div>
     <button type="button" onclick="doSignOut()" id="settings-logout-btn" class="settings-logout-btn">Sign Out</button>
   </div>
   <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
 
-  <!-- MAIN CONTENT -->
-  <div class="page-wrap">
-    <div id="app">
-      <div class="state-center">
-        <div class="spinner"></div>
-        <p>Loading your watchlist…</p>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <div class="footer-inner">
-      <div class="footer-logo">ANI<span>SCOUT</span></div>
-      <div class="footer-copy">© 2025 AniScout. Data from MyAnimeList & AniList.</div>
-    </div>
-  </footer>
-
   <script>
-    // ── State ─────────────────────────────────────────────────────────────────────
     let sb = null;
     let currentUser = null;
     let username = null;
-    let watchlistItems = [];
-    let activeFilter = 'all';
+    let currentFilter = 'all';
+    let allItems = [];
 
-    // ── Supabase init ─────────────────────────────────────────────────────────────
+    // ── Supabase + Auth ──────────────────────────────────────────────────────
     async function initSupabase() {
       try {
         const res = await fetch('/api/supabase-config');
         const config = await res.json();
-        if (!config.url || !config.anonKey) { showSignInState(); return; }
+        if (!config.url || !config.anonKey) { showUnauthState(); return; }
         sb = supabase.createClient(config.url, config.anonKey);
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
@@ -415,276 +422,172 @@
             if (uRow) { username = uRow.username; localStorage.setItem('aniscout_username', username); }
           }
           updateSettingsPanel();
-          loadWatchlist();
+          await loadWatchlist();
         } else {
           updateSettingsPanel();
-          showSignInState();
+          showUnauthState();
         }
-      } catch {
-        updateSettingsPanel();
-        showSignInState();
-      }
+      } catch { showUnauthState(); }
     }
 
-    // ── Load watchlist ────────────────────────────────────────────────────────────
+    // ── Load watchlist ───────────────────────────────────────────────────────
     async function loadWatchlist() {
-      try {
-        const { data, error } = await sb.from('watchlist')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        watchlistItems = data || [];
-        renderPage();
-      } catch {
-        document.getElementById('app').innerHTML = `
-          <div class="state-center">
-            <p style="color:var(--red)">Failed to load watchlist.</p>
-            <a href="/" class="cta-btn-ghost">Browse Anime</a>
-          </div>`;
-      }
+      const { data: items } = await sb.from('watchlist')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+      allItems = items || [];
+      document.getElementById('wl-state').style.display = 'none';
+      document.getElementById('wl-header').classList.remove('wl-hidden');
+      document.getElementById('wl-filter-bar').classList.remove('wl-hidden');
+
+      if (allItems.length === 0) { showEmptyState(); return; }
+      updateCount();
+      renderGrid(allItems);
+      applyFilter(currentFilter);
     }
 
-    // ── Render page ───────────────────────────────────────────────────────────────
-    function renderPage() {
-      const total = watchlistItems.length;
-      const filtered = activeFilter === 'all'
-        ? watchlistItems
-        : watchlistItems.filter(item => normalizeStatus(item.status) === activeFilter);
+    // ── Render grid ──────────────────────────────────────────────────────────
+    function renderGrid(items) {
+      const grid = document.getElementById('wl-grid');
+      grid.innerHTML = '';
+      items.forEach(item => {
+        const status = item.status || 'plan_to_watch';
+        const score  = item.score ? `★ ${item.score}` : '';
+        const year   = item.year || '';
+        const poster = item.poster || '';
 
-      document.getElementById('app').innerHTML = `
-        <div class="page-header">
-          <h1 class="page-title">MY WATCHLIST</h1>
-          <p class="page-subtitle">${total} ${total === 1 ? 'title' : 'titles'}</p>
-        </div>
-        <div class="filter-bar">
-          ${['all','watching','completed','plan'].map(f => `
-            <button type="button" class="filter-pill${activeFilter === f ? ' active' : ''}" onclick="setFilter('${f}')">
-              ${filterLabel(f)}
-            </button>`).join('')}
-        </div>
-        <div class="watchlist-grid">
-          ${filtered.length === 0 ? renderEmpty() : filtered.map(renderCard).join('')}
-        </div>`;
-    }
+        const card = document.createElement('div');
+        card.className = 'wl-card';
+        card.dataset.itemId = item.id;
+        card.dataset.status = status;
 
-    function filterLabel(f) {
-      return { all: 'All', watching: 'Watching', completed: 'Completed', plan: 'Plan to Watch' }[f];
-    }
+        const imgHtml = poster
+          ? `<img src="${poster}" alt="${escHtml(item.title)}" loading="lazy" onerror="this.style.display='none'" />`
+          : `<div class="card-img-placeholder">No image</div>`;
 
-    function normalizeStatus(status) {
-      if (!status) return 'plan';
-      const s = status.toLowerCase();
-      if (s === 'watching') return 'watching';
-      if (s === 'completed') return 'completed';
-      return 'plan';
-    }
-
-    function renderCard(item) {
-      const ns = normalizeStatus(item.status);
-      const badgeClass = { watching: 's-watching', completed: 's-completed', plan: 's-plan' }[ns];
-      const badgeText  = { watching: 'Watching', completed: 'Completed', plan: 'Plan to Watch' }[ns];
-
-      const statuses = [
-        { val: 'Watching',      norm: 'watching' },
-        { val: 'Completed',     norm: 'completed' },
-        { val: 'Plan to Watch', norm: 'plan'      },
-      ];
-
-      const imgHtml = item.poster
-        ? `<img src="${escHtml(item.poster)}" alt="${escHtml(item.title)}" loading="lazy" onerror="this.style.display='none'">`
-        : `<div class="wl-no-img">No Image</div>`;
-
-      return `
-        <div class="wl-card" data-id="${escHtml(item.id)}">
-          <a href="/anime.html?id=${item.mal_id}" class="wl-card-img-link">
-            <div class="wl-card-img">
-              ${imgHtml}
-              <div class="wl-card-overlay"></div>
-              ${item.score ? `<span class="wl-score">★ ${parseFloat(item.score).toFixed(1)}</span>` : ''}
-              <span class="wl-status-badge ${badgeClass}">${badgeText}</span>
-              <div class="wl-status-dropdown">
-                ${statuses.map(s => `
-                  <button type="button" class="wl-status-option${ns === s.norm ? ' current' : ''}"
-                    onclick="event.preventDefault();event.stopPropagation();updateStatus('${escHtml(item.id)}','${s.val}',this)">
-                    ${s.val}
-                  </button>`).join('')}
+        card.innerHTML = `
+          <div class="wl-card-img">
+            ${imgHtml}
+            <div class="wl-card-img-overlay"></div>
+            ${score ? `<div class="card-score">${score}</div>` : ''}
+            <div class="wl-status-badge wl-status-${status}">${statusLabel(status)}</div>
+            <div class="wl-action-bar">
+              <div class="wl-action-status-row">
+                <button type="button" class="wl-action-btn btn-watching"
+                  onclick="event.stopPropagation();updateStatus('${item.id}','watching')">Watching</button>
+                <button type="button" class="wl-action-btn btn-completed"
+                  onclick="event.stopPropagation();updateStatus('${item.id}','completed')">Completed</button>
+                <button type="button" class="wl-action-btn btn-plan"
+                  onclick="event.stopPropagation();updateStatus('${item.id}','plan_to_watch')">Plan to Watch</button>
               </div>
-              <button type="button" class="wl-remove"
-                onclick="event.preventDefault();event.stopPropagation();removeItem('${escHtml(item.id)}')"
-                title="Remove from watchlist">×</button>
+              <button type="button" class="wl-remove-btn"
+                onclick="event.stopPropagation();removeItem('${item.id}')">✕ Remove</button>
             </div>
-          </a>
-          <a href="/anime.html?id=${item.mal_id}" class="wl-card-body">
-            <div class="wl-card-title">${escHtml(item.title)}</div>
-            ${item.year ? `<div class="wl-card-meta">${item.year}</div>` : ''}
-          </a>
-        </div>`;
+          </div>
+          <div class="wl-card-body">
+            <a href="/anime.html?id=${escHtml(String(item.mal_id || ''))}" style="text-decoration:none">
+              <div class="wl-card-title">${escHtml(item.title)}</div>
+            </a>
+            ${year ? `<div class="wl-card-year">${year}</div>` : ''}
+          </div>`;
+        grid.appendChild(card);
+      });
     }
 
-    function renderEmpty() {
-      if (activeFilter !== 'all' && watchlistItems.length > 0) {
-        return `<div style="grid-column:1/-1;padding:60px 0;text-align:center;color:var(--muted)">
-          No ${filterLabel(activeFilter)} titles yet.
-        </div>`;
+    // ── Filter ───────────────────────────────────────────────────────────────
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.wl-filter-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.filter === filter);
+      });
+      applyFilter(filter);
+    }
+
+    function applyFilter(filter) {
+      document.querySelectorAll('.wl-card').forEach(card => {
+        card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+      });
+    }
+
+    // ── Status update ────────────────────────────────────────────────────────
+    async function updateStatus(itemId, status) {
+      await sb.from('watchlist').update({ status }).eq('id', itemId);
+      const card = document.querySelector(`[data-item-id="${itemId}"]`);
+      if (card) {
+        const badge = card.querySelector('.wl-status-badge');
+        if (badge) {
+          badge.textContent = statusLabel(status);
+          badge.className = `wl-status-badge wl-status-${status}`;
+        }
+        card.dataset.status = status;
+        // update in allItems too
+        const idx = allItems.findIndex(i => String(i.id) === String(itemId));
+        if (idx !== -1) allItems[idx].status = status;
       }
-      return `<div style="grid-column:1/-1">
-        <div class="state-center" style="min-height:50vh">
-          <div class="empty-state-illus">
-            <div class="empty-illus-wrap">
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                <rect x="10" y="10" width="28" height="40" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
-                <rect x="18" y="7" width="28" height="40" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
-                <rect x="26" y="14" width="28" height="40" rx="4" fill="var(--raised)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-                <path d="M36 30l-3 3 3 3M44 30l3 3-3 3" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="52" cy="50" r="9" fill="var(--red)" opacity="0.9"/>
-                <path d="M52 47v4l2.5 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="empty-illus-title">NOTHING HERE YET</div>
-            <p class="empty-illus-sub">Your watchlist is empty. Start adding anime you want to track.</p>
-            <div class="empty-illus-btns">
-              <a href="/" class="cta-btn">Browse Anime</a>
-            </div>
-          </div>
-        </div>
-      </div>`;
+      applyFilter(currentFilter);
     }
 
-    function showSignInState() {
-      document.getElementById('app').innerHTML = `
-        <div class="state-center">
-          <div class="empty-state-illus">
-            <div class="empty-illus-wrap">
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                <circle cx="32" cy="24" r="12" fill="var(--raised)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-                <path d="M10 54c0-12 9.85-21 22-21s22 9 22 21" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
-                <circle cx="32" cy="24" r="5" fill="var(--red)" opacity="0.85"/>
-              </svg>
-            </div>
-            <div class="empty-illus-title">SIGN IN TO SEE YOUR WATCHLIST</div>
-            <p class="empty-illus-sub">Create a free account to track anime, save your progress, and sync across devices.</p>
-            <div class="empty-illus-btns">
-              <button type="button" class="cta-btn" onclick="openSignInModal()">Sign In / Register</button>
-              <a href="/" class="cta-btn-ghost">Browse Anime</a>
-            </div>
-          </div>
-        </div>`;
+    // ── Remove item ──────────────────────────────────────────────────────────
+    async function removeItem(itemId) {
+      await sb.from('watchlist').delete().eq('id', itemId).eq('user_id', currentUser.id);
+      const card = document.querySelector(`[data-item-id="${itemId}"]`);
+      if (card) {
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          card.remove();
+          allItems = allItems.filter(i => String(i.id) !== String(itemId));
+          updateCount();
+          if (allItems.length === 0) showEmptyState();
+        }, 300);
+      }
     }
 
-    // ── Filters ───────────────────────────────────────────────────────────────────
-    function setFilter(f) {
-      activeFilter = f;
-      renderPage();
+    function statusLabel(s) {
+      return { watching: 'Watching', completed: 'Completed', plan_to_watch: 'Plan to Watch' }[s] || 'Plan to Watch';
     }
 
-    // ── Update status ─────────────────────────────────────────────────────────────
-    async function updateStatus(id, newStatus) {
-      if (!sb) return;
-      const item = watchlistItems.find(i => i.id === id);
-      if (item) item.status = newStatus;
-      renderPage();
-      await sb.from('watchlist').update({ status: newStatus }).eq('id', id);
+    function updateCount() {
+      const el = document.getElementById('wl-subtitle');
+      if (el) el.textContent = `${allItems.length} title${allItems.length !== 1 ? 's' : ''} tracked`;
     }
 
-    // ── Remove item ───────────────────────────────────────────────────────────────
-    async function removeItem(id) {
-      if (!sb) return;
-      watchlistItems = watchlistItems.filter(i => i.id !== id);
-      renderPage();
-      await sb.from('watchlist').delete().eq('id', id);
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────────
     function escHtml(str) {
-      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return String(str || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
-    function openSignInModal() {
+    // ── State screens ────────────────────────────────────────────────────────
+    function showUnauthState() {
+      const s = document.getElementById('wl-state');
+      s.style.display = 'flex';
+      s.innerHTML = `
+        <div class="state-icon">🔒</div>
+        <div class="state-title">Sign in to see your watchlist</div>
+        <p class="state-desc">Track what you're watching, completed, and plan to watch.</p>
+        <button type="button" class="state-btn" onclick="openLoginModal()">Sign In</button>`;
+    }
+
+    function showEmptyState() {
+      document.getElementById('wl-grid').innerHTML = '';
+      const s = document.getElementById('wl-state');
+      s.style.display = 'flex';
+      s.innerHTML = `
+        <div class="state-icon">📋</div>
+        <div class="state-title">Nothing here yet</div>
+        <p class="state-desc">Start adding anime to build your watchlist.</p>
+        <a href="/" class="state-btn">Browse Anime →</a>`;
+    }
+
+    function openLoginModal() {
       document.getElementById('modal-username').classList.add('open');
       setTimeout(() => document.getElementById('input-username').focus(), 50);
     }
 
-    // ── Username modal (exact same logic as anime.html) ───────────────────────────
-    function usernameToEmail(name) {
-      return name.toLowerCase().replace(/ /g, '~') + '@aniscout.local';
-    }
-
-    async function submitUsername() {
-      const input    = document.getElementById('input-username');
-      const pinInput = document.getElementById('input-pin');
-      const btn      = document.getElementById('btn-username');
-      const err      = document.getElementById('err-username');
-      const name     = input.value.trim();
-      const pin      = pinInput.value.trim();
-
-      err.textContent = '';
-      if (name.length < 2)  { err.textContent = 'At least 2 characters please.'; return; }
-      if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
-      if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
-      if (pin.length < 4)   { err.textContent = 'PIN must be at least 4 digits.'; return; }
-      if (!/^\d+$/.test(pin)) { err.textContent = 'PIN must be digits only.'; return; }
-
-      btn.disabled = true;
-      btn.textContent = 'Checking…';
-
-      const email = usernameToEmail(name);
-
-      try {
-        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
-
-        if (signUpErr || !signUpData?.user) {
-          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
-          if (signInErr) {
-            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
-            err.textContent = row
-              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
-              : 'Sign-in failed. Try again.';
-            btn.disabled = false;
-            btn.textContent = 'Save to Watchlist →';
-            return;
-          }
-          currentUser = signInData.user;
-          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
-          username = uRow?.username || name;
-
-        } else {
-          currentUser = signUpData.user;
-          const { error: claimErr } = await sb.from('usernames')
-            .insert({ username: name, user_id: currentUser.id });
-
-          if (claimErr) {
-            await sb.auth.signOut();
-            currentUser = null;
-            if (claimErr.code === '23505') {
-              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
-              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
-              document.getElementById('input-username').disabled = true;
-              err.textContent = '';
-            } else {
-              err.textContent = claimErr.message || 'Could not claim username.';
-            }
-            btn.disabled = false;
-            btn.textContent = 'Sign In →';
-            return;
-          }
-          username = name;
-        }
-
-        localStorage.setItem('aniscout_username', username);
-        localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
-        document.getElementById('modal-username').classList.remove('open');
-        updateSettingsPanel();
-        loadWatchlist();
-
-      } catch (e) {
-        err.textContent = e.message || 'Sign-in failed. Try again.';
-        btn.disabled = false;
-        btn.textContent = 'Save to Watchlist →';
-      }
-    }
-
-    // ── Settings panel ────────────────────────────────────────────────────────────
+    // ── Settings panel ────────────────────────────────────────────────────────
     function toggleSettings() {
       document.getElementById('settings-panel').classList.toggle('open');
     }
@@ -706,22 +609,88 @@
       }
     }
     function toggleProfileDropdown() {
-      if (!currentUser || !username) { openSignInModal(); return; }
+      if (!currentUser || !username) { openLoginModal(); return; }
       document.getElementById('nav-profile-dropdown').classList.toggle('open');
     }
     async function doSignOut() {
       if (sb) await sb.auth.signOut();
       localStorage.removeItem('aniscout_username');
       localStorage.removeItem('aniscout_session');
-      currentUser = null;
-      username = null;
-      watchlistItems = [];
+      currentUser = null; username = null;
       document.getElementById('settings-panel').classList.remove('open');
       document.getElementById('nav-profile-dropdown').classList.remove('open');
       updateSettingsPanel();
-      showSignInState();
+      document.getElementById('wl-header').classList.add('wl-hidden');
+      document.getElementById('wl-filter-bar').classList.add('wl-hidden');
+      document.getElementById('wl-grid').innerHTML = '';
+      showUnauthState();
     }
 
+    // ── Username modal ────────────────────────────────────────────────────────
+    function usernameToEmail(name) {
+      return name.toLowerCase().replace(/ /g, '~') + '@aniscout.local';
+    }
+    async function submitUsername() {
+      const input    = document.getElementById('input-username');
+      const pinInput = document.getElementById('input-pin');
+      const btn      = document.getElementById('btn-username');
+      const err      = document.getElementById('err-username');
+      const name     = input.value.trim();
+      const pin      = pinInput.value.trim();
+
+      err.textContent = '';
+      if (name.length < 2)  { err.textContent = 'At least 2 characters please.'; return; }
+      if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
+      if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+      if (pin.length < 4)   { err.textContent = 'PIN must be at least 4 digits.'; return; }
+      if (!/^\d+$/.test(pin)) { err.textContent = 'PIN must be digits only.'; return; }
+
+      btn.disabled = true; btn.textContent = 'Checking…';
+      const email = usernameToEmail(name);
+
+      try {
+        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
+        if (signUpErr || !signUpData?.user) {
+          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
+          if (signInErr) {
+            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
+            err.textContent = row
+              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
+              : 'Sign-in failed. Try again.';
+            btn.disabled = false; btn.textContent = 'Sign In →'; return;
+          }
+          currentUser = signInData.user;
+          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+          username = uRow?.username || name;
+        } else {
+          currentUser = signUpData.user;
+          const { error: claimErr } = await sb.from('usernames').insert({ username: name, user_id: currentUser.id });
+          if (claimErr) {
+            await sb.auth.signOut(); currentUser = null;
+            if (claimErr.code === '23505') {
+              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
+              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
+              input.disabled = true; err.textContent = '';
+            } else { err.textContent = claimErr.message || 'Could not claim username.'; }
+            btn.disabled = false; btn.textContent = 'Sign In →'; return;
+          }
+          username = name;
+        }
+        localStorage.setItem('aniscout_username', username);
+        localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
+        document.getElementById('modal-username').classList.remove('open');
+        updateSettingsPanel();
+        const s = document.getElementById('wl-state');
+        s.style.display = 'flex';
+        s.innerHTML = '<div class="spinner"></div><p>Loading watchlist…</p>';
+        await loadWatchlist();
+      } catch (e) {
+        err.textContent = e.message || 'Sign-in failed. Try again.';
+        btn.disabled = false; btn.textContent = 'Sign In →';
+      }
+    }
+
+    // ── Close dropdowns on outside click ─────────────────────────────────────
     document.addEventListener('click', e => {
       const panel = document.getElementById('settings-panel');
       const fab   = document.querySelector('.settings-fab');
@@ -734,7 +703,6 @@
         if (dd) dd.classList.remove('open');
       }
     });
-
     document.getElementById('input-username').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('input-pin').focus();
     });
@@ -742,9 +710,8 @@
       if (e.key === 'Enter') submitUsername();
     });
 
-    // ── Boot ──────────────────────────────────────────────────────────────────────
+    // ── Boot ──────────────────────────────────────────────────────────────────
     initSupabase();
   </script>
-  <script src="/assets/shared.js"></script>
 </body>
 </html>
