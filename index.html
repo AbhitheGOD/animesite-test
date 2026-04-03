@@ -1601,10 +1601,20 @@
         list.unshift({ malId, title, poster, score, year });
         btn.innerHTML = '♥<span class="watchlist-tooltip">Saved</span>'; btn.classList.add('saved');
         btn.title = 'Remove from watchlist';
+        if (currentUser && sb) {
+          sb.from('watchlist').upsert({
+            user_id: currentUser.id, username: authUsername || '',
+            mal_id: malId, title, poster, score, year
+          }, { onConflict: 'user_id,mal_id' }).then(() => {});
+        }
       } else {
         list.splice(idx, 1);
         btn.innerHTML = '♡<span class="watchlist-tooltip">Add to Watchlist</span>'; btn.classList.remove('saved');
         btn.title = 'Add to watchlist';
+        if (currentUser && sb) {
+          sb.from('watchlist').delete()
+            .eq('user_id', currentUser.id).eq('mal_id', malId).then(() => {});
+        }
       }
       saveWatchlistData(list);
       renderWatchlist();
@@ -1641,6 +1651,31 @@
       }).join('');
     }
     renderWatchlist();
+
+    async function syncWatchlistFromSupabase() {
+      if (!currentUser || !sb) return;
+      try {
+        const { data, error } = await sb.from('watchlist')
+          .select('*').eq('user_id', currentUser.id)
+          .order('added_at', { ascending: false });
+        if (error || !data) return;
+        const list = data.map(r => ({
+          malId: r.mal_id, title: r.title, poster: r.poster,
+          score: r.score || 0, year: r.year || 0
+        }));
+        saveWatchlistData(list);
+        renderWatchlist();
+        document.querySelectorAll('.watchlist-btn').forEach(btn => {
+          const id = parseInt(btn.dataset.malid);
+          const saved = list.some(a => a.malId === id);
+          btn.innerHTML = saved
+            ? '♥<span class="watchlist-tooltip">Saved</span>'
+            : '♡<span class="watchlist-tooltip">Add to Watchlist</span>';
+          btn.classList.toggle('saved', saved);
+          btn.title = saved ? 'Remove from watchlist' : 'Save to watchlist';
+        });
+      } catch { /* silent */ }
+    }
 
     // ── Recently Viewed ───────────────────────────────────────────────────────
     function renderRecentlyViewed() {
@@ -2200,13 +2235,15 @@
             const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
             if (uRow) { authUsername = uRow.username; localStorage.setItem('aniscout_username', authUsername); }
           }
+          updateProfileButton();
+          syncWatchlistFromSupabase();
         } else {
           currentUser = null;
           authUsername = null;
           localStorage.removeItem('aniscout_username');
           localStorage.removeItem('aniscout_session');
+          updateProfileButton();
         }
-        updateProfileButton();
       } catch { /* silent — auth features just won't work */ }
     })();
 
@@ -2278,6 +2315,7 @@
         localStorage.setItem('aniscout_session', JSON.stringify({ username: authUsername, userId: currentUser.id }));
         document.getElementById('modal-username').classList.remove('open');
         updateProfileButton();
+        syncWatchlistFromSupabase();
       } catch (e) {
         err.textContent = e.message || 'Sign-in failed. Try again.';
         btn.disabled = false; btn.textContent = 'Enter AniScout →';
@@ -2298,8 +2336,10 @@
     async function doSignOut() {
       localStorage.removeItem('aniscout_username');
       localStorage.removeItem('aniscout_session');
+      saveWatchlistData([]);
       authUsername = null; currentUser = null;
       if (sb) { try { await sb.auth.signOut(); } catch { /* ignore */ } }
+      renderWatchlist();
       document.getElementById('settings-panel').classList.remove('open');
       document.getElementById('nav-profile-dropdown').classList.remove('open');
       updateProfileButton();
