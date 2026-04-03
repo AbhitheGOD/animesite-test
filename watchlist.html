@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Watchlist — AniScout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/shared.css" />
+  <style>
+    :root {
+      --red:    #E8272A;
+      --orange: #F5A01A;
+      --dark:   #08080E;
+      --surface:#111119;
+      --raised: #18182A;
+      --border: rgba(255,255,255,0.07);
+      --text:   #F0F0F8;
+      --muted:  #7878A0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.03em; line-height: 1.05; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 64px;
+      background: rgba(8,8,14,0.85);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.08em; text-decoration: none; color: var(--text); }
+    .nav-logo span { color: var(--red); }
+    .nav-actions { display: flex; align-items: center; gap: 20px; }
+    .nav-back {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 0.88rem; text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--text); }
+    .nav-back svg { width: 16px; height: 16px; }
+
+    /* NAV PROFILE BUTTON */
+    .nav-profile-wrap { position: relative; }
+    .nav-profile-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 12px; background: none;
+      border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 500; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .nav-profile-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .nav-profile-btn svg { width: 14px; height: 14px; }
+    .nav-profile-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px; min-width: 170px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7); z-index: 300;
+    }
+    .nav-profile-dropdown.open { display: block; }
+    .profile-drop-user {
+      padding: 6px 10px 10px; font-size: 0.8rem; color: var(--muted);
+      border-bottom: 1px solid var(--border); margin-bottom: 6px;
+      font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .profile-drop-link {
+      display: block; padding: 8px 10px; font-size: 0.85rem; color: var(--text);
+      text-decoration: none; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-link:hover { background: var(--raised); }
+    .profile-drop-logout {
+      display: block; width: 100%; padding: 8px 10px; font-size: 0.85rem;
+      color: var(--red); background: none; border: none;
+      font-family: 'DM Sans', sans-serif; font-weight: 500;
+      text-align: left; cursor: pointer; border-radius: 7px; transition: background 0.15s;
+    }
+    .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
+
+    /* PAGE */
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 100px 40px 80px; }
+
+    /* PAGE HEADER */
+    .page-header { margin-bottom: 36px; }
+    .page-title { font-size: clamp(2.4rem, 6vw, 4rem); color: var(--text); line-height: 1; }
+    .page-subtitle { font-size: 0.92rem; color: var(--muted); margin-top: 6px; }
+
+    /* FILTER BAR */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+    .filter-pill {
+      padding: 7px 18px; border-radius: 40px; font-size: 0.85rem; font-weight: 600;
+      border: 1px solid var(--border); background: var(--raised);
+      color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .filter-pill:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .filter-pill.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+    /* CARD GRID */
+    .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+
+    /* CARD */
+    .wl-card { position: relative; }
+    .wl-card-img-link { display: block; text-decoration: none; }
+    .wl-card-img {
+      position: relative; border-radius: 10px; overflow: hidden;
+      aspect-ratio: 2/3;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .wl-card:hover .wl-card-img {
+      transform: translateY(-5px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(232,39,42,0.1);
+    }
+    .wl-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .wl-card:hover .wl-card-img img { transform: scale(1.06); }
+    .wl-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(8,8,14,0.85) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .wl-no-img {
+      width: 100%; height: 100%; background: var(--raised);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 0.75rem;
+    }
+
+    /* Score badge */
+    .wl-score {
+      position: absolute; top: 8px; left: 8px;
+      background: rgba(8,8,14,0.85); color: var(--orange);
+      font-size: 0.75rem; font-weight: 700; padding: 3px 7px; border-radius: 5px;
+      pointer-events: none;
+    }
+
+    /* Status badge */
+    .wl-status-badge {
+      position: absolute; top: 8px; right: 8px;
+      font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 5px;
+      text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none;
+    }
+    .wl-status-badge.s-watching  { background: rgba(59,130,246,0.25); color: #93c5fd; border: 1px solid rgba(59,130,246,0.4); }
+    .wl-status-badge.s-completed { background: rgba(34,197,94,0.2);   color: #86efac; border: 1px solid rgba(34,197,94,0.35); }
+    .wl-status-badge.s-plan      { background: rgba(245,160,26,0.18); color: var(--orange); border: 1px solid rgba(245,160,26,0.35); }
+
+    /* Remove button */
+    .wl-remove {
+      position: absolute; bottom: 8px; right: 8px; z-index: 10;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(8,8,14,0.8); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s, background 0.2s, color 0.2s;
+    }
+    .wl-card:hover .wl-remove { opacity: 1; }
+    .wl-remove:hover { background: rgba(232,39,42,0.85); color: #fff; border-color: transparent; }
+
+    /* Status dropdown — slides up on card hover */
+    .wl-status-dropdown {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+      background: rgba(8,8,14,0.96);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0 0 10px 10px;
+      padding: 4px 0;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+    }
+    .wl-card:hover .wl-status-dropdown {
+      opacity: 1; transform: translateY(0);
+      pointer-events: auto;
+    }
+    .wl-status-option {
+      display: block; width: 100%; padding: 7px 12px;
+      background: none; border: none; text-align: left;
+      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+      color: var(--muted); cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .wl-status-option:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+    .wl-status-option.current { color: var(--text); font-weight: 600; }
+
+    /* Card body */
+    .wl-card-body { padding: 10px 4px 0; text-decoration: none; display: block; }
+    .wl-card-title {
+      font-weight: 600; font-size: 0.88rem; color: var(--text); line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .wl-card-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* LOADING / ERROR */
+    .state-center {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 60vh; gap: 16px; color: var(--muted); text-align: center;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid var(--border);
+      border-top-color: var(--red); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* BUTTONS */
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; background: var(--red); border: none;
+      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: opacity 0.2s; box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+    }
+    .cta-btn:hover { opacity: 0.88; }
+    .cta-btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 26px; background: none; border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: border-color 0.2s;
+    }
+    .cta-btn-ghost:hover { border-color: rgba(255,255,255,0.25); }
+
+    /* USERNAME MODAL */
+    .modal-bd {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(8,8,14,0.92); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px); align-items: center; justify-content: center;
+    }
+    .modal-bd.open { display: flex; }
+    .modal-card {
+      background: var(--surface); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; padding: 40px; width: min(440px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    }
+    .modal-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+    .modal-title { font-size: 2.2rem; font-family: 'Bebas Neue', sans-serif; color: var(--text); margin-bottom: 8px; }
+    .modal-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; line-height: 1.65; }
+    .modal-err { color: var(--red); font-size: 0.85rem; margin-bottom: 12px; min-height: 20px; }
+    .modal-input {
+      width: 100%; padding: 12px 16px; background: var(--raised);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+    }
+    .modal-input:focus { border-color: rgba(232,39,42,0.5); }
+    .modal-input::placeholder { color: var(--muted); }
+    .modal-btn {
+      width: 100%; padding: 13px; background: var(--red); border: none;
+      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+    }
+    .modal-btn:hover:not(:disabled) { opacity: 0.9; }
+    .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .modal-warn {
+      font-size: 0.8rem; color: var(--muted); margin-top: 18px; padding: 12px 14px;
+      background: rgba(245,160,26,0.06); border-radius: 8px;
+      border: 1px solid rgba(245,160,26,0.15); line-height: 1.6;
+    }
+    .modal-warn strong { color: var(--orange); }
+
+    /* SETTINGS */
+    .settings-fab {
+      position: fixed; bottom: 20px; right: 20px; z-index: 200;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--raised); border: 1px solid var(--border);
+      color: var(--muted); font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .settings-fab:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    .settings-panel {
+      display: none; position: fixed; bottom: 68px; right: 20px; z-index: 200;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; width: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .settings-panel.open { display: block; }
+    .settings-info { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+    .settings-logout-btn {
+      width: 100%; padding: 8px 12px;
+      background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.25);
+      border-radius: 8px; color: var(--red); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .settings-logout-btn:hover { background: rgba(232,39,42,0.2); }
+    #settings-logout-btn { display: none; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border); padding: 32px 40px;
+      background: var(--dark); margin-top: 60px;
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.08em; }
+    .footer-logo span { color: var(--red); }
+    .footer-copy { font-size: 0.8rem; color: rgba(120,120,160,0.5); }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .page-wrap { padding: 90px 20px 60px; }
+      .watchlist-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="nav-logo">ANI<span>SCOUT</span></a>
+    <div class="nav-actions">
+      <a href="/" class="nav-back">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 12L6 8l4-4"/>
+        </svg>
+        Browse Anime
+      </a>
+      <div class="nav-profile-wrap">
+        <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="nav-profile-label">Login</span>
+        </button>
+        <div id="nav-profile-dropdown" class="nav-profile-dropdown">
+          <div class="profile-drop-user" id="profile-drop-user"></div>
+          <a href="/watchlist.html" class="profile-drop-link">My Watchlist</a>
+          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Logout</button>
+        </div>
+      </div>
+    </div>
+    <button type="button" id="hamburger-btn" class="hamburger-btn" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- MOBILE NAV MENU -->
+  <div id="mobile-nav-menu" class="mobile-nav-menu">
+    <a href="/">Home / Search</a>
+    <a href="/watchlist.html">My Watchlist</a>
+    <button type="button" class="mob-nav-item" onclick="document.getElementById('mobile-nav-menu').classList.remove('open');document.getElementById('hamburger-btn').classList.remove('open');toggleProfileDropdown()">
+      <span id="mob-profile-label">Login / Profile</span>
+    </button>
+  </div>
+
+  <!-- USERNAME MODAL -->
+  <div id="modal-username" class="modal-bd">
+    <div class="modal-card">
+      <div class="modal-label">Welcome to AniScout</div>
+      <h2 class="modal-title" id="modal-username-title">PICK A USERNAME</h2>
+      <p class="modal-sub" id="modal-username-sub">Choose how your friends will see you. Save your watchlist across any device.</p>
+      <div class="modal-err" id="err-username"></div>
+      <input class="modal-input" id="input-username" placeholder="e.g. SailorMoon42" maxlength="24" autocomplete="off" spellcheck="false" />
+      <input class="modal-input" id="input-pin" placeholder="Set a 4–8 digit PIN" maxlength="8" autocomplete="off" inputmode="numeric" type="password" />
+      <button type="button" class="modal-btn" id="btn-username" onclick="submitUsername()">Save to Watchlist →</button>
+      <div class="modal-warn"><strong>Your PIN</strong> lets you access your watchlist from any device.</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings-panel" class="settings-panel">
+    <div id="settings-info" class="settings-info">Not signed in</div>
+    <button type="button" onclick="doSignOut()" id="settings-logout-btn" class="settings-logout-btn">Sign Out</button>
+  </div>
+  <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
+
+  <!-- MAIN CONTENT -->
+  <div class="page-wrap">
+    <div id="app">
+      <div class="state-center">
+        <div class="spinner"></div>
+        <p>Loading your watchlist…</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-logo">ANI<span>SCOUT</span></div>
+      <div class="footer-copy">© 2025 AniScout. Data from MyAnimeList & AniList.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ── State ─────────────────────────────────────────────────────────────────────
+    let sb = null;
+    let currentUser = null;
+    let username = null;
+    let watchlistItems = [];
+    let activeFilter = 'all';
+
+    // ── Supabase init ─────────────────────────────────────────────────────────────
+    async function initSupabase() {
+      try {
+        const res = await fetch('/api/supabase-config');
+        const config = await res.json();
+        if (!config.url || !config.anonKey) { showSignInState(); return; }
+        sb = supabase.createClient(config.url, config.anonKey);
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          currentUser = session.user;
+          username = localStorage.getItem('aniscout_username');
+          if (!username) {
+            const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+            if (uRow) { username = uRow.username; localStorage.setItem('aniscout_username', username); }
+          }
+          updateSettingsPanel();
+          loadWatchlist();
+        } else {
+          updateSettingsPanel();
+          showSignInState();
+        }
+      } catch {
+        updateSettingsPanel();
+        showSignInState();
+      }
+    }
+
+    // ── Load watchlist ────────────────────────────────────────────────────────────
+    async function loadWatchlist() {
+      try {
+        const { data, error } = await sb.from('watchlist')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        watchlistItems = data || [];
+        renderPage();
+      } catch {
+        document.getElementById('app').innerHTML = `
+          <div class="state-center">
+            <p style="color:var(--red)">Failed to load watchlist.</p>
+            <a href="/" class="cta-btn-ghost">Browse Anime</a>
+          </div>`;
+      }
+    }
+
+    // ── Render page ───────────────────────────────────────────────────────────────
+    function renderPage() {
+      const total = watchlistItems.length;
+      const filtered = activeFilter === 'all'
+        ? watchlistItems
+        : watchlistItems.filter(item => normalizeStatus(item.status) === activeFilter);
+
+      document.getElementById('app').innerHTML = `
+        <div class="page-header">
+          <h1 class="page-title">MY WATCHLIST</h1>
+          <p class="page-subtitle">${total} ${total === 1 ? 'title' : 'titles'}</p>
+        </div>
+        <div class="filter-bar">
+          ${['all','watching','completed','plan'].map(f => `
+            <button type="button" class="filter-pill${activeFilter === f ? ' active' : ''}" onclick="setFilter('${f}')">
+              ${filterLabel(f)}
+            </button>`).join('')}
+        </div>
+        <div class="watchlist-grid">
+          ${filtered.length === 0 ? renderEmpty() : filtered.map(renderCard).join('')}
+        </div>`;
+    }
+
+    function filterLabel(f) {
+      return { all: 'All', watching: 'Watching', completed: 'Completed', plan: 'Plan to Watch' }[f];
+    }
+
+    function normalizeStatus(status) {
+      if (!status) return 'plan';
+      const s = status.toLowerCase();
+      if (s === 'watching') return 'watching';
+      if (s === 'completed') return 'completed';
+      return 'plan';
+    }
+
+    function renderCard(item) {
+      const ns = normalizeStatus(item.status);
+      const badgeClass = { watching: 's-watching', completed: 's-completed', plan: 's-plan' }[ns];
+      const badgeText  = { watching: 'Watching', completed: 'Completed', plan: 'Plan to Watch' }[ns];
+
+      const statuses = [
+        { val: 'Watching',      norm: 'watching' },
+        { val: 'Completed',     norm: 'completed' },
+        { val: 'Plan to Watch', norm: 'plan'      },
+      ];
+
+      const imgHtml = item.poster
+        ? `<img src="${escHtml(item.poster)}" alt="${escHtml(item.title)}" loading="lazy" onerror="this.style.display='none'">`
+        : `<div class="wl-no-img">No Image</div>`;
+
+      return `
+        <div class="wl-card" data-id="${escHtml(item.id)}">
+          <a href="/anime.html?id=${item.mal_id}" class="wl-card-img-link">
+            <div class="wl-card-img">
+              ${imgHtml}
+              <div class="wl-card-overlay"></div>
+              ${item.score ? `<span class="wl-score">★ ${parseFloat(item.score).toFixed(1)}</span>` : ''}
+              <span class="wl-status-badge ${badgeClass}">${badgeText}</span>
+              <div class="wl-status-dropdown">
+                ${statuses.map(s => `
+                  <button type="button" class="wl-status-option${ns === s.norm ? ' current' : ''}"
+                    onclick="event.preventDefault();event.stopPropagation();updateStatus('${escHtml(item.id)}','${s.val}',this)">
+                    ${s.val}
+                  </button>`).join('')}
+              </div>
+              <button type="button" class="wl-remove"
+                onclick="event.preventDefault();event.stopPropagation();removeItem('${escHtml(item.id)}')"
+                title="Remove from watchlist">×</button>
+            </div>
+          </a>
+          <a href="/anime.html?id=${item.mal_id}" class="wl-card-body">
+            <div class="wl-card-title">${escHtml(item.title)}</div>
+            ${item.year ? `<div class="wl-card-meta">${item.year}</div>` : ''}
+          </a>
+        </div>`;
+    }
+
+    function renderEmpty() {
+      if (activeFilter !== 'all' && watchlistItems.length > 0) {
+        return `<div style="grid-column:1/-1;padding:60px 0;text-align:center;color:var(--muted)">
+          No ${filterLabel(activeFilter)} titles yet.
+        </div>`;
+      }
+      return `<div style="grid-column:1/-1">
+        <div class="state-center" style="min-height:50vh">
+          <div class="empty-state-illus">
+            <div class="empty-illus-wrap">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <rect x="10" y="10" width="28" height="40" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+                <rect x="18" y="7" width="28" height="40" rx="4" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
+                <rect x="26" y="14" width="28" height="40" rx="4" fill="var(--raised)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+                <path d="M36 30l-3 3 3 3M44 30l3 3-3 3" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="52" cy="50" r="9" fill="var(--red)" opacity="0.9"/>
+                <path d="M52 47v4l2.5 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="empty-illus-title">NOTHING HERE YET</div>
+            <p class="empty-illus-sub">Your watchlist is empty. Start adding anime you want to track.</p>
+            <div class="empty-illus-btns">
+              <a href="/" class="cta-btn">Browse Anime</a>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function showSignInState() {
+      document.getElementById('app').innerHTML = `
+        <div class="state-center">
+          <div class="empty-state-illus">
+            <div class="empty-illus-wrap">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="24" r="12" fill="var(--raised)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+                <path d="M10 54c0-12 9.85-21 22-21s22 9 22 21" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="32" cy="24" r="5" fill="var(--red)" opacity="0.85"/>
+              </svg>
+            </div>
+            <div class="empty-illus-title">SIGN IN TO SEE YOUR WATCHLIST</div>
+            <p class="empty-illus-sub">Create a free account to track anime, save your progress, and sync across devices.</p>
+            <div class="empty-illus-btns">
+              <button type="button" class="cta-btn" onclick="openSignInModal()">Sign In / Register</button>
+              <a href="/" class="cta-btn-ghost">Browse Anime</a>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ── Filters ───────────────────────────────────────────────────────────────────
+    function setFilter(f) {
+      activeFilter = f;
+      renderPage();
+    }
+
+    // ── Update status ─────────────────────────────────────────────────────────────
+    async function updateStatus(id, newStatus) {
+      if (!sb) return;
+      const item = watchlistItems.find(i => i.id === id);
+      if (item) item.status = newStatus;
+      renderPage();
+      await sb.from('watchlist').update({ status: newStatus }).eq('id', id);
+    }
+
+    // ── Remove item ───────────────────────────────────────────────────────────────
+    async function removeItem(id) {
+      if (!sb) return;
+      watchlistItems = watchlistItems.filter(i => i.id !== id);
+      renderPage();
+      await sb.from('watchlist').delete().eq('id', id);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function openSignInModal() {
+      document.getElementById('modal-username').classList.add('open');
+      setTimeout(() => document.getElementById('input-username').focus(), 50);
+    }
+
+    // ── Username modal (exact same logic as anime.html) ───────────────────────────
+    function usernameToEmail(name) {
+      return name.toLowerCase().replace(/ /g, '~') + '@aniscout.local';
+    }
+
+    async function submitUsername() {
+      const input    = document.getElementById('input-username');
+      const pinInput = document.getElementById('input-pin');
+      const btn      = document.getElementById('btn-username');
+      const err      = document.getElementById('err-username');
+      const name     = input.value.trim();
+      const pin      = pinInput.value.trim();
+
+      err.textContent = '';
+      if (name.length < 2)  { err.textContent = 'At least 2 characters please.'; return; }
+      if (name.length > 24) { err.textContent = 'Max 24 characters.'; return; }
+      if (!/^[a-zA-Z0-9_\- ]+$/.test(name)) { err.textContent = 'Letters, numbers, spaces, _ and - only.'; return; }
+      if (pin.length < 4)   { err.textContent = 'PIN must be at least 4 digits.'; return; }
+      if (!/^\d+$/.test(pin)) { err.textContent = 'PIN must be digits only.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+
+      const email = usernameToEmail(name);
+
+      try {
+        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
+
+        if (signUpErr || !signUpData?.user) {
+          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
+          if (signInErr) {
+            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
+            err.textContent = row
+              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
+              : 'Sign-in failed. Try again.';
+            btn.disabled = false;
+            btn.textContent = 'Save to Watchlist →';
+            return;
+          }
+          currentUser = signInData.user;
+          const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
+          username = uRow?.username || name;
+
+        } else {
+          currentUser = signUpData.user;
+          const { error: claimErr } = await sb.from('usernames')
+            .insert({ username: name, user_id: currentUser.id });
+
+          if (claimErr) {
+            await sb.auth.signOut();
+            currentUser = null;
+            if (claimErr.code === '23505') {
+              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
+              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
+              document.getElementById('input-username').disabled = true;
+              err.textContent = '';
+            } else {
+              err.textContent = claimErr.message || 'Could not claim username.';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Sign In →';
+            return;
+          }
+          username = name;
+        }
+
+        localStorage.setItem('aniscout_username', username);
+        localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
+        document.getElementById('modal-username').classList.remove('open');
+        updateSettingsPanel();
+        loadWatchlist();
+
+      } catch (e) {
+        err.textContent = e.message || 'Sign-in failed. Try again.';
+        btn.disabled = false;
+        btn.textContent = 'Save to Watchlist →';
+      }
+    }
+
+    // ── Settings panel ────────────────────────────────────────────────────────────
+    function toggleSettings() {
+      document.getElementById('settings-panel').classList.toggle('open');
+    }
+    function updateSettingsPanel() {
+      const info        = document.getElementById('settings-info');
+      const logoutBtn   = document.getElementById('settings-logout-btn');
+      const profileLabel = document.getElementById('nav-profile-label');
+      const profileUser  = document.getElementById('profile-drop-user');
+      if (username) {
+        info.textContent = `Signed in as ${username}`;
+        logoutBtn.style.display = 'block';
+        if (profileLabel) profileLabel.textContent = username;
+        if (profileUser)  profileUser.textContent  = username;
+      } else {
+        info.textContent = 'Not signed in';
+        logoutBtn.style.display = 'none';
+        if (profileLabel) profileLabel.textContent = 'Login';
+        if (profileUser)  profileUser.textContent  = '';
+      }
+    }
+    function toggleProfileDropdown() {
+      if (!currentUser || !username) { openSignInModal(); return; }
+      document.getElementById('nav-profile-dropdown').classList.toggle('open');
+    }
+    async function doSignOut() {
+      if (sb) await sb.auth.signOut();
+      localStorage.removeItem('aniscout_username');
+      localStorage.removeItem('aniscout_session');
+      currentUser = null;
+      username = null;
+      watchlistItems = [];
+      document.getElementById('settings-panel').classList.remove('open');
+      document.getElementById('nav-profile-dropdown').classList.remove('open');
+      updateSettingsPanel();
+      showSignInState();
+    }
+
+    document.addEventListener('click', e => {
+      const panel = document.getElementById('settings-panel');
+      const fab   = document.querySelector('.settings-fab');
+      if (panel && fab && !panel.contains(e.target) && !fab.contains(e.target)) {
+        panel.classList.remove('open');
+      }
+      const profileWrap = document.querySelector('.nav-profile-wrap');
+      if (profileWrap && !profileWrap.contains(e.target)) {
+        const dd = document.getElementById('nav-profile-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+    });
+
+    document.getElementById('input-username').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('input-pin').focus();
+    });
+    document.getElementById('input-pin').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitUsername();
+    });
+
+    // ── Boot ──────────────────────────────────────────────────────────────────────
+    initSupabase();
+  </script>
+  <script src="/assets/shared.js"></script>
+</body>
+</html>

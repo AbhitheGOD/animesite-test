@@ -1152,16 +1152,28 @@
 
     /* ── Watchlist button on cards ── */
     .watchlist-btn {
-      position: absolute; bottom: 8px; right: 8px;
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(8,8,14,0.85); border: 1px solid rgba(255,255,255,0.15);
+      position: absolute; top: 8px; left: 8px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(8,8,14,0.75); border: 1px solid rgba(255,255,255,0.12);
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; font-size: 0.85rem; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
-      transition: background 0.2s, border-color 0.2s, transform 0.15s;
-      z-index: 2; color: var(--text); line-height: 1;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      z-index: 3; color: white; line-height: 1;
+      opacity: 0; pointer-events: none;
     }
-    .watchlist-btn:hover { background: rgba(232,39,42,0.85); border-color: var(--red); transform: scale(1.15); }
-    .watchlist-btn.saved { background: rgba(232,39,42,0.85); border-color: var(--red); }
+    .watchlist-btn:hover { transform: scale(1.15); }
+    .watchlist-btn.saved { color: var(--red); }
+    .anime-card:hover .watchlist-btn,
+    .disc-card:hover .watchlist-btn { opacity: 1; pointer-events: auto; }
+    .watchlist-tooltip {
+      position: absolute; top: -28px; left: 50%; transform: translateX(-50%);
+      background: rgba(8,8,14,0.9); color: #fff;
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em;
+      white-space: nowrap; padding: 3px 7px; border-radius: 4px;
+      pointer-events: none; opacity: 0; transition: opacity 0.15s ease;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .watchlist-btn:hover .watchlist-tooltip { opacity: 1; }
 
     /* ── Watchlist section ── */
     #watchlist-section {
@@ -1586,11 +1598,11 @@
       const idx = list.findIndex(a => a.malId === malId);
       if (idx === -1) {
         list.unshift({ malId, title, poster, score, year });
-        btn.textContent = '♥'; btn.classList.add('saved');
+        btn.innerHTML = '♥<span class="watchlist-tooltip">Saved</span>'; btn.classList.add('saved');
         btn.title = 'Remove from watchlist';
       } else {
         list.splice(idx, 1);
-        btn.textContent = '♡'; btn.classList.remove('saved');
+        btn.innerHTML = '♡<span class="watchlist-tooltip">Add to Watchlist</span>'; btn.classList.remove('saved');
         btn.title = 'Add to watchlist';
       }
       saveWatchlistData(list);
@@ -1618,7 +1630,7 @@
             <button class="watchlist-btn saved"
               data-malid="${a.malId}" data-title="${(a.title||'').replace(/"/g,'&quot;')}"
               data-poster="${a.poster||''}" data-score="${a.score||0}" data-year="${a.year||0}"
-              onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)" title="Remove from watchlist">♥</button>
+              onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)" title="Remove from watchlist">♥<span class="watchlist-tooltip">Saved</span></button>
           </div>
           <div class="card-body">
             <div class="card-title">${a.title||'Unknown'}</div>
@@ -1834,7 +1846,7 @@
             data-score="${anime.score || 0}"
             data-year="${anime.year || 0}"
             onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)"
-            title="${isSaved ? 'Remove from watchlist' : 'Save to watchlist'}">${isSaved ? '♥' : '♡'}</button>
+            title="${isSaved ? 'Remove from watchlist' : 'Save to watchlist'}">${isSaved ? '♥' : '♡'}<span class="watchlist-tooltip">${isSaved ? 'Saved' : 'Add to Watchlist'}</span></button>
         </div>
         <div class="card-body">
           <div class="card-title">${anime.title || 'Unknown'}</div>
@@ -1984,6 +1996,10 @@
       const rawDesc = (anime.description || '').replace(/<[^>]+>/g, '').trim();
       const desc = rawDesc.length > 160 ? rawDesc.substring(0, 157) + '…' : rawDesc || 'No description available.';
 
+      const isSaved = getWatchlist().some(a => a.malId === anime.idMal);
+      const discScore = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 0;
+      const discYear = anime.startDate?.year || 0;
+
       const card = document.createElement('a');
       card.className = 'disc-card fade-up';
       card.href = href;
@@ -1994,6 +2010,14 @@
           onerror="this.style.display='none';this.parentElement.style.background='var(--raised)';this.parentElement.querySelector('.disc-card-title').style.cssText='position:absolute;bottom:16px;left:12px;right:12px;font-size:0.85rem'">
         <div class="disc-card-gradient"></div>
         ${score ? `<div class="disc-card-score">${score}</div>` : ''}
+        <button class="watchlist-btn ${isSaved ? 'saved' : ''}"
+          data-malid="${anime.idMal || 0}"
+          data-title="${safeTitle}"
+          data-poster="${img}"
+          data-score="${discScore}"
+          data-year="${discYear}"
+          onclick="event.preventDefault();event.stopPropagation();toggleWatchlist(this)"
+          title="${isSaved ? 'Remove from watchlist' : 'Save to watchlist'}">${isSaved ? '♥' : '♡'}<span class="watchlist-tooltip">${isSaved ? 'Saved' : 'Add to Watchlist'}</span></button>
         <div class="disc-card-genres">${genres.map(g => `<span class="disc-card-genre">${g}</span>`).join('')}</div>
         <div class="disc-card-title">${title}</div>
         <div class="disc-card-overlay">
