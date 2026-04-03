@@ -1684,14 +1684,16 @@
         if (!recent.length) return;
         const bar = document.getElementById('recently-viewed-bar');
         const row = document.getElementById('recent-row');
-        row.innerHTML = recent.map(a => `
+        const preview = recent.slice(0, 3);
+        row.innerHTML = preview.map(a => `
           <a href="/anime.html?id=${a.malId}" class="recent-item">
             ${a.poster ? `<img class="recent-thumb" src="${a.poster}" alt="${a.title}" loading="lazy" onerror="this.style.display='none'">` : ''}
             <div class="recent-info">
               <div class="recent-title">${a.title || 'Unknown'}</div>
               <div class="recent-year">${a.year || ''}</div>
             </div>
-          </a>`).join('');
+          </a>`).join('')
+          + (recent.length > 3 ? `<a href="/history.html" class="recent-item recent-view-all">View all <span style="color:var(--red)">${recent.length}</span> →</a>` : '');
         bar.style.display = 'block';
       } catch {}
     }
@@ -2367,6 +2369,7 @@
   <!-- SETTINGS -->
   <div id="settings-panel" class="settings-panel">
     <div id="settings-info" class="settings-info">Not signed in</div>
+    <a href="/history.html" style="display:block;padding:8px 12px;font-size:0.82rem;color:var(--muted);text-decoration:none;border-radius:6px;transition:background 0.15s;margin-bottom:4px" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">🕐 Watch History</a>
     <button type="button" onclick="doSignOut()" id="settings-logout-btn" class="settings-logout-btn">Sign Out</button>
   </div>
   <button type="button" onclick="toggleSettings()" class="settings-fab" title="Settings">⚙</button>
