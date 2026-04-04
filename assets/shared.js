@@ -252,10 +252,10 @@ async function chatWidgetOpenRoom(roomId, roomName) {
   const { data: msgs } = await _widgetSb.from('messages')
     .select('id, content, username, user_id, created_at')
     .eq('room_id', roomId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(40);
 
-  chatWidgetRenderMessages(msgs || []);
+  chatWidgetRenderMessages((msgs || []).reverse());
 
   if (_widgetChannel) _widgetSb.removeChannel(_widgetChannel);
   _widgetChannel = _widgetSb.channel('widget-room-' + roomId)
