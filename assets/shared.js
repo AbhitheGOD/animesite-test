@@ -226,9 +226,58 @@ async function chatWidgetShowRoomList() {
         if (!_widgetActiveRoomId && document.getElementById('chat-widget-panel').classList.contains('open')) {
           chatWidgetShowRoomList();
         }
+        // Show popup toast if panel is closed
+        const panel = document.getElementById('chat-widget-panel');
+        if (!panel.classList.contains('open')) {
+          chatWidgetShowNotif(payload.new, r);
+        }
       })
       .subscribe();
   });
+}
+
+let _notifTimer = null;
+let _notifEl = null;
+
+function chatWidgetShowNotif(msg, room) {
+  // Dismiss any existing toast immediately
+  if (_notifEl) {
+    clearTimeout(_notifTimer);
+    _notifEl.remove();
+    _notifEl = null;
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'chat-notif-toast';
+  const safeName = room.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeUser = (msg.username || 'Someone').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeText = (msg.content || '').slice(0, 60).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  toast.innerHTML = '<div class="chat-notif-room">' + safeName + '</div>'
+    + '<div class="chat-notif-line"><span class="chat-notif-name">' + safeUser + '</span>' + safeText + '</div>'
+    + '<span class="chat-notif-close">✕</span>';
+
+  toast.addEventListener('click', function (e) {
+    if (e.target.classList.contains('chat-notif-close')) {
+      dismissNotif(toast);
+      return;
+    }
+    dismissNotif(toast);
+    const panel = document.getElementById('chat-widget-panel');
+    if (!panel.classList.contains('open')) panel.classList.add('open');
+    chatWidgetOpenRoom(room.id, room.name);
+  });
+
+  document.body.appendChild(toast);
+  _notifEl = toast;
+
+  _notifTimer = setTimeout(function () { dismissNotif(toast); }, 5000);
+}
+
+function dismissNotif(toast) {
+  if (!toast || !toast.parentNode) return;
+  toast.classList.add('hiding');
+  setTimeout(function () { if (toast.parentNode) toast.remove(); }, 260);
+  if (_notifEl === toast) _notifEl = null;
 }
 
 async function chatWidgetOpenRoom(roomId, roomName) {

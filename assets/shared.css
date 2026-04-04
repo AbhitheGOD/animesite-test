@@ -248,3 +248,31 @@ button:not(.hamburger-btn):active,
   transition: opacity 0.2s;
 }
 #chat-widget-send:hover { opacity: 0.85; }
+
+/* ── Chat Message Notification Toast ─────────────────────────────────────── */
+.chat-notif-toast {
+  position: fixed; bottom: 84px; left: 24px; z-index: 1100;
+  background: #18182A; border: 1px solid rgba(232,39,42,0.35);
+  border-left: 3px solid #E8272A;
+  border-radius: 12px; padding: 10px 14px;
+  width: 260px; cursor: pointer;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  animation: chatNotifIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.chat-notif-toast.hiding {
+  animation: chatNotifOut 0.25s ease forwards;
+}
+@keyframes chatNotifIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+@keyframes chatNotifOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(10px); }
+}
+.chat-notif-room  { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #E8272A; margin-bottom: 3px; }
+.chat-notif-line  { font-size: 0.82rem; color: #F0F0F8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-notif-name  { font-weight: 700; color: #F5A01A; margin-right: 4px; }
+.chat-notif-close { position: absolute; top: 8px; right: 10px; font-size: 0.75rem; color: #7878A0; line-height: 1; }
