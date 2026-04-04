@@ -260,6 +260,7 @@ async function chatWidgetOpenRoom(roomId, roomName) {
   if (_widgetChannel) _widgetSb.removeChannel(_widgetChannel);
   _widgetChannel = _widgetSb.channel('widget-room-' + roomId)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: 'room_id=eq.' + roomId }, function (payload) {
+      if (_widgetUser && payload.new.user_id === _widgetUser.id) return;
       chatWidgetAppendMessage(payload.new);
     })
     .subscribe();
@@ -300,12 +301,25 @@ async function chatWidgetSend() {
   const content = (input.value || '').trim();
   if (!content || !_widgetActiveRoomId || !_widgetUser) return;
   input.value = '';
-  await _widgetSb.from('messages').insert({
+
+  // Optimistically render own message immediately
+  chatWidgetAppendMessage({
+    id: 'tmp-' + Date.now(),
+    room_id: _widgetActiveRoomId,
+    user_id: _widgetUser.id,
+    username: _widgetUsername || 'You',
+    content: content,
+    created_at: new Date().toISOString()
+  });
+
+  const { error } = await _widgetSb.from('messages').insert({
     room_id: _widgetActiveRoomId,
     user_id: _widgetUser.id,
     username: _widgetUsername,
     content: content
   });
+
+  if (error) console.error('Widget send failed:', error.message);
 }
 
 // ── Scroll Reveal (pages without their own IntersectionObserver) ──────────────
