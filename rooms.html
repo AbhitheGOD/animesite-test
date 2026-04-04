@@ -453,7 +453,18 @@
           username = uRow?.username || name;
 
         } else {
-          // New account created — claim username in DB
+          // New account created — but if email confirmation is on, session may be null.
+          // Force a sign-in to get a valid session before touching the DB.
+          if (!signUpData.session) {
+            const { data: siData, error: siErr } = await sb.auth.signInWithPassword({ email, password: pin });
+            if (siErr || !siData?.user) {
+              err.textContent = 'Account created but could not establish session. Please enter your PIN to sign in.';
+              document.getElementById('input-username').disabled = true;
+              btn.disabled = false; btn.textContent = 'Sign In →'; return;
+            }
+            signUpData.user = siData.user;
+          }
+          // Claim username in DB
           currentUser = signUpData.user;
           const { error: claimErr } = await sb.from('usernames')
             .insert({ username: name, user_id: currentUser.id });

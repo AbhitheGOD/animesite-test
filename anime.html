@@ -604,6 +604,15 @@
           username = uRow?.username || name;
 
         } else {
+          if (!signUpData.session) {
+            const { data: siData, error: siErr } = await sb.auth.signInWithPassword({ email, password: pin });
+            if (siErr || !siData?.user) {
+              err.textContent = 'Account created but could not establish session. Please enter your PIN to sign in.';
+              document.getElementById('input-username').disabled = true;
+              btn.disabled = false; btn.textContent = 'Sign In →'; return;
+            }
+            signUpData.user = siData.user;
+          }
           currentUser = signUpData.user;
           const { error: claimErr } = await sb.from('usernames')
             .insert({ username: name, user_id: currentUser.id });

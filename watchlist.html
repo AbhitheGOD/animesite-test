@@ -439,7 +439,7 @@
       const { data: items } = await sb.from('watchlist')
         .select('*')
         .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+        .order('added_at', { ascending: false });
 
       // If Supabase is empty but localStorage has items, push them up first
       if ((!items || items.length === 0)) {
@@ -459,7 +459,7 @@
           const { data: synced } = await sb.from('watchlist')
             .select('*')
             .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false });
+            .order('added_at', { ascending: false });
           allItems = synced || [];
         } else {
           allItems = [];
@@ -693,6 +693,15 @@
           const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
           username = uRow?.username || name;
         } else {
+          if (!signUpData.session) {
+            const { data: siData, error: siErr } = await sb.auth.signInWithPassword({ email, password: pin });
+            if (siErr || !siData?.user) {
+              err.textContent = 'Account created but could not establish session. Please enter your PIN to sign in.';
+              document.getElementById('input-username').disabled = true;
+              btn.disabled = false; btn.textContent = 'Sign In →'; return;
+            }
+            signUpData.user = siData.user;
+          }
           currentUser = signUpData.user;
           const { error: claimErr } = await sb.from('usernames').insert({ username: name, user_id: currentUser.id });
           if (claimErr) {
