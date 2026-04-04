@@ -151,18 +151,27 @@ function toggleChatWidget() {
     chatWidgetShowRoomList();
   } else {
     panel.classList.remove('open');
+    const body = document.getElementById('chat-widget-body');
+    if (body) body.innerHTML = '';
+    const inputRow = document.getElementById('chat-widget-input-row');
+    if (inputRow) inputRow.style.display = 'none';
+    const input = document.getElementById('chat-widget-input');
+    if (input) input.value = '';
   }
 }
 
 async function chatWidgetShowRoomList() {
-  await _initWidgetSb();
+  const body = document.getElementById('chat-widget-body');
+  if (body) body.innerHTML = '<div class="chat-widget-empty">Loading…</div>';
   document.getElementById('chat-widget-back-btn').style.display = 'none';
   document.getElementById('chat-widget-room-name').textContent = '';
   document.getElementById('chat-widget-input-row').style.display = 'none';
+  const input = document.getElementById('chat-widget-input');
+  if (input) input.value = '';
   _widgetActiveRoomId = null;
   if (_widgetChannel) { _widgetSb && _widgetSb.removeChannel(_widgetChannel); _widgetChannel = null; }
 
-  const body = document.getElementById('chat-widget-body');
+  await _initWidgetSb();
 
   if (!_widgetSb || !_widgetUser) {
     body.innerHTML = '<div class="chat-widget-empty">Sign in to use rooms chat</div>';

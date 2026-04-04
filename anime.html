@@ -552,7 +552,8 @@
           title: a.title_english || a.title,
           poster: a.images?.jpg?.large_image_url || a.anilistPoster,
           score: a.score || null,
-          year: a.year || a.aired?.prop?.from?.year || null
+          year: a.year || a.aired?.prop?.from?.year || null,
+          status: 'plan_to_watch'
         });
         setWatchlistState(true);
       }
