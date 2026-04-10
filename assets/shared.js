@@ -338,9 +338,11 @@ function chatWidgetAppendMessage(m) {
 function chatWidgetMsgHTML(m) {
   const isMine = _widgetUser && m.user_id === _widgetUser.id;
   const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const safeName = (m.username || 'User').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const safeContent = (m.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return '<div class="chat-widget-msg' + (isMine ? ' chat-widget-msg-mine' : '') + '">'
-    + '<span class="chat-widget-msg-name">' + (m.username || 'User') + '</span>'
-    + '<span class="chat-widget-msg-text">' + (m.content || '') + '</span>'
+    + '<span class="chat-widget-msg-name">' + safeName + '</span>'
+    + '<span class="chat-widget-msg-text">' + safeContent + '</span>'
     + '<div class="chat-widget-msg-time">' + time + '</div>'
     + '</div>';
 }
@@ -365,6 +367,7 @@ async function chatWidgetSend() {
     room_id: _widgetActiveRoomId,
     user_id: _widgetUser.id,
     username: _widgetUsername,
+    type: 'text',
     content: content
   });
 

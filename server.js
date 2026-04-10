@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getRecommendations, getTrendingNow, normalizeAniList } from './recommender.js';
@@ -157,10 +157,8 @@ app.post('/api/waitlist', (req, res) => {
   }
 
   list.push(email);
-  import('fs').then(fs => {
-    fs.mkdirSync(path.join(__dirname, '.tmp'), { recursive: true });
-    writeFileSync(WAITLIST_FILE, JSON.stringify(list, null, 2));
-  });
+  mkdirSync(path.join(__dirname, '.tmp'), { recursive: true });
+  writeFileSync(WAITLIST_FILE, JSON.stringify(list, null, 2));
 
   console.log(`[waitlist] New signup: ${email} (total: ${list.length})`);
   res.json({ message: 'You\'re on the list!', total: list.length });

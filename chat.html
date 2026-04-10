@@ -307,6 +307,20 @@
     .reply-quote-user { font-size: 0.72rem; font-weight: 700; color: var(--red); display: block; }
     .reply-quote-text { font-size: 0.78rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 
+    /* ── SEEN BY ─────────────────────────────────────────────────────────────── */
+    .seen-by {
+      display: flex; gap: 3px; margin-top: 5px;
+      justify-content: flex-end;
+    }
+    .msg-item:not(.msg-own) .seen-by { justify-content: flex-start; }
+    .seen-avatar {
+      width: 16px; height: 16px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.58rem; font-weight: 700; color: #fff;
+      cursor: default; flex-shrink: 0;
+      border: 1.5px solid var(--dark);
+    }
+
     /* ── REPLY BUTTON (appears on hover) ────────────────────────────────────── */
     .msg-reply-btn {
       display: none; align-self: center; flex-shrink: 0;
@@ -552,6 +566,8 @@
     let isAdmin = false;
     const adminUserIds = new Set(); // tracks which user_ids are room admins
     let transferCandidates = [];
+    let memberReadMap = {}; // userId -> messageId (their last-seen message cursor)
+    let membersMap    = {}; // userId -> { username } for seen-by rendering
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
     async function init() {
@@ -633,6 +649,10 @@
         renderedIds.add(msg.id);
       });
       scrollToBottom(true);
+
+      // Load existing read cursors then mark latest message as seen by us
+      await loadReads();
+      if (msgs.length) markRead(msgs[msgs.length - 1].id);
     }
 
     // ── Load members ─────────────────────────────────────────────────────────
@@ -646,6 +666,10 @@
       // Rebuild admin tracking so crown shows correctly in messages
       adminUserIds.clear();
       members.filter(m => m.is_admin).forEach(m => adminUserIds.add(m.user_id));
+
+      // Keep membersMap in sync for seen-by avatars
+      membersMap = {};
+      members.forEach(m => { membersMap[m.user_id] = { username: m.username }; });
 
       const el = document.getElementById('members-list');
       if (!members.length) { el.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">No members</p>'; return; }
@@ -688,6 +712,19 @@
           area.appendChild(makeMessageEl(payload.new));
           renderedIds.add(payload.new.id);
           scrollToBottom();
+          // Mark as read if we're at the bottom or it's our own message
+          if (isNearBottom() || payload.new.user_id === currentUser.id) {
+            markRead(payload.new.id);
+          }
+        })
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'message_reads',
+          filter: `room_id=eq.${roomId}`
+        }, payload => {
+          if (payload.new?.user_id) {
+            memberReadMap[payload.new.user_id] = payload.new.message_id;
+            updateAllSeenBy();
+          }
         })
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'room_members',
@@ -914,6 +951,62 @@
         showToast('Failed to share anime: ' + error.message);
         console.error('[send-anime]', error.message);
       }
+    }
+
+    // ── Seen by (read receipts) ───────────────────────────────────────────────
+    async function loadReads() {
+      const { data } = await sb
+        .from('message_reads').select('user_id, message_id').eq('room_id', roomId);
+      memberReadMap = {};
+      (data || []).forEach(r => { memberReadMap[r.user_id] = r.message_id; });
+      updateAllSeenBy();
+    }
+
+    async function markRead(messageId) {
+      if (!messageId || !currentUser) return;
+      if (memberReadMap[currentUser.id] === messageId) return; // already up to date
+      memberReadMap[currentUser.id] = messageId;
+      updateAllSeenBy();
+      await sb.from('message_reads').upsert(
+        { room_id: roomId, user_id: currentUser.id, message_id: messageId, updated_at: new Date().toISOString() },
+        { onConflict: 'room_id,user_id' }
+      );
+    }
+
+    function updateAllSeenBy() {
+      // Build map: messageId -> [userId, ...] (exclude self)
+      const seenBy = {};
+      Object.entries(memberReadMap).forEach(([uid, mid]) => {
+        if (uid === currentUser.id) return;
+        if (!seenBy[mid]) seenBy[mid] = [];
+        seenBy[mid].push(uid);
+      });
+
+      document.querySelectorAll('.msg-item[data-id]').forEach(el => {
+        const msgId   = el.dataset.id;
+        const viewers = seenBy[msgId] || [];
+        let seenRow   = el.querySelector('.seen-by');
+
+        if (!viewers.length) {
+          if (seenRow) seenRow.remove();
+          return;
+        }
+        if (!seenRow) {
+          seenRow = document.createElement('div');
+          seenRow.className = 'seen-by';
+          el.querySelector('.msg-content').appendChild(seenRow);
+        }
+        seenRow.innerHTML = viewers.map(uid => {
+          const m = membersMap[uid];
+          if (!m) return '';
+          return `<div class="seen-avatar" style="background:${userColor(m.username)}" title="Seen by @${escHtml(m.username)}">${escHtml(m.username[0].toUpperCase())}</div>`;
+        }).join('');
+      });
+    }
+
+    function isNearBottom() {
+      const area = document.getElementById('messages-area');
+      return area.scrollHeight - area.scrollTop - area.clientHeight < 120;
     }
 
     // ── DOM builders ──────────────────────────────────────────────────────────
@@ -1150,6 +1243,15 @@
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') { closeAnimeModal(); closeLightbox(); closeTransferModal(); }
     });
+
+    // Mark messages as read when user scrolls to the bottom
+    document.getElementById('messages-area').addEventListener('scroll', () => {
+      if (!isNearBottom()) return;
+      const allMsgs = document.querySelectorAll('.msg-item[data-id]');
+      if (!allMsgs.length) return;
+      const lastId = allMsgs[allMsgs.length - 1].dataset.id;
+      markRead(lastId);
+    }, { passive: true });
 
     // ── Settings panel ────────────────────────────────────────────────────────
     function toggleSettings() {
