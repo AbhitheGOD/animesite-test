@@ -679,42 +679,59 @@
       const email = usernameToEmail(name);
 
       try {
-        const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
-        if (signUpErr || !signUpData?.user) {
-          const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
-          if (signInErr) {
-            const { data: row } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
-            err.textContent = row
-              ? 'Incorrect PIN. Use the same PIN you set when you first claimed this username.'
-              : 'Sign-in failed. Try again.';
-            btn.disabled = false; btn.textContent = 'Sign In →'; return;
-          }
+        // ── Step 1: Try signing in first (handles any device for existing accounts) ──
+        const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pin });
+
+        if (!signInErr && signInData?.user) {
+          // Existing user — signed in successfully
           currentUser = signInData.user;
           const { data: uRow } = await sb.from('usernames').select('username').eq('user_id', currentUser.id).maybeSingle();
           username = uRow?.username || name;
+
         } else {
+          // Sign-in failed — could be a new user or wrong PIN
+          // Check if this username is already claimed (anon-readable via RLS policy)
+          const { data: takenRow } = await sb.from('usernames').select('username').eq('username', name).maybeSingle();
+          if (takenRow) {
+            // Username exists but PIN was wrong
+            err.textContent = 'Incorrect PIN. Use the same PIN you originally set for this username.';
+            btn.disabled = false; btn.textContent = 'Sign In →'; return;
+          }
+
+          // ── Step 2: New user — sign up ──
+          const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pin });
+          if (signUpErr || !signUpData?.user) {
+            err.textContent = signUpErr?.message || 'Could not create account. Try again.';
+            btn.disabled = false; btn.textContent = 'Sign In →'; return;
+          }
+
+          // ── Step 3: Get a session (always retry signIn — works even if email confirm is off) ──
+          let authedUser = signUpData.user;
           if (!signUpData.session) {
-            const { data: siData, error: siErr } = await sb.auth.signInWithPassword({ email, password: pin });
-            if (siErr || !siData?.user) {
-              err.textContent = 'Account created but could not establish session. Please enter your PIN to sign in.';
-              document.getElementById('input-username').disabled = true;
+            const { data: retryData, error: retryErr } = await sb.auth.signInWithPassword({ email, password: pin });
+            if (retryErr || !retryData?.user) {
+              // Email confirmation is blocking the session — give a clear actionable error
+              err.textContent = 'Almost there! Go to your Supabase dashboard → Auth → Settings and disable "Enable email confirmations", then try again.';
               btn.disabled = false; btn.textContent = 'Sign In →'; return;
             }
-            signUpData.user = siData.user;
+            authedUser = retryData.user;
           }
-          currentUser = signUpData.user;
+          currentUser = authedUser;
+
+          // ── Step 4: Claim the username ──
           const { error: claimErr } = await sb.from('usernames').insert({ username: name, user_id: currentUser.id });
           if (claimErr) {
             await sb.auth.signOut(); currentUser = null;
             if (claimErr.code === '23505') {
-              document.getElementById('modal-username-title').textContent = 'WELCOME BACK';
-              document.getElementById('modal-username-sub').textContent = `"${name}" already exists. Enter your PIN to sign in.`;
-              input.disabled = true; err.textContent = '';
-            } else { err.textContent = claimErr.message || 'Could not claim username.'; }
+              err.textContent = `"${name}" was just taken. Try a different username.`;
+            } else {
+              err.textContent = claimErr.message || 'Could not claim username.';
+            }
             btn.disabled = false; btn.textContent = 'Sign In →'; return;
           }
           username = name;
         }
+
         localStorage.setItem('aniscout_username', username);
         localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
         document.getElementById('modal-username').classList.remove('open');
