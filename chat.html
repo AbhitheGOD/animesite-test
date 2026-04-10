@@ -686,12 +686,14 @@
             </div>
             <!-- Theater controls (only visible in theater mode) -->
             <div class="wp-theater-controls">
-              <button type="button" class="wp-btn wp-btn-primary" id="wp-play-btn-theater" onclick="wpTogglePlay()">▶ Play</button>
+              <button type="button" class="wp-btn wp-btn-primary wp-admin-ctrl" id="wp-play-btn-theater" onclick="wpTogglePlay()">▶ Play</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-mute-btn wp-nonadmin-ctrl" onclick="wpToggleMute()">🔊 Mute</button>
               <div class="wp-theater-meta">
                 <span class="wp-theater-title" id="wp-theater-title">Watch Session</span>
                 <span class="wp-theater-status" id="wp-status-theater">Syncing…</span>
               </div>
-              <button type="button" class="wp-btn wp-btn-ghost" onclick="endWatchparty()">End Session</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-admin-ctrl" onclick="endWatchparty()">End Session</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-nonadmin-ctrl" onclick="leaveWatchparty()">Leave</button>
               <button type="button" class="wp-btn wp-btn-ghost" onclick="wpToggleTheater()">✕ Exit</button>
             </div>
           </div>
@@ -701,9 +703,11 @@
             <div class="wp-title" id="wp-title">Watch Session</div>
             <div class="wp-status" id="wp-status">Syncing…</div>
             <div class="wp-actions">
-              <button type="button" class="wp-btn wp-btn-primary" id="wp-play-btn" onclick="wpTogglePlay()">▶ Play</button>
+              <button type="button" class="wp-btn wp-btn-primary wp-admin-ctrl" id="wp-play-btn" onclick="wpTogglePlay()">▶ Play</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-mute-btn wp-nonadmin-ctrl" onclick="wpToggleMute()">🔊 Mute</button>
               <button type="button" class="wp-btn wp-btn-ghost" id="wp-theater-btn" onclick="wpToggleTheater()">⛶ Expand</button>
-              <button type="button" class="wp-btn wp-btn-ghost" onclick="endWatchparty()">End Session</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-admin-ctrl" onclick="endWatchparty()">End Session</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-nonadmin-ctrl" onclick="leaveWatchparty()">Leave</button>
             </div>
           </div>
 
@@ -779,6 +783,7 @@
     let wpSession    = null; // current room_sessions row
     let wpSyncing    = false; // true while applying remote state, blocks feedback loop
     let wpTheater    = false; // theater (expanded) mode active
+    let wpMuted      = false; // local mute state
     let recentMsgs   = []; // last 50 text messages for mini chat
     let wpSeekTimer  = null;
     let wpSearchTimer = null;
@@ -828,6 +833,7 @@
       document.getElementById('nav-invite-code').textContent = room.invite_code;
 
       if (isAdmin) document.getElementById('admin-gear-btn').classList.add('visible');
+      updateWpControls();
 
       // Load members first so adminUserIds is populated before messages render
       await loadMembers();
@@ -978,6 +984,7 @@
             const gearBtn = document.getElementById('admin-gear-btn');
             if (isAdmin) gearBtn.classList.add('visible');
             else gearBtn.classList.remove('visible');
+            updateWpControls();
           }
         })
         .on('broadcast', { event: 'kick' }, payload => {
@@ -1222,6 +1229,25 @@
 
     function onPlayerStateChange(e) {
       if (wpSyncing || !wpSession) return;
+
+      if (!isAdmin) {
+        // Non-admins can't control playback — snap back to session state after a beat
+        if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.PLAYING) {
+          clearTimeout(wpSeekTimer);
+          wpSeekTimer = setTimeout(() => {
+            if (!wpSession || !ytPlayer || !wpPlayerReady) return;
+            const delta = (Date.now() - new Date(wpSession.updated_at).getTime()) / 1000;
+            const targetPos = wpSession.position_seconds + (wpSession.playback_state === 'playing' ? delta : 0);
+            wpSyncing = true;
+            ytPlayer.seekTo(targetPos, true);
+            if (wpSession.playback_state === 'playing') ytPlayer.playVideo();
+            else ytPlayer.pauseVideo();
+            setTimeout(() => { wpSyncing = false; }, 2000);
+          }, 600);
+        }
+        return;
+      }
+
       if (e.data === YT.PlayerState.PLAYING) {
         clearTimeout(wpSeekTimer);
         broadcastWpState('playing', ytPlayer.getCurrentTime());
@@ -1240,6 +1266,7 @@
     }
 
     async function broadcastWpState(state, position) {
+      if (!isAdmin) return;
       await sb.from('room_sessions').upsert({
         room_id: roomId,
         video_id: wpSession.video_id,
@@ -1267,6 +1294,18 @@
       const delta = (Date.now() - new Date(session.updated_at).getTime()) / 1000;
       const targetPos = session.position_seconds + (session.playback_state === 'playing' ? delta : 0);
 
+      // If both are already playing and close enough in time, skip the seek to
+      // avoid a re-broadcast ping-pong loop (seek → PLAYING event → broadcast → ...)
+      if (session.playback_state === 'playing' &&
+          ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+        const diff = Math.abs(ytPlayer.getCurrentTime() - targetPos);
+        if (diff < 4) {
+          setWpPlayBtn(true);
+          setWpStatus('Playing — synced with room');
+          return;
+        }
+      }
+
       wpSyncing = true;
       ytPlayer.seekTo(targetPos, true);
       if (session.playback_state === 'playing') {
@@ -1278,7 +1317,7 @@
         setWpPlayBtn(false);
         setWpStatus('Paused');
       }
-      setTimeout(() => { wpSyncing = false; }, 800);
+      setTimeout(() => { wpSyncing = false; }, 2000);
     }
 
     async function loadSession() {
@@ -1313,6 +1352,7 @@
     }
 
     async function endWatchparty() {
+      if (!isAdmin) return;
       if (!confirm('End the watch session for everyone?')) return;
       await sb.from('room_sessions').delete().eq('room_id', roomId);
       wpSession = null;
@@ -1330,6 +1370,7 @@
     }
 
     function wpTogglePlay() {
+      if (!isAdmin) { showToast('Only the room admin can control playback.'); return; }
       if (!ytPlayer || !wpPlayerReady) return;
       const state = ytPlayer.getPlayerState();
       if (state === YT.PlayerState.PLAYING) {
@@ -1337,6 +1378,38 @@
       } else {
         ytPlayer.playVideo();
       }
+    }
+
+    function wpToggleMute() {
+      if (!ytPlayer || !wpPlayerReady) return;
+      if (wpMuted) {
+        ytPlayer.unMute();
+        wpMuted = false;
+        document.querySelectorAll('.wp-mute-btn').forEach(b => b.textContent = '🔊 Mute');
+      } else {
+        ytPlayer.mute();
+        wpMuted = true;
+        document.querySelectorAll('.wp-mute-btn').forEach(b => b.textContent = '🔇 Unmute');
+      }
+    }
+
+    function leaveWatchparty() {
+      wpSession = null;
+      ytPlayer = null;
+      wpPlayerReady = false;
+      wpMuted = false;
+      const oldEl = document.getElementById('yt-player');
+      const freshEl = document.createElement('div');
+      freshEl.id = 'yt-player';
+      oldEl.replaceWith(freshEl);
+      closeWatchpartyPanel();
+    }
+
+    function updateWpControls() {
+      const adminEls = document.querySelectorAll('.wp-admin-ctrl');
+      const nonAdminEls = document.querySelectorAll('.wp-nonadmin-ctrl');
+      adminEls.forEach(el => el.style.display = isAdmin ? '' : 'none');
+      nonAdminEls.forEach(el => el.style.display = isAdmin ? 'none' : '');
     }
 
     function setWpPlayBtn(playing) {
@@ -1428,8 +1501,10 @@
     function onWatchBtnClick() {
       if (wpSession) {
         document.getElementById('watchparty-panel').classList.toggle('open');
-      } else {
+      } else if (isAdmin) {
         openWatchpartyModal();
+      } else {
+        showToast('Only the room admin can start a watch session.');
       }
     }
 
