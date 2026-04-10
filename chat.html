@@ -368,6 +368,84 @@
       .nav-watch-btn { padding: 6px 9px; }
     }
 
+    /* ── WATCHPARTY THEATER MODE ─────────────────────────────────────────────── */
+    .watchparty-panel.theater {
+      position: absolute; inset: 0; z-index: 50;
+      max-height: none !important; overflow: hidden;
+    }
+    .watchparty-panel.theater .watchparty-inner {
+      height: 100%; padding: 0; flex-direction: row; gap: 0; align-items: stretch;
+    }
+    .wp-left {
+      display: flex; flex-direction: column; flex: 1; min-width: 0; overflow: hidden;
+    }
+    .watchparty-panel.theater .wp-player-wrap {
+      width: 100% !important; flex: 1; border-radius: 0; aspect-ratio: unset !important;
+    }
+    .watchparty-panel:not(.theater) .wp-theater-controls { display: none; }
+    .watchparty-panel:not(.theater) .wp-mini-chat { display: none; }
+    .watchparty-panel.theater .wp-info { display: none; }
+    .wp-theater-controls {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+      padding: 9px 16px; background: rgba(8,8,14,0.96);
+      border-top: 1px solid var(--border);
+    }
+    .wp-theater-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .wp-theater-title {
+      font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem;
+      color: var(--text); letter-spacing: 0.04em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .wp-theater-status { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── MINI CHAT ────────────────────────────────────────────────────────────── */
+    .wp-mini-chat {
+      width: 280px; flex-shrink: 0; display: flex; flex-direction: column;
+      background: rgba(8,8,14,0.97); border-left: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .wp-mini-chat-header {
+      padding: 9px 14px; font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.85rem; letter-spacing: 0.08em; color: var(--muted);
+      border-bottom: 1px solid var(--border); flex-shrink: 0; text-transform: uppercase;
+    }
+    .wp-mini-messages {
+      flex: 1; overflow-y: auto; padding: 10px 10px;
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .wp-mini-msg { display: flex; align-items: flex-start; gap: 7px; font-size: 0.8rem; line-height: 1.4; }
+    .wp-mini-msg.own { flex-direction: row-reverse; }
+    .wp-mini-avatar {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.63rem; font-weight: 700; color: #fff; margin-top: 2px;
+    }
+    .wp-mini-body { display: flex; flex-direction: column; max-width: 190px; }
+    .wp-mini-name { font-size: 0.67rem; color: var(--muted); margin-bottom: 2px; }
+    .wp-mini-msg.own .wp-mini-name { text-align: right; }
+    .wp-mini-bubble {
+      background: var(--raised); border-radius: 8px; padding: 5px 9px;
+      color: var(--text); word-break: break-word;
+    }
+    .wp-mini-msg.own .wp-mini-bubble { background: rgba(232,39,42,0.2); }
+    .wp-mini-input-row {
+      display: flex; gap: 6px; padding: 9px 10px;
+      border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .wp-mini-input-row input {
+      flex: 1; background: var(--raised); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 7px 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.8rem; outline: none;
+    }
+    .wp-mini-input-row input:focus { border-color: rgba(232,39,42,0.4); }
+    .wp-mini-input-row input::placeholder { color: var(--muted); }
+    .wp-mini-send-btn {
+      background: var(--red); border: none; border-radius: 8px;
+      color: #fff; padding: 7px 12px; cursor: pointer; font-size: 0.88rem;
+      font-weight: 700; transition: opacity 0.2s; flex-shrink: 0;
+    }
+    .wp-mini-send-btn:hover { opacity: 0.85; }
+
     /* ── SEEN BY ─────────────────────────────────────────────────────────────── */
     .seen-by {
       display: flex; gap: 3px; margin-top: 5px;
@@ -600,17 +678,45 @@
       <!-- WATCHPARTY PANEL -->
       <div id="watchparty-panel" class="watchparty-panel">
         <div class="watchparty-inner">
-          <div class="wp-player-wrap" id="wp-player-wrap">
-            <div id="yt-player"></div>
+
+          <!-- LEFT: player + theater controls bar -->
+          <div class="wp-left">
+            <div class="wp-player-wrap" id="wp-player-wrap">
+              <div id="yt-player"></div>
+            </div>
+            <!-- Theater controls (only visible in theater mode) -->
+            <div class="wp-theater-controls">
+              <button type="button" class="wp-btn wp-btn-primary" id="wp-play-btn-theater" onclick="wpTogglePlay()">▶ Play</button>
+              <div class="wp-theater-meta">
+                <span class="wp-theater-title" id="wp-theater-title">Watch Session</span>
+                <span class="wp-theater-status" id="wp-status-theater">Syncing…</span>
+              </div>
+              <button type="button" class="wp-btn wp-btn-ghost" onclick="endWatchparty()">End Session</button>
+              <button type="button" class="wp-btn wp-btn-ghost" onclick="wpToggleTheater()">✕ Exit</button>
+            </div>
           </div>
+
+          <!-- Normal mode info panel (hidden in theater mode) -->
           <div class="wp-info">
             <div class="wp-title" id="wp-title">Watch Session</div>
             <div class="wp-status" id="wp-status">Syncing…</div>
             <div class="wp-actions">
               <button type="button" class="wp-btn wp-btn-primary" id="wp-play-btn" onclick="wpTogglePlay()">▶ Play</button>
+              <button type="button" class="wp-btn wp-btn-ghost" id="wp-theater-btn" onclick="wpToggleTheater()">⛶ Expand</button>
               <button type="button" class="wp-btn wp-btn-ghost" onclick="endWatchparty()">End Session</button>
             </div>
           </div>
+
+          <!-- Mini chat (only visible in theater mode) -->
+          <div class="wp-mini-chat" id="wp-mini-chat">
+            <div class="wp-mini-chat-header">Chat</div>
+            <div class="wp-mini-messages" id="wp-mini-messages"></div>
+            <div class="wp-mini-input-row">
+              <input type="text" id="wp-mini-input" placeholder="Message…" maxlength="500" autocomplete="off" />
+              <button type="button" class="wp-mini-send-btn" onclick="sendMiniChat()">→</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -672,6 +778,8 @@
     let wpPlayerReady = false;
     let wpSession    = null; // current room_sessions row
     let wpSyncing    = false; // true while applying remote state, blocks feedback loop
+    let wpTheater    = false; // theater (expanded) mode active
+    let recentMsgs   = []; // last 50 text messages for mini chat
     let wpSeekTimer  = null;
     let wpSearchTimer = null;
 
@@ -754,7 +862,9 @@
         if (d !== lastDate) { area.appendChild(makeDateDivider(d)); lastDate = d; }
         area.appendChild(makeMessageEl(msg));
         renderedIds.add(msg.id);
+        if (msg.type === 'text' && msg.content) recentMsgs.push(msg);
       });
+      if (recentMsgs.length > 50) recentMsgs = recentMsgs.slice(-50);
       scrollToBottom(true);
 
       // Load existing read cursors then mark latest message as seen by us
@@ -818,6 +928,7 @@
           if (placeholder) placeholder.remove();
           area.appendChild(makeMessageEl(payload.new));
           renderedIds.add(payload.new.id);
+          pushMiniMsg(payload.new);
           scrollToBottom();
           // Mark as read if we're at the bottom or it's our own message
           if (isNearBottom() || payload.new.user_id === currentUser.id) {
@@ -888,6 +999,10 @@
         }, payload => {
           if (payload.eventType === 'DELETE') {
             wpSession = null;
+            if (wpTheater) {
+              wpTheater = false;
+              document.getElementById('watchparty-panel').classList.remove('theater');
+            }
             closeWatchpartyPanel();
             return;
           }
@@ -1089,7 +1204,10 @@
     }
 
     function createYTPlayer(videoId) {
-      document.getElementById('yt-player').innerHTML = '';
+      const oldEl = document.getElementById('yt-player');
+      const freshEl = document.createElement('div');
+      freshEl.id = 'yt-player';
+      oldEl.replaceWith(freshEl);
       wpPlayerReady = false;
       ytPlayer = new YT.Player('yt-player', {
         videoId,
@@ -1108,14 +1226,14 @@
         clearTimeout(wpSeekTimer);
         broadcastWpState('playing', ytPlayer.getCurrentTime());
         setWpPlayBtn(true);
-        document.getElementById('wp-status').textContent = 'Playing — synced with room';
+        setWpStatus('Playing — synced with room');
       } else if (e.data === YT.PlayerState.PAUSED) {
         clearTimeout(wpSeekTimer);
         wpSeekTimer = setTimeout(() => {
           if (ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.PAUSED) {
             broadcastWpState('paused', ytPlayer.getCurrentTime());
             setWpPlayBtn(false);
-            document.getElementById('wp-status').textContent = 'Paused';
+            setWpStatus('Paused');
           }
         }, 350);
       }
@@ -1137,7 +1255,7 @@
     function applyRemoteSession(session) {
       // Load player if video changed or player doesn't exist yet
       if (!ytPlayer || (wpSession?.video_id !== session.video_id)) {
-        document.getElementById('wp-title').textContent = session.video_title || 'Watch Session';
+        setWpTitle(session.video_title || 'Watch Session');
         openWatchpartyPanel();
         initYTPlayer(session.video_id);
         wpSession = session;
@@ -1154,11 +1272,11 @@
       if (session.playback_state === 'playing') {
         ytPlayer.playVideo();
         setWpPlayBtn(true);
-        document.getElementById('wp-status').textContent = 'Playing — synced with room';
+        setWpStatus('Playing — synced with room');
       } else {
         ytPlayer.pauseVideo();
         setWpPlayBtn(false);
-        document.getElementById('wp-status').textContent = 'Paused';
+        setWpStatus('Paused');
       }
       setTimeout(() => { wpSyncing = false; }, 800);
     }
@@ -1167,8 +1285,8 @@
       const { data } = await sb.from('room_sessions').select('*').eq('room_id', roomId).maybeSingle();
       if (!data) return;
       wpSession = data;
-      document.getElementById('wp-title').textContent = data.video_title || 'Watch Session';
-      document.getElementById('wp-status').textContent = 'Joining session…';
+      setWpTitle(data.video_title || 'Watch Session');
+      setWpStatus('Joining session…');
       openWatchpartyPanel();
       initYTPlayer(data.video_id);
     }
@@ -1188,8 +1306,8 @@
       const { error } = await sb.from('room_sessions').upsert(session, { onConflict: 'room_id' });
       if (error) { showToast('Could not start session: ' + error.message); return; }
       wpSession = session;
-      document.getElementById('wp-title').textContent = title;
-      document.getElementById('wp-status').textContent = 'Starting…';
+      setWpTitle(title);
+      setWpStatus('Starting…');
       openWatchpartyPanel();
       initYTPlayer(videoId);
     }
@@ -1200,7 +1318,14 @@
       wpSession = null;
       ytPlayer = null;
       wpPlayerReady = false;
-      document.getElementById('yt-player').innerHTML = '';
+      if (wpTheater) {
+        wpTheater = false;
+        document.getElementById('watchparty-panel').classList.remove('theater');
+      }
+      const oldEl = document.getElementById('yt-player');
+      const freshEl = document.createElement('div');
+      freshEl.id = 'yt-player';
+      oldEl.replaceWith(freshEl);
       closeWatchpartyPanel();
     }
 
@@ -1215,7 +1340,75 @@
     }
 
     function setWpPlayBtn(playing) {
-      document.getElementById('wp-play-btn').textContent = playing ? '⏸ Pause' : '▶ Play';
+      const label = playing ? '⏸ Pause' : '▶ Play';
+      document.getElementById('wp-play-btn').textContent = label;
+      document.getElementById('wp-play-btn-theater').textContent = label;
+    }
+
+    function setWpTitle(title) {
+      document.getElementById('wp-title').textContent = title;
+      document.getElementById('wp-theater-title').textContent = title;
+    }
+
+    function setWpStatus(status) {
+      document.getElementById('wp-status').textContent = status;
+      document.getElementById('wp-status-theater').textContent = status;
+    }
+
+    function wpToggleTheater() {
+      wpTheater = !wpTheater;
+      const panel = document.getElementById('watchparty-panel');
+      if (wpTheater) {
+        panel.classList.add('theater');
+        document.getElementById('wp-theater-btn').textContent = '⛶ Collapse';
+        populateMiniChat();
+      } else {
+        panel.classList.remove('theater');
+        document.getElementById('wp-theater-btn').textContent = '⛶ Expand';
+      }
+    }
+
+    // ── Mini chat ─────────────────────────────────────────────────────────────
+    function pushMiniMsg(msg) {
+      if (msg.type !== 'text' || !msg.content) return;
+      recentMsgs.push(msg);
+      if (recentMsgs.length > 50) recentMsgs.shift();
+      if (wpTheater) appendMiniChatMsg(msg);
+    }
+
+    function appendMiniChatMsg(msg) {
+      const container = document.getElementById('wp-mini-messages');
+      const isOwn = msg.user_id === currentUser.id;
+      const color = userColor(msg.username || 'A');
+      const initial = (msg.username || '?')[0].toUpperCase();
+      const el = document.createElement('div');
+      el.className = 'wp-mini-msg' + (isOwn ? ' own' : '');
+      el.innerHTML = `
+        <div class="wp-mini-avatar" style="background:${color}">${escHtml(initial)}</div>
+        <div class="wp-mini-body">
+          ${!isOwn ? `<div class="wp-mini-name">${escHtml(msg.username || 'Anon')}</div>` : ''}
+          <div class="wp-mini-bubble">${escHtml(msg.content)}</div>
+        </div>`;
+      container.appendChild(el);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function populateMiniChat() {
+      const container = document.getElementById('wp-mini-messages');
+      container.innerHTML = '';
+      recentMsgs.forEach(m => appendMiniChatMsg(m));
+    }
+
+    async function sendMiniChat() {
+      const input = document.getElementById('wp-mini-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      const { error } = await sb.from('messages').insert({
+        room_id: roomId, user_id: currentUser.id,
+        username, type: 'text', content: text
+      });
+      if (error) { input.value = text; showToast('Failed: ' + error.message); }
     }
 
     function openWatchpartyPanel() {
@@ -1567,6 +1760,9 @@
     const msgInput = document.getElementById('msg-input');
     msgInput.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextMessage(); }
+    });
+    document.getElementById('wp-mini-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); sendMiniChat(); }
     });
     msgInput.addEventListener('input', () => {
       msgInput.style.height = 'auto';
