@@ -1929,18 +1929,27 @@
       // YouTube URL / ID shortcut
       const ytId = extractYouTubeId(q);
       if (ytId) {
-        const actionLabel = wpQueueMode === 'suggest' ? 'Suggest' : 'Watch';
-        const actionFn    = wpQueueMode === 'suggest'
-          ? `suggestToQueue('${escAttr(ytId)}', 'YouTube Video')`
-          : `startWatchparty('${escAttr(ytId)}', 'YouTube Video')`;
-        document.getElementById('wp-search-results').innerHTML = `
-          <div class="search-result-item">
-            <div class="result-info">
-              <div class="result-title">YouTube Video</div>
-              <div class="result-meta" style="font-family:monospace;font-size:0.78rem">${escHtml(ytId)}</div>
-            </div>
-            <button type="button" class="result-share" onclick="${actionFn}">${escHtml(actionLabel)}</button>
-          </div>`;
+        const resultsEl = document.getElementById('wp-search-results');
+        resultsEl.innerHTML = '<div class="search-empty"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto"></div></div>';
+        (async () => {
+          let title = 'YouTube Video';
+          try {
+            const oe = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}&format=json`);
+            if (oe.ok) { const j = await oe.json(); title = j.title || title; }
+          } catch {}
+          const actionLabel = wpQueueMode === 'suggest' ? 'Suggest' : 'Watch';
+          const actionFn    = wpQueueMode === 'suggest'
+            ? `suggestToQueue('${escAttr(ytId)}', '${escAttr(title)}')`
+            : `startWatchparty('${escAttr(ytId)}', '${escAttr(title)}')`;
+          resultsEl.innerHTML = `
+            <div class="search-result-item">
+              <div class="result-info">
+                <div class="result-title">${escHtml(title)}</div>
+                <div class="result-meta" style="font-family:monospace;font-size:0.78rem">${escHtml(ytId)}</div>
+              </div>
+              <button type="button" class="result-share" onclick="${actionFn}">${escHtml(actionLabel)}</button>
+            </div>`;
+        })();
         return;
       }
       // Direct video URL
