@@ -300,6 +300,14 @@
       transition: border-color 0.2s, color 0.2s;
     }
     .settings-fab:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+    /* In theater mode the message bar owns bottom-right — move FAB to top-right */
+    .watchparty-panel.theater ~ .settings-fab,
+    body:has(.watchparty-panel.theater) .settings-fab {
+      bottom: auto; top: 14px; right: 14px;
+    }
+    body:has(.watchparty-panel.theater) .settings-panel {
+      bottom: auto; top: 62px; right: 14px;
+    }
     .settings-panel {
       display: none; position: fixed; bottom: 68px; right: 20px; z-index: 200;
       background: var(--surface); border: 1px solid var(--border);
