@@ -224,7 +224,7 @@ async function searchAdvanced({
   const query = `
     query (
       $search: String, $genres: [String], $tags: [String],
-      $yearFrom: Int, $yearTo: Int, $scoreMin: Int,
+      $yearFrom: FuzzyDateInt, $yearTo: FuzzyDateInt, $scoreMin: Int,
       $status: MediaStatus, $format: MediaFormat,
       $sort: [MediaSort], $page: Int, $perPage: Int,
       $notIn: [Int]

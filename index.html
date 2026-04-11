@@ -432,25 +432,7 @@
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 14px;
     }
-    .genre-chip {
-      padding: 18px 20px;
-      background: var(--raised);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .genre-chip:hover {
-      transform: translateY(-3px);
-      border-color: rgba(232,39,42,0.35);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 2px 8px rgba(232,39,42,0.12);
-    }
-    .genre-chip:active { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(232,39,42,0.2); }
-    .genre-chip:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
     .genre-emoji { font-size: 1.6rem; margin-bottom: 8px; display: block; }
-    .genre-name { font-size: 0.9rem; font-weight: 500; color: var(--text); }
-    .genre-count { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
 
     /* ── Featured cards ── */
     .featured-grid {
@@ -1295,95 +1277,63 @@
     }
     .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
 
-    /* ── Advanced Filter Panel ───────────────────────────────────────────────── */
-    .search-filter-wrap {
-      max-width: 520px; margin: 12px auto 0; position: relative;
-    }
-    .filter-toggle-btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 7px 16px; border-radius: 100px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.04);
+    /* ── Genre filter chips (in genres section) ─────────────────────────────── */
+    .filter-genre-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .genre-filter-chip {
+      padding: 9px 18px; border-radius: 100px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--raised);
       color: var(--muted); font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem; font-weight: 600; cursor: pointer;
-      transition: border-color 0.2s, color 0.2s, background 0.2s;
-    }
-    .filter-toggle-btn:hover { border-color: rgba(232,39,42,0.45); color: var(--text); }
-    .filter-toggle-btn.active {
-      border-color: var(--red); background: rgba(232,39,42,0.1); color: var(--text);
-    }
-    .filter-count-badge {
-      display: none; align-items: center; justify-content: center;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: var(--red); color: #fff; font-size: 0.65rem; font-weight: 700;
-    }
-    .filter-count-badge.visible { display: inline-flex; }
-    .advanced-filter-panel {
-      display: none;
-      background: rgba(17,17,25,0.97);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      padding: 22px 24px 18px;
-      margin-top: 10px;
-      -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
-      box-shadow: 0 20px 56px rgba(0,0,0,0.7);
-      text-align: left;
-      animation: filterSlideIn 0.2s ease;
-    }
-    @keyframes filterSlideIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .advanced-filter-panel.open { display: block; }
-    .filter-section { margin-bottom: 18px; }
-    .filter-section:last-child { margin-bottom: 0; }
-    .filter-section-label {
-      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--red); margin-bottom: 10px;
-    }
-    .filter-genre-chips {
-      display: flex; flex-wrap: wrap; gap: 7px;
-    }
-    .filter-chip {
-      padding: 5px 13px; border-radius: 100px; cursor: pointer;
-      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
-      color: var(--muted); font-family: 'DM Sans', sans-serif;
-      font-size: 0.78rem; font-weight: 500;
-      transition: border-color 0.18s, color 0.18s, background 0.18s;
+      font-size: 0.88rem; font-weight: 500;
+      transition: border-color 0.18s, color 0.18s, background 0.18s, transform 0.15s;
       -webkit-user-select: none; user-select: none;
     }
-    .filter-chip:hover { border-color: rgba(232,39,42,0.4); color: var(--text); }
-    .filter-chip.selected {
-      border-color: var(--red); background: rgba(232,39,42,0.12); color: var(--text);
+    .genre-filter-chip:hover {
+      border-color: rgba(232,39,42,0.4); color: var(--text);
+      transform: translateY(-2px);
     }
-    .filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-    .filter-select-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 110px; }
-    .filter-select-wrap label { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; }
+    .genre-filter-chip.selected {
+      border-color: var(--red); background: rgba(232,39,42,0.15);
+      color: var(--text); transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(232,39,42,0.2);
+    }
+    /* Narrow-down row */
+    .genre-filter-row {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      align-items: flex-end; margin-bottom: 20px;
+      padding: 20px 24px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border); border-radius: 14px;
+    }
+    .filter-select-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; }
+    .filter-select-wrap label { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
     .filter-select {
-      padding: 8px 12px; border-radius: 8px;
+      padding: 9px 12px; border-radius: 8px;
       background: var(--raised); border: 1px solid var(--border);
       color: var(--text); font-family: 'DM Sans', sans-serif;
       font-size: 0.82rem; outline: none; cursor: pointer;
       transition: border-color 0.2s;
     }
     .filter-select:focus { border-color: rgba(232,39,42,0.45); }
-    .filter-actions { display: flex; gap: 10px; margin-top: 18px; }
+    /* Action row */
+    .genre-filter-actions { display: flex; align-items: center; gap: 12px; }
     .filter-apply-btn {
-      flex: 1; padding: 9px 18px; border-radius: 8px;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 26px; border-radius: 10px;
       background: var(--red); border: none; color: #fff;
-      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600;
       cursor: pointer; transition: opacity 0.2s, transform 0.15s;
-      box-shadow: 0 4px 16px rgba(232,39,42,0.3);
+      box-shadow: 0 4px 20px rgba(232,39,42,0.35);
     }
-    .filter-apply-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .filter-apply-btn:hover { opacity: 0.88; transform: translateY(-1px); }
     .filter-reset-btn {
-      padding: 9px 18px; border-radius: 8px;
+      padding: 11px 20px; border-radius: 10px;
       background: transparent; border: 1px solid var(--border);
       color: var(--muted); font-family: 'DM Sans', sans-serif;
-      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
     }
     .filter-reset-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+    .filter-active-count { font-size: 0.82rem; color: var(--red); font-weight: 600; }
     /* ── Search error state ─────────────────────────────────────────────────── */
     .search-error-state {
       grid-column: 1 / -1; padding: 48px 0; text-align: center; color: var(--muted);
@@ -1495,101 +1445,10 @@
         <span>Sci-Fi</span>
       </div>
 
-      <!-- Advanced filter toggle + panel -->
-      <div class="search-filter-wrap" style="text-align:center; margin-top:18px;">
-        <button type="button" id="filter-toggle-btn" class="filter-toggle-btn" onclick="toggleFilterPanel()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          Advanced Filters
-          <span id="filter-count-badge" class="filter-count-badge">0</span>
-        </button>
-
-        <div id="advanced-filter-panel" class="advanced-filter-panel">
-          <!-- Genres -->
-          <div class="filter-section">
-            <div class="filter-section-label">Genres</div>
-            <div class="filter-genre-chips" id="filter-genre-chips">
-              <span class="filter-chip" data-genre="Action">Action</span>
-              <span class="filter-chip" data-genre="Adventure">Adventure</span>
-              <span class="filter-chip" data-genre="Comedy">Comedy</span>
-              <span class="filter-chip" data-genre="Drama">Drama</span>
-              <span class="filter-chip" data-genre="Fantasy">Fantasy</span>
-              <span class="filter-chip" data-genre="Horror">Horror</span>
-              <span class="filter-chip" data-genre="Mystery">Mystery</span>
-              <span class="filter-chip" data-genre="Psychological">Psychological</span>
-              <span class="filter-chip" data-genre="Romance">Romance</span>
-              <span class="filter-chip" data-genre="Sci-Fi">Sci-Fi</span>
-              <span class="filter-chip" data-genre="Slice of Life">Slice of Life</span>
-              <span class="filter-chip" data-genre="Sports">Sports</span>
-              <span class="filter-chip" data-genre="Supernatural">Supernatural</span>
-              <span class="filter-chip" data-genre="Thriller">Thriller</span>
-              <span class="filter-chip" data-genre="Mecha">Mecha</span>
-              <span class="filter-chip" data-genre="Isekai">Isekai (tag)</span>
-            </div>
-          </div>
-
-          <!-- Year / Status / Format / Sort row -->
-          <div class="filter-section">
-            <div class="filter-section-label">Narrow Down</div>
-            <div class="filter-row">
-              <div class="filter-select-wrap">
-                <label for="f-year-from">Year from</label>
-                <select id="f-year-from" class="filter-select"></select>
-              </div>
-              <div class="filter-select-wrap">
-                <label for="f-year-to">Year to</label>
-                <select id="f-year-to" class="filter-select"></select>
-              </div>
-              <div class="filter-select-wrap">
-                <label for="f-score-min">Min score</label>
-                <select id="f-score-min" class="filter-select">
-                  <option value="">Any</option>
-                  <option value="6">6+</option>
-                  <option value="7">7+</option>
-                  <option value="7.5">7.5+</option>
-                  <option value="8">8+</option>
-                  <option value="8.5">8.5+</option>
-                  <option value="9">9+</option>
-                </select>
-              </div>
-              <div class="filter-select-wrap">
-                <label for="f-status">Status</label>
-                <select id="f-status" class="filter-select">
-                  <option value="">Any</option>
-                  <option value="FINISHED">Finished</option>
-                  <option value="RELEASING">Airing</option>
-                  <option value="NOT_YET_RELEASED">Upcoming</option>
-                </select>
-              </div>
-              <div class="filter-select-wrap">
-                <label for="f-format">Type</label>
-                <select id="f-format" class="filter-select">
-                  <option value="">Any</option>
-                  <option value="TV">TV Series</option>
-                  <option value="MOVIE">Movie</option>
-                  <option value="OVA">OVA</option>
-                  <option value="ONA">ONA</option>
-                  <option value="SPECIAL">Special</option>
-                </select>
-              </div>
-              <div class="filter-select-wrap">
-                <label for="f-sort">Sort by</label>
-                <select id="f-sort" class="filter-select">
-                  <option value="SCORE_DESC">Highest Score</option>
-                  <option value="POPULARITY_DESC">Most Popular</option>
-                  <option value="TRENDING_DESC">Trending</option>
-                  <option value="START_DATE_DESC">Newest First</option>
-                  <option value="FAVOURITES_DESC">Most Favourited</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-actions">
-            <button type="button" class="filter-apply-btn" onclick="applyAdvancedFilters()">Search with Filters</button>
-            <button type="button" class="filter-reset-btn" onclick="resetFilters()">Reset</button>
-          </div>
-        </div>
-      </div>
+      <!-- Scroll hint to filter section -->
+      <p style="margin-top:22px; font-size:0.82rem; color:var(--muted);">
+        Or <a href="#genres" style="color:var(--red);text-decoration:none;font-weight:600;">browse &amp; filter by genre ↓</a>
+      </p>
     </div>
     <div class="hero-scroll">
       <div class="scroll-dot"></div>
@@ -1675,24 +1534,94 @@
     <div class="container">
       <div class="genres-header">
         <div class="fade-left">
-          <div class="section-label">Browse by Vibe</div>
+          <div class="section-label">Browse &amp; Filter</div>
           <h2 class="section-title">What Are You<br />In the Mood For?</h2>
         </div>
-        <p class="section-desc fade-right" style="max-width:280px">Pick a genre or theme to get instant recommendations.</p>
+        <p class="section-desc fade-right" style="max-width:280px">Pick genres, set filters, and find anime that matches exactly what you want.</p>
       </div>
-      <div class="genres-grid">
-        <div class="genre-chip fade-scale"><span class="genre-emoji">⚔️</span><div class="genre-name">Action</div><div class="genre-count">3,200 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.04s"><span class="genre-emoji">🧠</span><div class="genre-name">Psychological</div><div class="genre-count">890 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.08s"><span class="genre-emoji">🔥</span><div class="genre-name">Shonen</div><div class="genre-count">4,100 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.12s"><span class="genre-emoji">🌌</span><div class="genre-name">Fantasy</div><div class="genre-count">2,700 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.16s"><span class="genre-emoji">🤖</span><div class="genre-name">Mecha</div><div class="genre-count">620 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.20s"><span class="genre-emoji">💀</span><div class="genre-name">Seinen</div><div class="genre-count">1,450 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.24s"><span class="genre-emoji">🏆</span><div class="genre-name">Sports</div><div class="genre-count">980 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.28s"><span class="genre-emoji">🌸</span><div class="genre-name">Romance</div><div class="genre-count">1,600 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.32s"><span class="genre-emoji">😂</span><div class="genre-name">Comedy</div><div class="genre-count">2,200 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.36s"><span class="genre-emoji">👻</span><div class="genre-name">Horror</div><div class="genre-count">410 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.40s"><span class="genre-emoji">🚀</span><div class="genre-name">Sci-Fi</div><div class="genre-count">750 titles</div></div>
-        <div class="genre-chip fade-scale" style="transition-delay:0.44s"><span class="genre-emoji">🗡️</span><div class="genre-name">Isekai</div><div class="genre-count">1,300 titles</div></div>
+
+      <!-- Genre chips (multi-select) -->
+      <div class="filter-genre-chips" id="filter-genre-chips" style="margin-bottom:28px;">
+        <span class="genre-filter-chip" data-genre="Action">⚔️ Action</span>
+        <span class="genre-filter-chip" data-genre="Adventure">🧭 Adventure</span>
+        <span class="genre-filter-chip" data-genre="Comedy">😂 Comedy</span>
+        <span class="genre-filter-chip" data-genre="Drama">🎭 Drama</span>
+        <span class="genre-filter-chip" data-genre="Fantasy">🌌 Fantasy</span>
+        <span class="genre-filter-chip" data-genre="Horror">👻 Horror</span>
+        <span class="genre-filter-chip" data-genre="Mystery">🔍 Mystery</span>
+        <span class="genre-filter-chip" data-genre="Psychological">🧠 Psychological</span>
+        <span class="genre-filter-chip" data-genre="Romance">🌸 Romance</span>
+        <span class="genre-filter-chip" data-genre="Sci-Fi">🚀 Sci-Fi</span>
+        <span class="genre-filter-chip" data-genre="Slice of Life">☕ Slice of Life</span>
+        <span class="genre-filter-chip" data-genre="Sports">🏆 Sports</span>
+        <span class="genre-filter-chip" data-genre="Supernatural">🔮 Supernatural</span>
+        <span class="genre-filter-chip" data-genre="Thriller">⚡ Thriller</span>
+        <span class="genre-filter-chip" data-genre="Mecha">🤖 Mecha</span>
+        <span class="genre-filter-chip" data-genre="Isekai">🗡️ Isekai</span>
+      </div>
+
+      <!-- Narrow-down row -->
+      <div class="genre-filter-row">
+        <div class="filter-select-wrap">
+          <label for="f-year-from">Year from</label>
+          <select id="f-year-from" class="filter-select"></select>
+        </div>
+        <div class="filter-select-wrap">
+          <label for="f-year-to">Year to</label>
+          <select id="f-year-to" class="filter-select"></select>
+        </div>
+        <div class="filter-select-wrap">
+          <label for="f-score-min">Min score</label>
+          <select id="f-score-min" class="filter-select">
+            <option value="">Any</option>
+            <option value="6">6+</option>
+            <option value="7">7+</option>
+            <option value="7.5">7.5+</option>
+            <option value="8">8+</option>
+            <option value="8.5">8.5+</option>
+            <option value="9">9+</option>
+          </select>
+        </div>
+        <div class="filter-select-wrap">
+          <label for="f-status">Status</label>
+          <select id="f-status" class="filter-select">
+            <option value="">Any</option>
+            <option value="FINISHED">Finished</option>
+            <option value="RELEASING">Airing</option>
+            <option value="NOT_YET_RELEASED">Upcoming</option>
+          </select>
+        </div>
+        <div class="filter-select-wrap">
+          <label for="f-format">Type</label>
+          <select id="f-format" class="filter-select">
+            <option value="">Any</option>
+            <option value="TV">TV Series</option>
+            <option value="MOVIE">Movie</option>
+            <option value="OVA">OVA</option>
+            <option value="ONA">ONA</option>
+            <option value="SPECIAL">Special</option>
+          </select>
+        </div>
+        <div class="filter-select-wrap">
+          <label for="f-sort">Sort by</label>
+          <select id="f-sort" class="filter-select">
+            <option value="SCORE_DESC">Highest Score</option>
+            <option value="POPULARITY_DESC">Most Popular</option>
+            <option value="TRENDING_DESC">Trending</option>
+            <option value="START_DATE_DESC">Newest First</option>
+            <option value="FAVOURITES_DESC">Most Favourited</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action row -->
+      <div class="genre-filter-actions">
+        <button type="button" class="filter-apply-btn" onclick="applyAdvancedFilters()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Find Anime
+        </button>
+        <button type="button" class="filter-reset-btn" onclick="resetFilters()">Reset All</button>
+        <span id="filter-active-count" class="filter-active-count"></span>
       </div>
     </div>
   </section>
@@ -2081,8 +2010,8 @@
       toEl.innerHTML   = toOpts;
     })();
 
-    // Chip toggle
-    document.querySelectorAll('#filter-genre-chips .filter-chip').forEach(chip => {
+    // Genre filter chip toggle (in genres section)
+    document.querySelectorAll('#filter-genre-chips .genre-filter-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         chip.classList.toggle('selected');
         updateFilterBadge();
@@ -2090,7 +2019,7 @@
     });
 
     function getActiveFilterGenres() {
-      return [...document.querySelectorAll('#filter-genre-chips .filter-chip.selected')]
+      return [...document.querySelectorAll('#filter-genre-chips .genre-filter-chip.selected')]
         .map(c => c.dataset.genre);
     }
 
@@ -2112,13 +2041,8 @@
       const status   = document.getElementById('f-status')?.value    ? 1 : 0;
       const format   = document.getElementById('f-format')?.value    ? 1 : 0;
       const total    = genres + yearFrom + yearTo + score + status + format;
-      const badge    = document.getElementById('filter-count-badge');
-      const toggleBtn = document.getElementById('filter-toggle-btn');
-      if (badge) {
-        badge.textContent = total;
-        badge.classList.toggle('visible', total > 0);
-      }
-      if (toggleBtn) toggleBtn.classList.toggle('active', total > 0);
+      const counter  = document.getElementById('filter-active-count');
+      if (counter) counter.textContent = total > 0 ? `${total} filter${total > 1 ? 's' : ''} active` : '';
     }
 
     // Wire all filter selects to update badge on change
@@ -2126,13 +2050,8 @@
       document.getElementById(id)?.addEventListener('change', updateFilterBadge);
     });
 
-    function toggleFilterPanel() {
-      const panel = document.getElementById('advanced-filter-panel');
-      if (panel) panel.classList.toggle('open');
-    }
-
     function resetFilters() {
-      document.querySelectorAll('#filter-genre-chips .filter-chip').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('#filter-genre-chips .genre-filter-chip').forEach(c => c.classList.remove('selected'));
       ['f-year-from','f-year-to','f-score-min','f-status','f-format'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -2173,8 +2092,10 @@
 
     function applyAdvancedFilters() {
       const query = document.querySelector('.hero-search input')?.value.trim() || '';
-      if (!hasActiveFilters() && !query) return;
-      document.getElementById('advanced-filter-panel')?.classList.remove('open');
+      if (!hasActiveFilters() && !query) {
+        alert('Select at least one genre or filter to search.');
+        return;
+      }
       doSearch(query);
     }
 
@@ -2535,13 +2456,6 @@
     })();
 
     // ── Genre chip click ──────────────────────────────────────────────────────
-    document.querySelectorAll('.genre-chip').forEach(chip => {
-      chip.addEventListener('click', function () {
-        const genre = this.querySelector('.genre-name')?.textContent;
-        if (genre) { searchInput.value = genre; doSearch(genre); }
-      });
-    });
-
     // ── Auth state ────────────────────────────────────────────────────────────
     let sb = null;
     let currentUser = null;
