@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getRecommendations, getTrendingNow, normalizeAniList } from './recommender.js';
 import { getAnimeById, searchAnime } from './sources/jikan.js';
-import { getSimilarByMalId } from './sources/anilist.js';
+import { getSimilarByMalId, searchAdvanced } from './sources/anilist.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -116,6 +116,43 @@ app.get('/api/recommend', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('[recommend]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/search-advanced ─────────────────────────────────────────────────
+const ALLOWED_SORTS    = new Set(['SCORE_DESC','SCORE','POPULARITY_DESC','POPULARITY','TRENDING_DESC','START_DATE_DESC','START_DATE','FAVOURITES_DESC']);
+const ALLOWED_STATUSES = new Set(['FINISHED','RELEASING','NOT_YET_RELEASED','CANCELLED','HIATUS']);
+const ALLOWED_FORMATS  = new Set(['TV','TV_SHORT','MOVIE','SPECIAL','OVA','ONA','MUSIC']);
+
+app.get('/api/search-advanced', async (req, res) => {
+  const { q, genres, tags, year_from, year_to, score_min, status, format, sort = 'SCORE_DESC', page = '1' } = req.query;
+
+  const parsedPage     = Math.max(1, parseInt(page) || 1);
+  const parsedYearFrom = year_from ? parseInt(year_from) : undefined;
+  const parsedYearTo   = year_to   ? parseInt(year_to)   : undefined;
+  const parsedScore    = score_min ? parseFloat(score_min) : undefined;
+  const sortValue      = ALLOWED_SORTS.has(sort) ? sort : 'SCORE_DESC';
+  const statusValue    = status && ALLOWED_STATUSES.has(status.toUpperCase()) ? status.toUpperCase() : undefined;
+  const formatValue    = format && ALLOWED_FORMATS.has(format.toUpperCase()) ? format.toUpperCase() : undefined;
+  const genreList      = genres ? genres.split(',').map(g => g.trim()).filter(Boolean) : [];
+  const tagList        = tags   ? tags.split(',').map(t => t.trim()).filter(Boolean)   : [];
+
+  const hasFilters = q || genreList.length || tagList.length || parsedYearFrom || parsedYearTo || parsedScore || statusValue || formatValue;
+  if (!hasFilters) return res.status(400).json({ error: 'Provide at least one search parameter.' });
+
+  try {
+    const result = await searchAdvanced({
+      search:   q ? q.trim() : undefined,
+      genres:   genreList.length ? genreList : undefined,
+      tags:     tagList.length   ? tagList   : undefined,
+      yearFrom: parsedYearFrom, yearTo: parsedYearTo, scoreMin: parsedScore,
+      status: statusValue, format: formatValue, sort: [sortValue],
+      page: parsedPage, perPage: 24,
+    });
+    res.json({ page: result.currentPage, hasNextPage: result.hasNextPage, total: result.total, results: result.media.map(normalizeAniList) });
+  } catch (err) {
+    console.error('[search-advanced]', err.message);
     res.status(500).json({ error: err.message });
   }
 });

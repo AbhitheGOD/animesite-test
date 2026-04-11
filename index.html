@@ -1294,6 +1294,120 @@
       text-align: left; cursor: pointer; border-radius: 7px; transition: background 0.15s;
     }
     .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
+
+    /* ── Advanced Filter Panel ───────────────────────────────────────────────── */
+    .search-filter-wrap {
+      max-width: 520px; margin: 12px auto 0; position: relative;
+    }
+    .filter-toggle-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 16px; border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .filter-toggle-btn:hover { border-color: rgba(232,39,42,0.45); color: var(--text); }
+    .filter-toggle-btn.active {
+      border-color: var(--red); background: rgba(232,39,42,0.1); color: var(--text);
+    }
+    .filter-count-badge {
+      display: none; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--red); color: #fff; font-size: 0.65rem; font-weight: 700;
+    }
+    .filter-count-badge.visible { display: inline-flex; }
+    .advanced-filter-panel {
+      display: none;
+      background: rgba(17,17,25,0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 22px 24px 18px;
+      margin-top: 10px;
+      -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+      box-shadow: 0 20px 56px rgba(0,0,0,0.7);
+      text-align: left;
+      animation: filterSlideIn 0.2s ease;
+    }
+    @keyframes filterSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .advanced-filter-panel.open { display: block; }
+    .filter-section { margin-bottom: 18px; }
+    .filter-section:last-child { margin-bottom: 0; }
+    .filter-section-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--red); margin-bottom: 10px;
+    }
+    .filter-genre-chips {
+      display: flex; flex-wrap: wrap; gap: 7px;
+    }
+    .filter-chip {
+      padding: 5px 13px; border-radius: 100px; cursor: pointer;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem; font-weight: 500;
+      transition: border-color 0.18s, color 0.18s, background 0.18s;
+      -webkit-user-select: none; user-select: none;
+    }
+    .filter-chip:hover { border-color: rgba(232,39,42,0.4); color: var(--text); }
+    .filter-chip.selected {
+      border-color: var(--red); background: rgba(232,39,42,0.12); color: var(--text);
+    }
+    .filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .filter-select-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 110px; }
+    .filter-select-wrap label { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; }
+    .filter-select {
+      padding: 8px 12px; border-radius: 8px;
+      background: var(--raised); border: 1px solid var(--border);
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; outline: none; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .filter-select:focus { border-color: rgba(232,39,42,0.45); }
+    .filter-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .filter-apply-btn {
+      flex: 1; padding: 9px 18px; border-radius: 8px;
+      background: var(--red); border: none; color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 4px 16px rgba(232,39,42,0.3);
+    }
+    .filter-apply-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .filter-reset-btn {
+      padding: 9px 18px; border-radius: 8px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .filter-reset-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+    /* ── Search error state ─────────────────────────────────────────────────── */
+    .search-error-state {
+      grid-column: 1 / -1; padding: 48px 0; text-align: center; color: var(--muted);
+    }
+    .search-error-icon  { font-size: 2.5rem; margin-bottom: 12px; }
+    .search-error-title { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); font-weight: 600; }
+    .search-error-sub   { font-size: 0.9rem; }
+    /* Format badge on non-TV result cards */
+    .card-format-badge {
+      position: absolute; top: 8px; left: 8px;
+      padding: 2px 7px; border-radius: 4px;
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+      background: rgba(8,8,14,0.8); color: var(--muted); z-index: 3;
+    }
+    /* Relation badge on result cards */
+    .relation-badge {
+      position: absolute; top: 8px; right: 8px;
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; z-index: 3;
+    }
+    .relation-badge.sequel   { background: rgba(232,39,42,0.88); color: #fff; }
+    .relation-badge.prequel  { background: rgba(245,160,26,0.88); color: #000; }
+    .relation-badge.spinoff  { background: rgba(80,80,200,0.88);  color: #fff; }
   </style>
 </head>
 <body>
@@ -1379,6 +1493,102 @@
         <span>Sports</span>
         <span>Romance</span>
         <span>Sci-Fi</span>
+      </div>
+
+      <!-- Advanced filter toggle + panel -->
+      <div class="search-filter-wrap" style="text-align:center; margin-top:18px;">
+        <button type="button" id="filter-toggle-btn" class="filter-toggle-btn" onclick="toggleFilterPanel()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Advanced Filters
+          <span id="filter-count-badge" class="filter-count-badge">0</span>
+        </button>
+
+        <div id="advanced-filter-panel" class="advanced-filter-panel">
+          <!-- Genres -->
+          <div class="filter-section">
+            <div class="filter-section-label">Genres</div>
+            <div class="filter-genre-chips" id="filter-genre-chips">
+              <span class="filter-chip" data-genre="Action">Action</span>
+              <span class="filter-chip" data-genre="Adventure">Adventure</span>
+              <span class="filter-chip" data-genre="Comedy">Comedy</span>
+              <span class="filter-chip" data-genre="Drama">Drama</span>
+              <span class="filter-chip" data-genre="Fantasy">Fantasy</span>
+              <span class="filter-chip" data-genre="Horror">Horror</span>
+              <span class="filter-chip" data-genre="Mystery">Mystery</span>
+              <span class="filter-chip" data-genre="Psychological">Psychological</span>
+              <span class="filter-chip" data-genre="Romance">Romance</span>
+              <span class="filter-chip" data-genre="Sci-Fi">Sci-Fi</span>
+              <span class="filter-chip" data-genre="Slice of Life">Slice of Life</span>
+              <span class="filter-chip" data-genre="Sports">Sports</span>
+              <span class="filter-chip" data-genre="Supernatural">Supernatural</span>
+              <span class="filter-chip" data-genre="Thriller">Thriller</span>
+              <span class="filter-chip" data-genre="Mecha">Mecha</span>
+              <span class="filter-chip" data-genre="Isekai">Isekai (tag)</span>
+            </div>
+          </div>
+
+          <!-- Year / Status / Format / Sort row -->
+          <div class="filter-section">
+            <div class="filter-section-label">Narrow Down</div>
+            <div class="filter-row">
+              <div class="filter-select-wrap">
+                <label for="f-year-from">Year from</label>
+                <select id="f-year-from" class="filter-select"></select>
+              </div>
+              <div class="filter-select-wrap">
+                <label for="f-year-to">Year to</label>
+                <select id="f-year-to" class="filter-select"></select>
+              </div>
+              <div class="filter-select-wrap">
+                <label for="f-score-min">Min score</label>
+                <select id="f-score-min" class="filter-select">
+                  <option value="">Any</option>
+                  <option value="6">6+</option>
+                  <option value="7">7+</option>
+                  <option value="7.5">7.5+</option>
+                  <option value="8">8+</option>
+                  <option value="8.5">8.5+</option>
+                  <option value="9">9+</option>
+                </select>
+              </div>
+              <div class="filter-select-wrap">
+                <label for="f-status">Status</label>
+                <select id="f-status" class="filter-select">
+                  <option value="">Any</option>
+                  <option value="FINISHED">Finished</option>
+                  <option value="RELEASING">Airing</option>
+                  <option value="NOT_YET_RELEASED">Upcoming</option>
+                </select>
+              </div>
+              <div class="filter-select-wrap">
+                <label for="f-format">Type</label>
+                <select id="f-format" class="filter-select">
+                  <option value="">Any</option>
+                  <option value="TV">TV Series</option>
+                  <option value="MOVIE">Movie</option>
+                  <option value="OVA">OVA</option>
+                  <option value="ONA">ONA</option>
+                  <option value="SPECIAL">Special</option>
+                </select>
+              </div>
+              <div class="filter-select-wrap">
+                <label for="f-sort">Sort by</label>
+                <select id="f-sort" class="filter-select">
+                  <option value="SCORE_DESC">Highest Score</option>
+                  <option value="POPULARITY_DESC">Most Popular</option>
+                  <option value="TRENDING_DESC">Trending</option>
+                  <option value="START_DATE_DESC">Newest First</option>
+                  <option value="FAVOURITES_DESC">Most Favourited</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="filter-actions">
+            <button type="button" class="filter-apply-btn" onclick="applyAdvancedFilters()">Search with Filters</button>
+            <button type="button" class="filter-reset-btn" onclick="resetFilters()">Reset</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="hero-scroll">
@@ -1728,35 +1938,42 @@
     const searchInput = document.querySelector('.hero-search input');
     const searchBtn   = document.querySelector('.hero-search button');
 
+    // Track whether the current results came from advanced-filter mode
+    let isFilteredMode = false;
+
     async function doSearch(query) {
-      if (!query) return;
-      currentQuery = query;
+      if (!query && !hasActiveFilters()) return;
+      currentQuery = query || '';
       currentPage  = 1;
       closeAutocomplete();
       searchBtn.textContent = 'Scouting...';
       searchBtn.disabled = true;
-      // Reset score slider
-      const slider = document.getElementById('score-slider');
+      const slider   = document.getElementById('score-slider');
       const scoreVal = document.getElementById('score-val');
-      if (slider) { slider.value = 0; }
-      if (scoreVal) { scoreVal.textContent = 'Any'; }
+      if (slider)   slider.value = 0;
+      if (scoreVal) scoreVal.textContent = 'Any';
+
       try {
-        const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}&page=1`);
-        if (!res.ok) throw new Error('Search failed');
-        const data = await res.json();
+        let data;
+        if (hasActiveFilters()) {
+          isFilteredMode = true;
+          data = await fetchAdvanced(currentQuery, 1);
+          data.isFiltered = true;
+        } else {
+          isFilteredMode = false;
+          const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(query)}&page=1`);
+          if (!res.ok) throw new Error('Search failed');
+          data = await res.json();
+        }
         hasNextPage = data.hasNextPage ?? false;
         renderResults(data, false);
-        saveRecentSearch(query);
+        if (query) saveRecentSearch(query);
         document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
-        const section = document.getElementById('results-section');
-        const grid = document.getElementById('results-grid');
+        const section   = document.getElementById('results-section');
+        const grid      = document.getElementById('results-grid');
         const filterBar = document.getElementById('filter-bar');
-        grid.innerHTML = `<div style="grid-column:1/-1;padding:48px 0;text-align:center;color:var(--muted)">
-          <div style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
-          <div style="font-size:1.1rem;margin-bottom:8px;color:var(--text);font-weight:600">Could not fetch recommendations</div>
-          <div style="font-size:0.9rem">Try a different title or check your connection.</div>
-        </div>`;
+        grid.innerHTML = '<div class="search-error-state"><div class="search-error-icon">⚠️</div><div class="search-error-title">Could not fetch results</div><div class="search-error-sub">Try a different title or adjust your filters.</div></div>';
         filterBar.style.display = 'none';
         section.style.display = 'block';
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1773,9 +1990,15 @@
       btn.disabled = true;
       currentPage++;
       try {
-        const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(currentQuery)}&page=${currentPage}`);
-        if (!res.ok) throw new Error('Failed');
-        const data = await res.json();
+        let data;
+        if (isFilteredMode) {
+          data = await fetchAdvanced(currentQuery, currentPage);
+          data.isFiltered = true;
+        } else {
+          const res = await fetch(`${API}/api/recommend?q=${encodeURIComponent(currentQuery)}&page=${currentPage}`);
+          if (!res.ok) throw new Error('Failed');
+          data = await res.json();
+        }
         hasNextPage = data.hasNextPage ?? false;
         renderResults(data, true);
       } catch {
@@ -1829,7 +2052,7 @@
       } catch {}
     }
 
-    // ── Score filter ──────────────────────────────────────────────────────────
+    // ── Score filter (post-render client-side) ────────────────────────────────
     function applyScoreFilter(val) {
       const min = parseFloat(val);
       const label = document.getElementById('score-val');
@@ -1838,6 +2061,121 @@
         const score = parseFloat(card.dataset.score) || 0;
         card.style.display = (min === 0 || score === 0 || score >= min) ? '' : 'none';
       });
+    }
+
+    // ── Advanced filter panel ─────────────────────────────────────────────────
+    // Populate year dropdowns
+    (function populateYears() {
+      const now = new Date().getFullYear();
+      const fromEl = document.getElementById('f-year-from');
+      const toEl   = document.getElementById('f-year-to');
+      if (!fromEl || !toEl) return;
+      const placeholder = '<option value="">Any</option>';
+      let fromOpts = placeholder;
+      let toOpts   = placeholder;
+      for (let y = now; y >= 1960; y--) {
+        fromOpts += `<option value="${y}">${y}</option>`;
+        toOpts   += `<option value="${y}">${y}</option>`;
+      }
+      fromEl.innerHTML = fromOpts;
+      toEl.innerHTML   = toOpts;
+    })();
+
+    // Chip toggle
+    document.querySelectorAll('#filter-genre-chips .filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('selected');
+        updateFilterBadge();
+      });
+    });
+
+    function getActiveFilterGenres() {
+      return [...document.querySelectorAll('#filter-genre-chips .filter-chip.selected')]
+        .map(c => c.dataset.genre);
+    }
+
+    function hasActiveFilters() {
+      const genres   = getActiveFilterGenres();
+      const yearFrom = document.getElementById('f-year-from')?.value;
+      const yearTo   = document.getElementById('f-year-to')?.value;
+      const score    = document.getElementById('f-score-min')?.value;
+      const status   = document.getElementById('f-status')?.value;
+      const format   = document.getElementById('f-format')?.value;
+      return genres.length || yearFrom || yearTo || score || status || format;
+    }
+
+    function updateFilterBadge() {
+      const genres   = getActiveFilterGenres().length;
+      const yearFrom = document.getElementById('f-year-from')?.value ? 1 : 0;
+      const yearTo   = document.getElementById('f-year-to')?.value   ? 1 : 0;
+      const score    = document.getElementById('f-score-min')?.value ? 1 : 0;
+      const status   = document.getElementById('f-status')?.value    ? 1 : 0;
+      const format   = document.getElementById('f-format')?.value    ? 1 : 0;
+      const total    = genres + yearFrom + yearTo + score + status + format;
+      const badge    = document.getElementById('filter-count-badge');
+      const toggleBtn = document.getElementById('filter-toggle-btn');
+      if (badge) {
+        badge.textContent = total;
+        badge.classList.toggle('visible', total > 0);
+      }
+      if (toggleBtn) toggleBtn.classList.toggle('active', total > 0);
+    }
+
+    // Wire all filter selects to update badge on change
+    ['f-year-from','f-year-to','f-score-min','f-status','f-format','f-sort'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', updateFilterBadge);
+    });
+
+    function toggleFilterPanel() {
+      const panel = document.getElementById('advanced-filter-panel');
+      if (panel) panel.classList.toggle('open');
+    }
+
+    function resetFilters() {
+      document.querySelectorAll('#filter-genre-chips .filter-chip').forEach(c => c.classList.remove('selected'));
+      ['f-year-from','f-year-to','f-score-min','f-status','f-format'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      const sortEl = document.getElementById('f-sort');
+      if (sortEl) sortEl.value = 'SCORE_DESC';
+      updateFilterBadge();
+    }
+
+    async function fetchAdvanced(query, page = 1) {
+      const genres   = getActiveFilterGenres();
+      const yearFrom = document.getElementById('f-year-from')?.value;
+      const yearTo   = document.getElementById('f-year-to')?.value;
+      const score    = document.getElementById('f-score-min')?.value;
+      const status   = document.getElementById('f-status')?.value;
+      const format   = document.getElementById('f-format')?.value;
+      const sort     = document.getElementById('f-sort')?.value || 'SCORE_DESC';
+
+      // AniList uses tag lookup for Isekai — split genres vs tags
+      const tagGenres  = ['Isekai'];
+      const genreList  = genres.filter(g => !tagGenres.includes(g));
+      const tagList    = genres.filter(g => tagGenres.includes(g));
+
+      const params = new URLSearchParams({ page, sort });
+      if (query)              params.set('q', query);
+      if (genreList.length)   params.set('genres', genreList.join(','));
+      if (tagList.length)     params.set('tags', tagList.join(','));
+      if (yearFrom)           params.set('year_from', yearFrom);
+      if (yearTo)             params.set('year_to', yearTo);
+      if (score)              params.set('score_min', score);
+      if (status)             params.set('status', status);
+      if (format)             params.set('format', format);
+
+      const res = await fetch(`${API}/api/search-advanced?${params}`);
+      if (!res.ok) throw new Error('Advanced search failed');
+      return res.json();
+    }
+
+    function applyAdvancedFilters() {
+      const query = document.querySelector('.hero-search input')?.value.trim() || '';
+      if (!hasActiveFilters() && !query) return;
+      document.getElementById('advanced-filter-panel')?.classList.remove('open');
+      doSearch(query);
     }
 
     // ── Surprise Me ───────────────────────────────────────────────────────────
@@ -1872,11 +2210,15 @@
       const genres = (anime.genres || []).slice(0, 2).map(g => `<span class="card-genre-tag">${g}</span>`).join('');
       const safeTitle = (anime.title || 'Unknown').replace(/"/g, '&quot;');
       const safePoster = (poster || '').replace(/"/g, '&quot;');
+      const RELATION_LABELS = { SEQUEL: ['sequel','Sequel'], PREQUEL: ['prequel','Prequel'], SIDE_STORY: ['spinoff','Side Story'], ALTERNATIVE_VERSION: ['spinoff','Alt. Ver'], PARENT: ['prequel','Parent'] };
+      const rel = anime.relevance && RELATION_LABELS[anime.relevance] ? RELATION_LABELS[anime.relevance] : null;
+      const formatBadge = anime.format && anime.format !== 'TV' ? `<span class="card-format-badge">${anime.format}</span>` : '';
       return `
         <div class="card-img">
           <img src="${poster}" alt="${safeTitle}" loading="lazy" onerror="this.src='https://placehold.co/240x320/111119/E8272A?text=${encodeURIComponent(anime.title || '?')}'"/>
           <div class="card-img-overlay"></div>
           ${score ? `<span class="card-score">${score}</span>` : ''}
+          ${rel ? `<span class="relation-badge ${rel[0]}">${rel[1]}</span>` : formatBadge}
           <button class="watchlist-btn ${isSaved ? 'saved' : ''}"
             data-malid="${anime.malId || 0}"
             data-title="${safeTitle}"
@@ -1900,16 +2242,26 @@
       const filterBar = document.getElementById('filter-bar');
 
       if (!append) {
-        title.textContent = data.isGenreSearch
-          ? `Top ${data.genreLabel} Anime`
-          : `Because you liked "${data.baseAnime?.title || 'that'}"`;
+        if (data.isFiltered) {
+          const activeGenres = getActiveFilterGenres();
+          title.textContent = activeGenres.length
+            ? `Filtered: ${activeGenres.slice(0,3).join(' · ')}`
+            : 'Filtered Results';
+        } else if (data.isGenreSearch) {
+          title.textContent = `Top ${data.genreLabel} Anime`;
+        } else {
+          title.textContent = `Because you liked "${data.baseAnime?.title || 'that'}"`;
+        }
         grid.innerHTML = '';
         filterBar.style.display = 'flex';
       }
 
-      const recs = !append && !data.isGenreSearch && data.baseAnime
-        ? [data.baseAnime, ...(data.recommendations || [])]
-        : (data.recommendations || []);
+      // advanced search returns { results: [] }, recommend returns { recommendations: [] }
+      const recs = data.results
+        ? data.results
+        : (!append && !data.isGenreSearch && data.baseAnime
+          ? [data.baseAnime, ...(data.recommendations || [])]
+          : (data.recommendations || []));
 
       if (!append && !recs.length) {
         grid.innerHTML = `<div class="empty-state-illus" style="grid-column:1/-1">
