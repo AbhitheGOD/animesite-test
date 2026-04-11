@@ -300,13 +300,13 @@
       transition: border-color 0.2s, color 0.2s;
     }
     .settings-fab:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
-    /* In theater mode the message bar owns bottom-right — move FAB to top-right */
+    /* In theater mode the message bar owns bottom-right — move FAB just below the nav */
     .watchparty-panel.theater ~ .settings-fab,
     body:has(.watchparty-panel.theater) .settings-fab {
-      bottom: auto; top: 14px; right: 14px;
+      bottom: auto; top: 70px; right: 14px;
     }
     body:has(.watchparty-panel.theater) .settings-panel {
-      bottom: auto; top: 62px; right: 14px;
+      bottom: auto; top: 118px; right: 14px;
     }
     .settings-panel {
       display: none; position: fixed; bottom: 68px; right: 20px; z-index: 200;
