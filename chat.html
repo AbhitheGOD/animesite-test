@@ -332,6 +332,14 @@
       color: var(--text); letter-spacing: 0.04em;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .wp-source-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.03em;
+      color: var(--muted); background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 2px 9px; width: fit-content;
+    }
+    .wp-source-icon { color: #ff0000; font-size: 0.6rem; }
     .wp-status { font-size: 0.78rem; color: var(--muted); }
     .wp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
     .wp-btn {
@@ -798,6 +806,7 @@
           <!-- Normal mode info panel (hidden in theater mode) -->
           <div class="wp-info">
             <div class="wp-title" id="wp-title">Watch Session</div>
+            <div class="wp-source-badge"><span class="wp-source-icon">▶</span> YouTube only &middot; Tab sharing coming soon</div>
             <div class="wp-status" id="wp-status">Syncing…</div>
             <div class="wp-actions">
               <button type="button" class="wp-btn wp-btn-primary wp-admin-ctrl" id="wp-play-btn" onclick="wpTogglePlay()">▶ Play</button>
