@@ -1504,10 +1504,13 @@
       if (!isAdmin) return;
       await startWatchparty(videoId, title);
       await sb.from('room_queue').delete().eq('id', queueId);
+      loadQueue();
     }
 
     async function removeFromQueue(queueId) {
-      await sb.from('room_queue').delete().eq('id', queueId);
+      const { error } = await sb.from('room_queue').delete().eq('id', queueId);
+      if (error) { showToast('Could not remove: ' + error.message); return; }
+      loadQueue();
     }
 
     function openWatchpartyModalInMode(mode) {
