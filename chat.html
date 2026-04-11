@@ -239,6 +239,40 @@
     }
     .copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ── PRESENCE TOASTS (GMeet-style join/leave) ──────────────────────────── */
+    .presence-toasts {
+      position: fixed; bottom: 24px; left: 24px;
+      display: flex; flex-direction: column-reverse; gap: 8px;
+      z-index: 300; pointer-events: none;
+    }
+    .presence-toast {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--raised); border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px 14px 8px 10px;
+      font-size: 0.82rem; color: var(--text); max-width: 230px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    .presence-toast.show { opacity: 1; transform: translateY(0); }
+    .presence-toast-av {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .presence-toast-name { font-weight: 600; }
+    .presence-toast-action { color: var(--muted); }
+
+    /* ── VIEWER COUNT ──────────────────────────────────────────────────────── */
+    .wp-viewer-count {
+      display: none; align-items: center; gap: 6px;
+      font-size: 0.72rem; color: var(--muted); font-weight: 500;
+    }
+    .wp-viewer-count.visible { display: flex; }
+    .wp-viewer-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #22c55e; box-shadow: 0 0 6px #22c55e88; flex-shrink: 0;
+    }
+
     /* ── MOBILE ──────────────────────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .chat-sidebar {
@@ -748,6 +782,9 @@
   <!-- COPY TOAST -->
   <div class="copy-toast" id="copy-toast">Copied!</div>
 
+  <!-- PRESENCE TOASTS -->
+  <div class="presence-toasts" id="presence-toasts"></div>
+
   <!-- WATCHPARTY PICKER MODAL -->
   <div id="modal-watchparty" class="modal-bd" onclick="if(event.target===this)closeWatchpartyModal()">
     <div class="modal-card">
@@ -807,6 +844,10 @@
           <div class="wp-info">
             <div class="wp-title" id="wp-title">Watch Session</div>
             <div class="wp-source-badge"><span class="wp-source-icon">▶</span> YouTube only &middot; Tab sharing coming soon</div>
+            <div class="wp-viewer-count" id="wp-viewer-count">
+              <span class="wp-viewer-dot"></span>
+              <span id="wp-viewer-num">1</span> watching
+            </div>
             <div class="wp-status" id="wp-status">Syncing…</div>
             <div class="wp-actions">
               <button type="button" class="wp-btn wp-btn-primary wp-admin-ctrl" id="wp-play-btn" onclick="wpTogglePlay()">▶ Play</button>
@@ -1043,9 +1084,44 @@
       setTimeout(() => { location.href = '/rooms.html'; }, 1500);
     }
 
+    // ── Presence toasts & viewer count ───────────────────────────────────────
+    function showPresenceToast(name, action) {
+      const container = document.getElementById('presence-toasts');
+      const el = document.createElement('div');
+      el.className = 'presence-toast';
+      el.innerHTML = `
+        <div class="presence-toast-av" style="background:${userColor(name)}">${escHtml(name[0].toUpperCase())}</div>
+        <span><span class="presence-toast-name">${escHtml(name)}</span> <span class="presence-toast-action">${action}</span></span>`;
+      container.appendChild(el);
+      requestAnimationFrame(() => el.classList.add('show'));
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 250);
+      }, 3500);
+    }
+
+    function updateViewerCount() {
+      if (!channel) return;
+      const state = channel.presenceState();
+      const watchers = Object.values(state).flat().filter(p => p.watching).length;
+      const el = document.getElementById('wp-viewer-count');
+      const numEl = document.getElementById('wp-viewer-num');
+      if (wpSession && watchers > 0) {
+        numEl.textContent = watchers;
+        el.classList.add('visible');
+      } else {
+        el.classList.remove('visible');
+      }
+    }
+
+    async function trackPresence(watching) {
+      if (!channel) return;
+      await channel.track({ user_id: currentUser.id, username, watching });
+    }
+
     // ── Realtime subscription ─────────────────────────────────────────────────
     function subscribeToRoom() {
-      channel = sb.channel(`room:${roomId}`)
+      channel = sb.channel(`room:${roomId}`, { config: { presence: { key: currentUser.id } } })
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'messages',
           filter: `room_id=eq.${roomId}`
@@ -1155,7 +1231,26 @@
             applyRemoteSession(payload.new);
           }
         })
-        .subscribe();
+        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          if (key === currentUser.id) return;
+          const name = newPresences[0]?.username || 'Someone';
+          showPresenceToast(name, 'joined the room');
+          updateViewerCount();
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          if (key === currentUser.id) return;
+          const name = leftPresences[0]?.username || 'Someone';
+          showPresenceToast(name, 'left the room');
+          updateViewerCount();
+        })
+        .on('presence', { event: 'sync' }, () => {
+          updateViewerCount();
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await trackPresence(false);
+          }
+        });
     }
 
     // ── Send text message ─────────────────────────────────────────────────────
@@ -1884,6 +1979,8 @@
       const btn = document.getElementById('nav-watch-btn');
       btn.classList.add('active');
       btn.innerHTML = '<span class="wp-live-dot"></span><span>Watching</span>';
+      trackPresence(true);
+      updateViewerCount();
     }
 
     function closeWatchpartyPanel() {
@@ -1894,6 +1991,8 @@
       const btn = document.getElementById('nav-watch-btn');
       btn.classList.remove('active');
       btn.innerHTML = '▶ <span>Watch</span>';
+      trackPresence(false);
+      updateViewerCount();
     }
 
     function onWatchBtnClick() {
