@@ -417,12 +417,32 @@
     let currentFilter = 'all';
     let allItems = [];
 
-    // ── Supabase + Auth ──────────────────────────────────────────────────────
+    function getLocalWatchlist() {
+      try { return JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]'); } catch { return []; }
+    }
+    function saveLocalWatchlist(list) {
+      localStorage.setItem('aniscout_watchlist', JSON.stringify(list));
+    }
+
+    // ── Load watchlist (localStorage — always works, no login needed) ─────────
+    function loadWatchlist() {
+      allItems = getLocalWatchlist();
+      document.getElementById('wl-state').style.display = 'none';
+      document.getElementById('wl-header').classList.remove('wl-hidden');
+      document.getElementById('wl-filter-bar').classList.remove('wl-hidden');
+      if (allItems.length === 0) { showEmptyState(); return; }
+      updateCount();
+      renderGrid(allItems);
+      applyFilter(currentFilter);
+    }
+
+    // ── Supabase auth (background — only for cross-device sync) ──────────────
     async function initSupabase() {
+      loadWatchlist(); // show localStorage immediately
       try {
         const res = await fetch('/api/supabase-config');
         const config = await res.json();
-        if (!config.url || !config.anonKey) { showUnauthState(); return; }
+        if (!config.url || !config.anonKey) return;
         sb = supabase.createClient(config.url, config.anonKey);
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
@@ -433,62 +453,46 @@
             if (uRow) { username = uRow.username; localStorage.setItem('aniscout_username', username); }
           }
           updateSettingsPanel();
-          await loadWatchlist();
+          syncFromSupabase();
         } else {
           updateSettingsPanel();
-          showLocalWatchlist();
         }
-      } catch { showLocalWatchlist(); }
+      } catch { /* silent — localStorage already showing */ }
     }
 
-    function getLocalWatchlist() {
-      try { return JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]'); } catch { return []; }
-    }
+    // ── Supabase background sync (merges cloud ↔ local) ──────────────────────
+    async function syncFromSupabase() {
+      if (!currentUser || !sb) return;
+      try {
+        const { data: cloudItems } = await sb.from('watchlist')
+          .select('*').eq('user_id', currentUser.id).order('added_at', { ascending: false });
+        if (!cloudItems) return;
 
-    // ── Load watchlist ───────────────────────────────────────────────────────
-    async function loadWatchlist() {
-      const { data: items } = await sb.from('watchlist')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('added_at', { ascending: false });
+        const local = getLocalWatchlist();
+        const cloudIds = new Set(cloudItems.map(i => i.mal_id));
+        const localIds = new Set(local.map(i => i.malId));
 
-      // Always merge localStorage items that aren't already in Supabase
-      const local = getLocalWatchlist();
-      if (local.length > 0) {
-        const existingIds = new Set((items || []).map(i => i.mal_id));
-        const missing = local.filter(a => !existingIds.has(a.malId));
-        if (missing.length > 0) {
-          const rows = missing.map(a => ({
-            user_id: currentUser.id,
-            username: username || '',
-            mal_id: a.malId,
-            title: a.title,
-            poster: a.poster || '',
-            score: a.score || 0,
-            year: a.year || 0,
-            status: a.status || 'plan_to_watch'
-          }));
-          await sb.from('watchlist').upsert(rows, { onConflict: 'user_id,mal_id' });
-          const { data: synced } = await sb.from('watchlist')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('added_at', { ascending: false });
-          allItems = synced || items || [];
-        } else {
-          allItems = items || [];
+        // Push local-only items up to Supabase
+        const localOnly = local.filter(a => !cloudIds.has(a.malId));
+        if (localOnly.length > 0) {
+          await sb.from('watchlist').upsert(localOnly.map(a => ({
+            user_id: currentUser.id, username: username || '',
+            mal_id: a.malId, title: a.title, poster: a.poster || '',
+            score: a.score || 0, year: a.year || 0, status: a.status || 'plan_to_watch'
+          })), { onConflict: 'user_id,mal_id' });
         }
-      } else {
-        allItems = items || [];
-      }
 
-      document.getElementById('wl-state').style.display = 'none';
-      document.getElementById('wl-header').classList.remove('wl-hidden');
-      document.getElementById('wl-filter-bar').classList.remove('wl-hidden');
-
-      if (allItems.length === 0) { showEmptyState(); return; }
-      updateCount();
-      renderGrid(allItems);
-      applyFilter(currentFilter);
+        // Pull cloud-only items down to localStorage
+        const cloudOnly = cloudItems.filter(i => !localIds.has(i.mal_id));
+        if (cloudOnly.length > 0) {
+          const merged = [...local, ...cloudOnly.map(i => ({
+            malId: i.mal_id, title: i.title, poster: i.poster || '',
+            score: i.score || 0, year: i.year || 0, status: i.status || 'plan_to_watch'
+          }))];
+          saveLocalWatchlist(merged);
+          loadWatchlist(); // re-render with merged list
+        }
+      } catch { /* silent */ }
     }
 
     // ── Render grid ──────────────────────────────────────────────────────────
@@ -496,6 +500,7 @@
       const grid = document.getElementById('wl-grid');
       grid.innerHTML = '';
       items.forEach(item => {
+        const malId  = item.malId || item.mal_id;
         const status = item.status || 'plan_to_watch';
         const score  = item.score ? `★ ${item.score}` : '';
         const year   = item.year || '';
@@ -503,7 +508,7 @@
 
         const card = document.createElement('div');
         card.className = 'wl-card';
-        card.dataset.itemId = item.id;
+        card.dataset.itemId = malId;
         card.dataset.status = status;
 
         const imgHtml = poster
@@ -519,18 +524,18 @@
             <div class="wl-action-bar">
               <div class="wl-action-status-row">
                 <button type="button" class="wl-action-btn btn-watching"
-                  onclick="event.stopPropagation();updateStatus('${item.id}','watching')">Watching</button>
+                  onclick="event.stopPropagation();updateStatus(${malId},'watching')">Watching</button>
                 <button type="button" class="wl-action-btn btn-completed"
-                  onclick="event.stopPropagation();updateStatus('${item.id}','completed')">Completed</button>
+                  onclick="event.stopPropagation();updateStatus(${malId},'completed')">Completed</button>
                 <button type="button" class="wl-action-btn btn-plan"
-                  onclick="event.stopPropagation();updateStatus('${item.id}','plan_to_watch')">Plan to Watch</button>
+                  onclick="event.stopPropagation();updateStatus(${malId},'plan_to_watch')">Plan to Watch</button>
               </div>
               <button type="button" class="wl-remove-btn"
-                onclick="event.stopPropagation();removeItem('${item.id}')">✕ Remove</button>
+                onclick="event.stopPropagation();removeItem(${malId})">✕ Remove</button>
             </div>
           </div>
           <div class="wl-card-body">
-            <a href="/anime.html?id=${escHtml(String(item.mal_id || ''))}" style="text-decoration:none">
+            <a href="/anime.html?id=${escHtml(String(malId || ''))}" style="text-decoration:none">
               <div class="wl-card-title">${escHtml(item.title)}</div>
             </a>
             ${year ? `<div class="wl-card-year">${year}</div>` : ''}
@@ -554,38 +559,39 @@
       });
     }
 
-    // ── Status update ────────────────────────────────────────────────────────
-    async function updateStatus(itemId, status) {
-      await sb.from('watchlist').update({ status }).eq('id', itemId);
-      const card = document.querySelector(`[data-item-id="${itemId}"]`);
+    // ── Status update (localStorage + optional Supabase background) ──────────
+    function updateStatus(malId, status) {
+      malId = parseInt(malId);
+      const local = getLocalWatchlist();
+      const idx = local.findIndex(x => x.malId === malId);
+      if (idx !== -1) { local[idx].status = status; saveLocalWatchlist(local); }
+      const card = document.querySelector(`[data-item-id="${malId}"]`);
       if (card) {
         const badge = card.querySelector('.wl-status-badge');
-        if (badge) {
-          badge.textContent = statusLabel(status);
-          badge.className = `wl-status-badge wl-status-${status}`;
-        }
+        if (badge) { badge.textContent = statusLabel(status); badge.className = `wl-status-badge wl-status-${status}`; }
         card.dataset.status = status;
-        // update in allItems too
-        const idx = allItems.findIndex(i => String(i.id) === String(itemId));
-        if (idx !== -1) allItems[idx].status = status;
       }
+      allItems = getLocalWatchlist();
       applyFilter(currentFilter);
+      if (currentUser && sb) sb.from('watchlist').update({ status }).eq('user_id', currentUser.id).eq('mal_id', malId).then(() => {});
     }
 
-    // ── Remove item ──────────────────────────────────────────────────────────
-    async function removeItem(itemId) {
-      await sb.from('watchlist').delete().eq('id', itemId).eq('user_id', currentUser.id);
-      const card = document.querySelector(`[data-item-id="${itemId}"]`);
+    // ── Remove item (localStorage + optional Supabase background) ────────────
+    function removeItem(malId) {
+      malId = parseInt(malId);
+      saveLocalWatchlist(getLocalWatchlist().filter(x => x.malId !== malId));
+      const card = document.querySelector(`[data-item-id="${malId}"]`);
       if (card) {
         card.style.opacity = '0';
         card.style.transform = 'scale(0.9)';
         setTimeout(() => {
           card.remove();
-          allItems = allItems.filter(i => String(i.id) !== String(itemId));
+          allItems = allItems.filter(i => (i.malId || i.mal_id) !== malId);
           updateCount();
           if (allItems.length === 0) showEmptyState();
         }, 300);
       }
+      if (currentUser && sb) sb.from('watchlist').delete().eq('user_id', currentUser.id).eq('mal_id', malId).then(() => {});
     }
 
     function statusLabel(s) {
@@ -604,64 +610,6 @@
     }
 
     // ── State screens ────────────────────────────────────────────────────────
-    function showLocalWatchlist() {
-      const local = getLocalWatchlist();
-      if (!local.length) { showUnauthState(); return; }
-
-      // Show local items read-only with a sign-in banner
-      document.getElementById('wl-state').style.display = 'none';
-      document.getElementById('wl-header').classList.remove('wl-hidden');
-      document.getElementById('wl-filter-bar').classList.remove('wl-hidden');
-
-      allItems = local.map(a => ({
-        id: null, mal_id: a.malId, title: a.title,
-        poster: a.poster || '', score: a.score || 0,
-        year: a.year || 0, status: a.status || 'plan_to_watch'
-      }));
-
-      const subtitle = document.getElementById('wl-subtitle');
-      if (subtitle) subtitle.textContent = `${allItems.length} title${allItems.length !== 1 ? 's' : ''} saved locally`;
-
-      const grid = document.getElementById('wl-grid');
-      grid.innerHTML = `<div class="local-sync-banner">
-        <span>Sign in to sync across devices and manage your list.</span>
-        <button type="button" onclick="openLoginModal()">Sign In</button>
-      </div>`;
-
-      allItems.forEach(item => {
-        const score = item.score ? `★ ${item.score}` : '';
-        const card = document.createElement('div');
-        card.className = 'wl-card';
-        card.dataset.status = item.status;
-        card.innerHTML = `
-          <div class="wl-card-img">
-            ${item.poster ? `<img src="${escHtml(item.poster)}" alt="${escHtml(item.title)}" loading="lazy" onerror="this.style.display='none'" />` : ''}
-            <div class="wl-card-img-overlay"></div>
-            ${score ? `<div class="card-score">${score}</div>` : ''}
-            <div class="wl-status-badge wl-status-${item.status}">${statusLabel(item.status)}</div>
-          </div>
-          <div class="wl-card-body">
-            <a href="/anime.html?id=${escHtml(String(item.mal_id || ''))}" style="text-decoration:none">
-              <div class="wl-card-title">${escHtml(item.title)}</div>
-            </a>
-            ${item.year ? `<div class="wl-card-year">${item.year}</div>` : ''}
-          </div>`;
-        grid.appendChild(card);
-      });
-
-      applyFilter(currentFilter);
-    }
-
-    function showUnauthState() {
-      const s = document.getElementById('wl-state');
-      s.style.display = 'flex';
-      s.innerHTML = `
-        <div class="state-icon">🔒</div>
-        <div class="state-title">Sign in to see your watchlist</div>
-        <p class="state-desc">Track what you're watching, completed, and plan to watch.</p>
-        <button type="button" class="state-btn" onclick="openLoginModal()">Sign In</button>`;
-    }
-
     function showEmptyState() {
       document.getElementById('wl-grid').innerHTML = '';
       const s = document.getElementById('wl-state');
@@ -707,14 +655,11 @@
       if (sb) await sb.auth.signOut();
       localStorage.removeItem('aniscout_username');
       localStorage.removeItem('aniscout_session');
-      currentUser = null; username = null;
+      currentUser = null; username = null; sb = null;
       document.getElementById('settings-panel').classList.remove('open');
       document.getElementById('nav-profile-dropdown').classList.remove('open');
       updateSettingsPanel();
-      document.getElementById('wl-header').classList.add('wl-hidden');
-      document.getElementById('wl-filter-bar').classList.add('wl-hidden');
-      document.getElementById('wl-grid').innerHTML = '';
-      showLocalWatchlist();
+      loadWatchlist();
     }
 
     // ── Username modal ────────────────────────────────────────────────────────
@@ -797,10 +742,8 @@
         localStorage.setItem('aniscout_session', JSON.stringify({ username, userId: currentUser.id }));
         document.getElementById('modal-username').classList.remove('open');
         updateSettingsPanel();
-        const s = document.getElementById('wl-state');
-        s.style.display = 'flex';
-        s.innerHTML = '<div class="spinner"></div><p>Loading watchlist…</p>';
-        await loadWatchlist();
+        loadWatchlist();
+        syncFromSupabase();
       } catch (e) {
         err.textContent = e.message || 'Sign-in failed. Try again.';
         btn.disabled = false; btn.textContent = 'Sign In →';

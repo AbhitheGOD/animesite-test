@@ -504,54 +504,39 @@
       } catch { /* silent — watchlist just won't work */ }
     }
 
-    // ── Watchlist ─────────────────────────────────────────────────────────────
-    async function checkWatchlistStatus() {
-      if (!sb || !currentUser || !currentAnime) return;
-      const { data } = await sb.from('watchlist').select('id')
-        .eq('user_id', currentUser.id).eq('mal_id', currentAnime.mal_id).maybeSingle();
-      setWatchlistState(!!data);
+    // ── Watchlist (localStorage-first, no login required) ────────────────────
+    function checkWatchlistStatus() {
+      if (!currentAnime) return;
+      try {
+        const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+        setWatchlistState(local.some(x => x.malId === currentAnime.mal_id));
+      } catch { setWatchlistState(false); }
     }
 
     function setWatchlistState(saved) {
       const btn = document.getElementById('watchlist-btn');
       const txt = document.getElementById('watchlist-btn-text');
       if (!btn || !txt) return;
-      if (saved) {
-        btn.classList.add('saved');
-        txt.textContent = 'In Watchlist';
-      } else {
-        btn.classList.remove('saved');
-        txt.textContent = 'Add to Watchlist';
-      }
+      btn.classList.toggle('saved', saved);
+      txt.textContent = saved ? 'In Watchlist' : 'Add to Watchlist';
     }
 
     function handleWatchlistClick() {
-      if (!sb || !currentUser || !username) {
-        document.getElementById('modal-username').classList.add('open');
-        setTimeout(() => document.getElementById('input-username').focus(), 50);
-        return;
-      }
       toggleWatchlist();
     }
 
-    async function toggleWatchlist() {
+    function toggleWatchlist() {
       if (!currentAnime) return;
       const btn = document.getElementById('watchlist-btn');
       const saved = btn.classList.contains('saved');
       const a = currentAnime;
-
-      if (saved) {
-        setWatchlistState(false);
-        try {
-          const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+      try {
+        const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+        if (saved) {
           localStorage.setItem('aniscout_watchlist', JSON.stringify(local.filter(x => x.malId !== a.mal_id)));
-        } catch {}
-        await sb.from('watchlist').delete()
-          .eq('user_id', currentUser.id).eq('mal_id', a.mal_id);
-      } else {
-        setWatchlistState(true);
-        try {
-          const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+          setWatchlistState(false);
+          if (currentUser && sb) sb.from('watchlist').delete().eq('user_id', currentUser.id).eq('mal_id', a.mal_id).then(() => {});
+        } else {
           if (!local.some(x => x.malId === a.mal_id)) {
             local.unshift({
               malId: a.mal_id,
@@ -563,18 +548,16 @@
             });
             localStorage.setItem('aniscout_watchlist', JSON.stringify(local));
           }
-        } catch {}
-        await sb.from('watchlist').upsert({
-          user_id: currentUser.id,
-          username,
-          mal_id: a.mal_id,
-          title: a.title_english || a.title,
-          poster: a.images?.jpg?.large_image_url || a.anilistPoster,
-          score: a.score || null,
-          year: a.year || a.aired?.prop?.from?.year || null,
-          status: 'plan_to_watch'
-        }, { onConflict: 'user_id,mal_id' });
-      }
+          setWatchlistState(true);
+          if (currentUser && sb) sb.from('watchlist').upsert({
+            user_id: currentUser.id, username,
+            mal_id: a.mal_id, title: a.title_english || a.title,
+            poster: a.images?.jpg?.large_image_url || a.anilistPoster,
+            score: a.score || null, year: a.year || a.aired?.prop?.from?.year || null,
+            status: 'plan_to_watch'
+          }, { onConflict: 'user_id,mal_id' }).then(() => {});
+        }
+      } catch {}
     }
 
     // ── Username modal (lazy auth for watchlist) ───────────────────────────────
@@ -744,6 +727,7 @@
         similarGenres = (anime.genres || []).map(g => g.name).slice(0, 3);
         currentAnime = anime;
         render(anime);
+        checkWatchlistStatus(); // instant localStorage check — no network needed
         requestAnimationFrame(initReadMore);
         initSupabase();
         loadSimilar(malId, similarGenres, 1);
