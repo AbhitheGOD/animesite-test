@@ -184,6 +184,17 @@
       transition: opacity 0.2s; box-shadow: 0 4px 20px rgba(232,39,42,0.3);
     }
     .state-btn:hover { opacity: 0.88; }
+    .local-sync-banner {
+      grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 12px 18px; background: rgba(232,39,42,0.08);
+      border: 1px solid rgba(232,39,42,0.25); border-radius: 10px;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .local-sync-banner button {
+      flex-shrink: 0; padding: 7px 18px; background: var(--red); border: none;
+      border-radius: 7px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
 
     /* PAGE HEADER */
     .wl-header {
@@ -425,9 +436,9 @@
           await loadWatchlist();
         } else {
           updateSettingsPanel();
-          showUnauthState();
+          showLocalWatchlist();
         }
-      } catch { showUnauthState(); }
+      } catch { showLocalWatchlist(); }
     }
 
     function getLocalWatchlist() {
@@ -441,11 +452,13 @@
         .eq('user_id', currentUser.id)
         .order('added_at', { ascending: false });
 
-      // If Supabase is empty but localStorage has items, push them up first
-      if ((!items || items.length === 0)) {
-        const local = getLocalWatchlist();
-        if (local.length > 0) {
-          const rows = local.map(a => ({
+      // Always merge localStorage items that aren't already in Supabase
+      const local = getLocalWatchlist();
+      if (local.length > 0) {
+        const existingIds = new Set((items || []).map(i => i.mal_id));
+        const missing = local.filter(a => !existingIds.has(a.malId));
+        if (missing.length > 0) {
+          const rows = missing.map(a => ({
             user_id: currentUser.id,
             username: username || '',
             mal_id: a.malId,
@@ -460,12 +473,12 @@
             .select('*')
             .eq('user_id', currentUser.id)
             .order('added_at', { ascending: false });
-          allItems = synced || [];
+          allItems = synced || items || [];
         } else {
-          allItems = [];
+          allItems = items || [];
         }
       } else {
-        allItems = items;
+        allItems = items || [];
       }
 
       document.getElementById('wl-state').style.display = 'none';
@@ -591,6 +604,54 @@
     }
 
     // ── State screens ────────────────────────────────────────────────────────
+    function showLocalWatchlist() {
+      const local = getLocalWatchlist();
+      if (!local.length) { showUnauthState(); return; }
+
+      // Show local items read-only with a sign-in banner
+      document.getElementById('wl-state').style.display = 'none';
+      document.getElementById('wl-header').classList.remove('wl-hidden');
+      document.getElementById('wl-filter-bar').classList.remove('wl-hidden');
+
+      allItems = local.map(a => ({
+        id: null, mal_id: a.malId, title: a.title,
+        poster: a.poster || '', score: a.score || 0,
+        year: a.year || 0, status: a.status || 'plan_to_watch'
+      }));
+
+      const subtitle = document.getElementById('wl-subtitle');
+      if (subtitle) subtitle.textContent = `${allItems.length} title${allItems.length !== 1 ? 's' : ''} saved locally`;
+
+      const grid = document.getElementById('wl-grid');
+      grid.innerHTML = `<div class="local-sync-banner">
+        <span>Sign in to sync across devices and manage your list.</span>
+        <button type="button" onclick="openLoginModal()">Sign In</button>
+      </div>`;
+
+      allItems.forEach(item => {
+        const score = item.score ? `★ ${item.score}` : '';
+        const card = document.createElement('div');
+        card.className = 'wl-card';
+        card.dataset.status = item.status;
+        card.innerHTML = `
+          <div class="wl-card-img">
+            ${item.poster ? `<img src="${escHtml(item.poster)}" alt="${escHtml(item.title)}" loading="lazy" onerror="this.style.display='none'" />` : ''}
+            <div class="wl-card-img-overlay"></div>
+            ${score ? `<div class="card-score">${score}</div>` : ''}
+            <div class="wl-status-badge wl-status-${item.status}">${statusLabel(item.status)}</div>
+          </div>
+          <div class="wl-card-body">
+            <a href="/anime.html?id=${escHtml(String(item.mal_id || ''))}" style="text-decoration:none">
+              <div class="wl-card-title">${escHtml(item.title)}</div>
+            </a>
+            ${item.year ? `<div class="wl-card-year">${item.year}</div>` : ''}
+          </div>`;
+        grid.appendChild(card);
+      });
+
+      applyFilter(currentFilter);
+    }
+
     function showUnauthState() {
       const s = document.getElementById('wl-state');
       s.style.display = 'flex';
@@ -653,7 +714,7 @@
       document.getElementById('wl-header').classList.add('wl-hidden');
       document.getElementById('wl-filter-bar').classList.add('wl-hidden');
       document.getElementById('wl-grid').innerHTML = '';
-      showUnauthState();
+      showLocalWatchlist();
     }
 
     // ── Username modal ────────────────────────────────────────────────────────

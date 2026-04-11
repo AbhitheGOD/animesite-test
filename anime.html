@@ -538,14 +538,33 @@
       if (!currentAnime) return;
       const btn = document.getElementById('watchlist-btn');
       const saved = btn.classList.contains('saved');
+      const a = currentAnime;
 
       if (saved) {
-        await sb.from('watchlist').delete()
-          .eq('user_id', currentUser.id).eq('mal_id', currentAnime.mal_id);
         setWatchlistState(false);
+        try {
+          const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+          localStorage.setItem('aniscout_watchlist', JSON.stringify(local.filter(x => x.malId !== a.mal_id)));
+        } catch {}
+        await sb.from('watchlist').delete()
+          .eq('user_id', currentUser.id).eq('mal_id', a.mal_id);
       } else {
-        const a = currentAnime;
-        await sb.from('watchlist').insert({
+        setWatchlistState(true);
+        try {
+          const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+          if (!local.some(x => x.malId === a.mal_id)) {
+            local.unshift({
+              malId: a.mal_id,
+              title: a.title_english || a.title,
+              poster: a.images?.jpg?.large_image_url || a.anilistPoster,
+              score: a.score || 0,
+              year: a.year || a.aired?.prop?.from?.year || 0,
+              status: 'plan_to_watch'
+            });
+            localStorage.setItem('aniscout_watchlist', JSON.stringify(local));
+          }
+        } catch {}
+        await sb.from('watchlist').upsert({
           user_id: currentUser.id,
           username,
           mal_id: a.mal_id,
@@ -554,8 +573,7 @@
           score: a.score || null,
           year: a.year || a.aired?.prop?.from?.year || null,
           status: 'plan_to_watch'
-        });
-        setWatchlistState(true);
+        }, { onConflict: 'user_id,mal_id' });
       }
     }
 
