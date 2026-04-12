@@ -1605,11 +1605,23 @@
 
     async function suggestToQueue(videoId, title) {
       closeWatchpartyModal();
-      const { error } = await sb.from('room_queue').insert({
-        room_id: roomId, video_id: videoId, video_title: title,
-        suggested_by: currentUser.id, suggested_by_username: username
-      });
-      if (error) showToast('Could not add to queue: ' + error.message);
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch('/api/queue/suggest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomId, videoId, videoTitle: title,
+            username, accessToken: session?.access_token,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showToast('Could not add to queue: ' + (err.error || 'Unknown error'));
+        }
+      } catch (e) {
+        showToast('Could not add to queue: ' + e.message);
+      }
     }
 
     async function playFromQueue(queueId, videoId, title) {

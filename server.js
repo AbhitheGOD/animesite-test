@@ -176,6 +176,72 @@ app.get('/api/supabase-config', (req, res) => {
   });
 });
 
+// ── POST /api/queue/suggest ──────────────────────────────────────────────────
+// Bypass RLS for room_queue inserts — verifies JWT + membership server-side,
+// then writes with the service role key so any room member can suggest.
+app.post('/api/queue/suggest', async (req, res) => {
+  const { roomId, videoId, videoTitle, username, accessToken } = req.body;
+  if (!roomId || !videoId || !videoTitle || !accessToken) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey     = process.env.SUPABASE_ANON_KEY;
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+  if (!supabaseUrl || !anonKey) {
+    return res.status(500).json({ error: 'Server not configured' });
+  }
+
+  try {
+    // 1. Verify the user's JWT
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'apikey': anonKey }
+    });
+    if (!userRes.ok) return res.status(401).json({ error: 'Invalid or expired session' });
+    const user = await userRes.json();
+    if (!user?.id) return res.status(401).json({ error: 'Could not identify user' });
+
+    // 2. Verify room membership (uses the user's own token — respects SELECT policy)
+    const memRes = await fetch(
+      `${supabaseUrl}/rest/v1/room_members?room_id=eq.${encodeURIComponent(roomId)}&user_id=eq.${encodeURIComponent(user.id)}&select=user_id&limit=1`,
+      { headers: { 'Authorization': `Bearer ${accessToken}`, 'apikey': anonKey } }
+    );
+    const members = await memRes.json().catch(() => []);
+    if (!Array.isArray(members) || members.length === 0) {
+      return res.status(403).json({ error: 'You are not a member of this room' });
+    }
+
+    // 3. Insert using service role key (bypasses RLS) if available,
+    //    otherwise fall back to the user's own token
+    const writeKey    = serviceKey || anonKey;
+    const writeBearer = serviceKey ? `Bearer ${serviceKey}` : `Bearer ${accessToken}`;
+
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/room_queue`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': writeBearer,
+        'apikey': writeKey,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        room_id: roomId, video_id: videoId, video_title: videoTitle,
+        suggested_by: user.id, suggested_by_username: username || 'Anonymous',
+      }),
+    });
+
+    if (!insertRes.ok) {
+      const txt = await insertRes.text();
+      return res.status(400).json({ error: txt || 'Could not add to queue' });
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /api/waitlist ───────────────────────────────────────────────────────
 app.post('/api/waitlist', (req, res) => {
   const { email } = req.body;
