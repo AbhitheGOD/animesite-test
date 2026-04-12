@@ -2649,6 +2649,20 @@
       document.getElementById('settings-panel').classList.toggle('open');
     }
     async function doSignOut() {
+      // Flush all local watchlist items to Supabase before clearing localStorage
+      // so they survive across sign-out/sign-in on any device
+      if (currentUser && sb) {
+        const local = getWatchlist();
+        if (local.length > 0) {
+          try {
+            await sb.from('watchlist').upsert(local.map(a => ({
+              user_id: currentUser.id, username: authUsername || '',
+              mal_id: a.malId, title: a.title, poster: a.poster || '',
+              score: a.score || 0, year: a.year || 0, status: a.status || 'plan_to_watch'
+            })), { onConflict: 'user_id,mal_id' });
+          } catch { /* silent */ }
+        }
+      }
       localStorage.removeItem('aniscout_username');
       localStorage.removeItem('aniscout_session');
       saveWatchlistData([]);

@@ -652,10 +652,24 @@
       document.getElementById('nav-profile-dropdown').classList.toggle('open');
     }
     async function doSignOut() {
-      if (sb) await sb.auth.signOut();
+      // Flush all local watchlist items to Supabase before clearing session
+      if (currentUser && sb) {
+        const local = getLocalWatchlist();
+        if (local.length > 0) {
+          try {
+            await sb.from('watchlist').upsert(local.map(a => ({
+              user_id: currentUser.id, username: username || '',
+              mal_id: a.malId, title: a.title, poster: a.poster || '',
+              score: a.score || 0, year: a.year || 0, status: a.status || 'plan_to_watch'
+            })), { onConflict: 'user_id,mal_id' });
+          } catch { /* silent */ }
+        }
+      }
+      if (sb) { try { await sb.auth.signOut(); } catch { /* ignore */ } }
       localStorage.removeItem('aniscout_username');
       localStorage.removeItem('aniscout_session');
-      currentUser = null; username = null; sb = null;
+      saveLocalWatchlist([]);
+      currentUser = null; username = null;
       document.getElementById('settings-panel').classList.remove('open');
       document.getElementById('nav-profile-dropdown').classList.remove('open');
       updateSettingsPanel();
