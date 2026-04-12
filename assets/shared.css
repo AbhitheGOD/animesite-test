@@ -249,6 +249,155 @@ button:not(.hamburger-btn):active,
 }
 #chat-widget-send:hover { opacity: 0.85; }
 
+/* ── Nav Avatar (initials circle) ────────────────────────────────────────── */
+.nav-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 800; color: #fff;
+  flex-shrink: 0; line-height: 1; letter-spacing: 0;
+  text-transform: uppercase; -webkit-user-select: none; user-select: none;
+}
+
+/* ── Nav profile dropdown — richer layout ─────────────────────────────────── */
+.profile-drop-header {
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 10px;
+}
+.profile-drop-avatar-lg {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 800; color: #fff;
+  flex-shrink: 0; line-height: 1; letter-spacing: 0;
+  text-transform: uppercase;
+}
+.profile-drop-name {
+  font-size: 0.88rem; font-weight: 700; color: var(--text, #F0F0F8);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 130px;
+}
+.profile-drop-sub {
+  font-size: 0.72rem; color: var(--muted, #7878A0); margin-top: 1px;
+}
+
+/* ── Did You Mean ─────────────────────────────────────────────────────────── */
+.did-you-mean {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; justify-content: center;
+  margin-bottom: 20px;
+}
+.dym-label {
+  font-size: 0.85rem; color: var(--muted, #7878A0);
+}
+.dym-chip {
+  padding: 5px 14px; border-radius: 100px;
+  background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.3);
+  color: var(--red, #E8272A); font-size: 0.85rem; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-weight: 600;
+  transition: background 0.18s, border-color 0.18s;
+}
+.dym-chip:hover { background: rgba(232,39,42,0.2); border-color: rgba(232,39,42,0.55); }
+
+/* ── Onboarding Modal ─────────────────────────────────────────────────────── */
+.onboarding-bd {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(8,8,14,0.88);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  align-items: center; justify-content: center;
+}
+.onboarding-bd.open { display: flex; }
+.onboarding-card {
+  background: var(--surface, #111119);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 44px 40px;
+  width: min(520px, 94vw);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  animation: obCardIn 0.35s cubic-bezier(0.34,1.25,0.64,1) forwards;
+}
+@keyframes obCardIn {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.ob-step-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 14px; border-radius: 100px;
+  background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.25);
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--red, #E8272A); margin-bottom: 24px;
+}
+.ob-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem; letter-spacing: 0.1em;
+  color: var(--text, #F0F0F8); margin-bottom: 24px;
+}
+.ob-logo span { color: var(--red, #E8272A); }
+.ob-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  letter-spacing: 0.04em; line-height: 1.05;
+  color: var(--text, #F0F0F8); margin-bottom: 12px;
+}
+.ob-sub {
+  font-size: 0.95rem; color: var(--muted, #7878A0);
+  line-height: 1.7; max-width: 360px; margin-bottom: 32px;
+}
+.ob-btn-primary {
+  width: 100%; max-width: 320px; padding: 14px;
+  background: var(--red, #E8272A); border: none; border-radius: 10px;
+  color: #fff; font-family: 'DM Sans', sans-serif;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 6px 24px rgba(232,39,42,0.35); margin-bottom: 12px;
+}
+.ob-btn-primary:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.ob-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.ob-btn-skip {
+  background: none; border: none; color: var(--muted, #7878A0);
+  font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+  cursor: pointer; padding: 6px; transition: color 0.2s;
+}
+.ob-btn-skip:hover { color: var(--text, #F0F0F8); }
+.ob-genres-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; width: 100%; margin-bottom: 28px;
+}
+.ob-genre-tile {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 14px 8px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03); cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, transform 0.15s;
+  -webkit-user-select: none; user-select: none;
+}
+.ob-genre-tile:hover { border-color: rgba(232,39,42,0.35); background: rgba(255,255,255,0.05); transform: translateY(-2px); }
+.ob-genre-tile.selected {
+  border-color: var(--red, #E8272A);
+  background: rgba(232,39,42,0.12); transform: translateY(-2px);
+}
+.ob-tile-emoji { font-size: 1.5rem; line-height: 1; }
+.ob-tile-label { font-size: 0.72rem; font-weight: 600; color: var(--muted, #7878A0); }
+.ob-genre-tile.selected .ob-tile-label { color: var(--red, #E8272A); }
+.ob-select-hint { font-size: 0.78rem; color: var(--muted, #7878A0); margin-bottom: 20px; }
+.ob-check-circle {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: rgba(232,39,42,0.12); border: 2px solid rgba(232,39,42,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; margin-bottom: 24px;
+  animation: obCheckPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes obCheckPop {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.ob-progress { display: flex; gap: 6px; margin-bottom: 28px; }
+.ob-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.2s; }
+.ob-dot.active { background: var(--red, #E8272A); width: 18px; border-radius: 3px; }
+.ob-hidden { display: none !important; }
+.nav-hidden { display: none !important; }
+
 /* ── Chat Message Notification Toast ─────────────────────────────────────── */
 .chat-notif-toast {
   position: fixed; bottom: 84px; left: 24px; z-index: 1100;

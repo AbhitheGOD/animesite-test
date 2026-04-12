@@ -396,13 +396,22 @@
       </a>
       <div class="nav-profile-wrap">
         <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="nav-avatar" class="nav-avatar nav-hidden"></span>
+          <svg id="nav-profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
           <span id="nav-profile-label">Login</span>
         </button>
         <div id="nav-profile-dropdown" class="nav-profile-dropdown">
-          <div class="profile-drop-user" id="profile-drop-user"></div>
-          <a href="/watchlist.html" class="profile-drop-link">My Watchlist</a>
-          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Logout</button>
+          <div class="profile-drop-header nav-hidden" id="profile-drop-header">
+            <span class="profile-drop-avatar-lg" id="profile-drop-avatar-lg"></span>
+            <div>
+              <div class="profile-drop-name" id="profile-drop-user"></div>
+              <div class="profile-drop-sub">AniScout member</div>
+            </div>
+          </div>
+          <a href="/watchlist.html" class="profile-drop-link">📋 My Watchlist</a>
+          <a href="/history.html" class="profile-drop-link">🕐 Watch History</a>
+          <a href="/settings.html" class="profile-drop-link">⚙️ Settings</a>
+          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Sign Out</button>
         </div>
       </div>
     </div>
@@ -653,21 +662,46 @@
     function toggleSettings() {
       document.getElementById('settings-panel').classList.toggle('open');
     }
+    function usernameToInitials(name) {
+      const parts = name.trim().split(/[\s_\-]+/);
+      return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+    }
+    function usernameToColor(name) {
+      const palette = ['#E8272A','#E05C1A','#7C4DE8','#2A72E8','#2AA5B0','#1AA86B','#D4276E','#E0A01A'];
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return palette[Math.abs(h) % palette.length];
+    }
+
     function updateSettingsPanel() {
-      const info = document.getElementById('settings-info');
-      const logoutBtn = document.getElementById('settings-logout-btn');
+      const info       = document.getElementById('settings-info');
+      const logoutBtn  = document.getElementById('settings-logout-btn');
       const profileLabel = document.getElementById('nav-profile-label');
-      const profileUser = document.getElementById('profile-drop-user');
+      const dropUser   = document.getElementById('profile-drop-user');
+      const dropHeader = document.getElementById('profile-drop-header');
+      const dropAvatar = document.getElementById('profile-drop-avatar-lg');
+      const navAvatar  = document.getElementById('nav-avatar');
+      const navIcon    = document.getElementById('nav-profile-icon');
+
       if (username) {
+        const initials = usernameToInitials(username);
+        const color    = usernameToColor(username);
         info.textContent = `Signed in as ${username}`;
         logoutBtn.style.display = 'block';
         if (profileLabel) profileLabel.textContent = username;
-        if (profileUser) profileUser.textContent = username;
+        if (dropUser) dropUser.textContent = username;
+        if (navAvatar) { navAvatar.textContent = initials; navAvatar.style.background = color; navAvatar.classList.remove('nav-hidden'); }
+        if (navIcon)   navIcon.style.display = 'none';
+        if (dropHeader) dropHeader.classList.remove('nav-hidden');
+        if (dropAvatar) { dropAvatar.textContent = initials; dropAvatar.style.background = color; }
       } else {
         info.textContent = 'Not signed in';
         logoutBtn.style.display = 'none';
         if (profileLabel) profileLabel.textContent = 'Login';
-        if (profileUser) profileUser.textContent = '';
+        if (dropUser) dropUser.textContent = '';
+        if (navAvatar) navAvatar.classList.add('nav-hidden');
+        if (navIcon)   navIcon.style.display = '';
+        if (dropHeader) dropHeader.classList.add('nav-hidden');
       }
     }
     function toggleProfileDropdown() {

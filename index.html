@@ -1391,13 +1391,22 @@
       <a href="#" class="nav-cta">Get Started</a>
       <div class="nav-profile-wrap">
         <button type="button" id="nav-profile-btn" class="nav-profile-btn" onclick="toggleProfileDropdown()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="nav-avatar" class="nav-avatar nav-hidden"></span>
+          <svg id="nav-profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
           <span id="nav-profile-label">Login</span>
         </button>
         <div id="nav-profile-dropdown" class="nav-profile-dropdown">
-          <div class="profile-drop-user" id="profile-drop-user"></div>
-          <a href="/watchlist.html" class="profile-drop-link">My Watchlist</a>
-          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Logout</button>
+          <div class="profile-drop-header nav-hidden" id="profile-drop-header">
+            <span class="profile-drop-avatar-lg" id="profile-drop-avatar-lg"></span>
+            <div>
+              <div class="profile-drop-name" id="profile-drop-user"></div>
+              <div class="profile-drop-sub">AniScout member</div>
+            </div>
+          </div>
+          <a href="/watchlist.html" class="profile-drop-link">📋 My Watchlist</a>
+          <a href="/history.html" class="profile-drop-link">🕐 Watch History</a>
+          <a href="/settings.html" class="profile-drop-link">⚙️ Settings</a>
+          <button type="button" class="profile-drop-logout" onclick="doSignOut()">Sign Out</button>
         </div>
       </div>
     </div>
@@ -2024,6 +2033,23 @@
       } catch {}
     }
 
+    // ── Did You Mean ──────────────────────────────────────────────────────────
+    async function fetchDidYouMean(query) {
+      try {
+        const res = await fetch(`${API}/api/search?q=${encodeURIComponent(query)}`);
+        if (!res.ok) return;
+        const results = await res.json();
+        if (!results.length) return;
+        const wrap = document.getElementById('did-you-mean-wrap');
+        if (!wrap) return;
+        const chips = results.slice(0, 3).map(r => {
+          const safe = (r.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          return `<button class="dym-chip" onclick="searchInput.value='${safe}';doSearch('${safe}')">${r.title || ''}</button>`;
+        }).join('');
+        wrap.innerHTML = `<div class="did-you-mean"><span class="dym-label">Did you mean:</span>${chips}</div>`;
+      } catch { /* silent */ }
+    }
+
     // ── Score filter (post-render client-side) ────────────────────────────────
     function applyScoreFilter(val) {
       const min = parseFloat(val);
@@ -2229,6 +2255,7 @@
 
       if (!append && !recs.length) {
         grid.innerHTML = `<div class="empty-state-illus" style="grid-column:1/-1">
+          <div id="did-you-mean-wrap"></div>
           <div class="empty-illus-wrap">
             <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="30" cy="30" r="18" stroke="rgba(232,39,42,0.45)" stroke-width="2.5" fill="rgba(232,39,42,0.07)"/>
@@ -2241,6 +2268,7 @@
           <div class="empty-illus-sub">We couldn't match that title. Try a different name or browse by genre below.</div>
         </div>`;
         section.style.display = 'block';
+        if (currentQuery) fetchDidYouMean(currentQuery);
         return;
       }
 
@@ -2505,24 +2533,57 @@
     let authUsername = null;
     let authInitialized = false;
 
+    function usernameToInitials(name) {
+      const parts = name.trim().split(/[\s_\-]+/);
+      return parts.length >= 2
+        ? (parts[0][0] + parts[1][0]).toUpperCase()
+        : name.slice(0, 2).toUpperCase();
+    }
+    function usernameToColor(name) {
+      const palette = ['#E8272A','#E05C1A','#7C4DE8','#2A72E8','#2AA5B0','#1AA86B','#D4276E','#E0A01A'];
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return palette[Math.abs(h) % palette.length];
+    }
+
     function updateProfileButton() {
-      const label = document.getElementById('nav-profile-label');
-      const mobLabel = document.getElementById('mob-profile-label');
-      const dropUser = document.getElementById('profile-drop-user');
-      const info = document.getElementById('settings-info');
-      const logoutBtn = document.getElementById('settings-logout-btn');
+      const label      = document.getElementById('nav-profile-label');
+      const mobLabel   = document.getElementById('mob-profile-label');
+      const dropUser   = document.getElementById('profile-drop-user');
+      const dropHeader = document.getElementById('profile-drop-header');
+      const dropAvatar = document.getElementById('profile-drop-avatar-lg');
+      const navAvatar  = document.getElementById('nav-avatar');
+      const navIcon    = document.getElementById('nav-profile-icon');
+      const info       = document.getElementById('settings-info');
+      const logoutBtn  = document.getElementById('settings-logout-btn');
+
       if (authUsername) {
+        const initials = usernameToInitials(authUsername);
+        const color    = usernameToColor(authUsername);
+
         if (label) label.textContent = authUsername;
         if (mobLabel) mobLabel.textContent = authUsername;
         if (dropUser) dropUser.textContent = authUsername;
         if (info) info.textContent = `Signed in as ${authUsername}`;
         if (logoutBtn) logoutBtn.style.display = 'block';
+
+        // Show avatar circle, hide generic icon
+        if (navAvatar) { navAvatar.textContent = initials; navAvatar.style.background = color; navAvatar.classList.remove('nav-hidden'); }
+        if (navIcon)   { navIcon.style.display = 'none'; }
+
+        // Richer dropdown header
+        if (dropHeader) dropHeader.classList.remove('nav-hidden');
+        if (dropAvatar) { dropAvatar.textContent = initials; dropAvatar.style.background = color; }
       } else {
         if (label) label.textContent = 'Login';
         if (mobLabel) mobLabel.textContent = 'Login / Profile';
         if (dropUser) dropUser.textContent = '';
         if (info) info.textContent = 'Not signed in';
         if (logoutBtn) logoutBtn.style.display = 'none';
+
+        if (navAvatar) navAvatar.classList.add('nav-hidden');
+        if (navIcon)   navIcon.style.display = '';
+        if (dropHeader) dropHeader.classList.add('nav-hidden');
       }
     }
 
@@ -2692,6 +2753,117 @@
       if (e.key === 'Enter') submitUsername();
     });
   </script>
+
+  <script>
+    // ── Onboarding ────────────────────────────────────────────────────────────
+    const OB_GENRES = [
+      { emoji: '⚔️', label: 'Action',      value: 'Action' },
+      { emoji: '🌀', label: 'Shonen',       value: 'Shounen' },
+      { emoji: '😂', label: 'Comedy',       value: 'Comedy' },
+      { emoji: '💘', label: 'Romance',      value: 'Romance' },
+      { emoji: '🧠', label: 'Psychological',value: 'Psychological' },
+      { emoji: '🔮', label: 'Fantasy',      value: 'Fantasy' },
+      { emoji: '🚀', label: 'Sci-Fi',       value: 'Sci-Fi' },
+      { emoji: '🌊', label: 'Adventure',    value: 'Adventure' },
+      { emoji: '👻', label: 'Horror',       value: 'Horror' },
+      { emoji: '🏆', label: 'Sports',       value: 'Sports' },
+      { emoji: '🤖', label: 'Mecha',        value: 'Mecha' },
+      { emoji: '🌸', label: 'Slice of Life',value: 'Slice of Life' },
+      { emoji: '🔫', label: 'Thriller',     value: 'Thriller' },
+      { emoji: '🗺️', label: 'Isekai',       value: 'Isekai' },
+      { emoji: '🕵️', label: 'Mystery',      value: 'Mystery' },
+      { emoji: '🎭', label: 'Drama',        value: 'Drama' },
+    ];
+
+    (function buildObGenresGrid() {
+      const grid = document.getElementById('ob-genres-grid');
+      if (!grid) return;
+      grid.innerHTML = OB_GENRES.map(g => `
+        <button type="button" class="ob-genre-tile" data-genre="${g.value}" onclick="obToggleGenre(this)">
+          <span class="ob-tile-emoji">${g.emoji}</span>
+          <span class="ob-tile-label">${g.label}</span>
+        </button>`).join('');
+    })();
+
+    function obToggleGenre(tile) {
+      tile.classList.toggle('selected');
+      const count = document.querySelectorAll('#ob-genres-grid .ob-genre-tile.selected').length;
+      const btn   = document.getElementById('ob-continue-btn');
+      const hint  = document.getElementById('ob-select-hint');
+      btn.disabled = count < 3;
+      hint.textContent = count >= 3 ? `${count} selected` : `Select at least ${3 - count} more`;
+    }
+
+    function obGoStep(n) {
+      document.querySelectorAll('.onboarding-card').forEach(c => c.classList.add('ob-hidden'));
+      const step = document.getElementById('ob-step-' + n);
+      if (step) { step.classList.remove('ob-hidden'); step.style.animation = 'none'; requestAnimationFrame(() => { step.style.animation = ''; }); }
+    }
+
+    function obFinish() {
+      const selected = [...document.querySelectorAll('#ob-genres-grid .ob-genre-tile.selected')].map(c => c.dataset.genre);
+      try { localStorage.setItem('aniscout_prefs', JSON.stringify({ genres: selected })); } catch {}
+      obGoStep(3);
+      obMarkDone();
+    }
+
+    function obSkip() {
+      obMarkDone();
+      document.getElementById('onboarding-modal').classList.remove('open');
+    }
+
+    function obClose() {
+      document.getElementById('onboarding-modal').classList.remove('open');
+    }
+
+    function obMarkDone() {
+      try { localStorage.setItem('aniscout_onboarded', '1'); } catch {}
+    }
+
+    // Trigger after short delay on first visit
+    (function initOnboarding() {
+      try { if (localStorage.getItem('aniscout_onboarded')) return; } catch { return; }
+      setTimeout(function () {
+        document.getElementById('onboarding-modal').classList.add('open');
+      }, 900);
+    })();
+  </script>
+
+  <!-- ONBOARDING MODAL -->
+  <div id="onboarding-modal" class="onboarding-bd">
+
+    <!-- Step 1: Welcome -->
+    <div id="ob-step-1" class="onboarding-card">
+      <div class="ob-logo">ANI<span>SCOUT</span></div>
+      <div class="ob-progress"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+      <h2 class="ob-title">FIND YOUR NEXT OBSESSION</h2>
+      <p class="ob-sub">Tell us what you love and we'll surface titles you've never heard of — but will never forget.</p>
+      <button type="button" class="ob-btn-primary" onclick="obGoStep(2)">Get Started →</button>
+      <button type="button" class="ob-btn-skip" onclick="obSkip()">Skip for now</button>
+    </div>
+
+    <!-- Step 2: Genre picker -->
+    <div id="ob-step-2" class="onboarding-card ob-hidden">
+      <div class="ob-step-pill">Step 2 of 3</div>
+      <div class="ob-progress"><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+      <h2 class="ob-title">WHAT DO YOU LOVE?</h2>
+      <p class="ob-sub">Pick 3 or more genres to personalize your recommendations.</p>
+      <div class="ob-genres-grid" id="ob-genres-grid"></div>
+      <div class="ob-select-hint" id="ob-select-hint">Select at least 3</div>
+      <button type="button" class="ob-btn-primary" id="ob-continue-btn" onclick="obFinish()" disabled>Continue →</button>
+      <button type="button" class="ob-btn-skip" onclick="obSkip()">Skip</button>
+    </div>
+
+    <!-- Step 3: Done -->
+    <div id="ob-step-3" class="onboarding-card ob-hidden">
+      <div class="ob-check-circle">✓</div>
+      <div class="ob-progress"><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div></div>
+      <h2 class="ob-title">YOU'RE ALL SET</h2>
+      <p class="ob-sub">Your preferences are saved. Dive in and discover your next obsession.</p>
+      <button type="button" class="ob-btn-primary" onclick="obClose()">Start Exploring →</button>
+    </div>
+
+  </div>
 
   <!-- SETTINGS -->
   <div id="settings-panel" class="settings-panel">

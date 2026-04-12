@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — AniScout</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/shared.css" />
+  <style>
+    :root {
+      --red:    #E8272A;
+      --orange: #F5A01A;
+      --dark:   #08080E;
+      --surface:#111119;
+      --raised: #18182A;
+      --border: rgba(255,255,255,0.07);
+      --text:   #F0F0F8;
+      --muted:  #7878A0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--dark); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.7; min-height: 100vh; }
+    h1, h2, h3 { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.03em; line-height: 1.05; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--dark); }
+    ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 64px;
+      background: rgba(8,8,14,0.92);
+      -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.08em; text-decoration: none; color: var(--text); }
+    .nav-logo span { color: var(--red); }
+    .nav-back {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 0.88rem; text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--text); }
+    .nav-back svg { width: 16px; height: 16px; }
+
+    /* PAGE */
+    .page-wrap {
+      max-width: 720px; margin: 0 auto;
+      padding: 96px 40px 80px;
+    }
+    .page-title { font-size: 3rem; color: var(--text); margin-bottom: 8px; }
+    .page-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 48px; }
+
+    /* PROFILE CARD */
+    .profile-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+      display: flex; align-items: center; gap: 24px;
+      margin-bottom: 12px;
+    }
+    .profile-avatar-xl {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; font-weight: 800; color: #fff;
+      flex-shrink: 0; letter-spacing: 0;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-name { font-size: 1.5rem; font-weight: 700; color: var(--text); }
+    .profile-handle { font-size: 0.85rem; color: var(--muted); }
+
+    /* COLOR PICKER */
+    .color-picker-row {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;
+    }
+    .color-swatch {
+      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .color-swatch:hover { transform: scale(1.2); }
+    .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+
+    /* SECTION */
+    .settings-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden; margin-bottom: 12px;
+    }
+    .settings-section-title {
+      padding: 16px 24px; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+    }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-label { font-size: 0.92rem; font-weight: 500; color: var(--text); }
+    .settings-row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .settings-row-action {
+      flex-shrink: 0; margin-left: 16px;
+    }
+
+    /* BUTTONS */
+    .btn-ghost {
+      padding: 8px 18px; border-radius: 8px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.22); color: var(--text); }
+    .btn-danger {
+      padding: 8px 18px; border-radius: 8px;
+      background: rgba(232,39,42,0.08); border: 1px solid rgba(232,39,42,0.25);
+      color: var(--red); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-danger:hover { background: rgba(232,39,42,0.18); }
+
+    /* SIGN-IN PROMPT */
+    .signin-prompt {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 48px 32px;
+      text-align: center; margin-bottom: 12px;
+    }
+    .signin-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .signin-title { font-size: 1.5rem; color: var(--text); margin-bottom: 8px; }
+    .signin-sub { font-size: 0.9rem; color: var(--muted); margin-bottom: 24px; }
+    .btn-primary-full {
+      display: inline-block; padding: 12px 32px;
+      background: var(--red); border: none; border-radius: 10px;
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(232,39,42,0.3);
+      transition: opacity 0.2s, transform 0.15s; text-decoration: none;
+    }
+    .btn-primary-full:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: var(--raised); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 22px;
+      font-size: 0.9rem; color: var(--text);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+      z-index: 500; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 600px) {
+      .page-wrap { padding: 88px 20px 60px; }
+      nav { padding: 0 20px; }
+      .profile-card { flex-direction: column; align-items: flex-start; }
+      .settings-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .settings-row-action { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="nav-logo">ANI<span>SCOUT</span></a>
+    <a href="/" class="nav-back">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg>
+      Back
+    </a>
+  </nav>
+
+  <div class="page-wrap">
+    <h1 class="page-title">SETTINGS</h1>
+    <p class="page-sub">Manage your account, preferences, and data.</p>
+
+    <!-- Sign-in prompt (shown when logged out) -->
+    <div class="signin-prompt" id="signin-prompt">
+      <div class="signin-icon">👤</div>
+      <div class="signin-title">Not signed in</div>
+      <p class="signin-sub">Sign in to manage your profile, sync your watchlist, and join rooms.</p>
+      <a href="/" class="btn-primary-full">Sign In on Home Page</a>
+    </div>
+
+    <!-- Profile card (shown when logged in) -->
+    <div class="profile-card" id="profile-card">
+      <div class="profile-avatar-xl" id="settings-avatar-xl"></div>
+      <div class="profile-info">
+        <div class="profile-name" id="settings-username-display">—</div>
+        <div class="profile-handle">AniScout member</div>
+        <div class="color-picker-row" id="color-picker-row"></div>
+      </div>
+    </div>
+
+    <!-- Account section -->
+    <div class="settings-section" id="account-section">
+      <div class="settings-section-title">Account</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Username</div>
+          <div class="settings-row-sub" id="settings-username-sub">—</div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Sign Out</div>
+          <div class="settings-row-sub">Sign out of your account on this device</div>
+        </div>
+        <div class="settings-row-action">
+          <button type="button" class="btn-danger" id="signout-btn" onclick="doSignOut()">Sign Out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data section -->
+    <div class="settings-section">
+      <div class="settings-section-title">Your Data</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Watch History</div>
+          <div class="settings-row-sub" id="history-count-label">Loading…</div>
+        </div>
+        <div class="settings-row-action">
+          <button type="button" class="btn-ghost" onclick="clearHistory()">Clear History</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Watchlist</div>
+          <div class="settings-row-sub" id="watchlist-count-label">Loading…</div>
+        </div>
+        <div class="settings-row-action">
+          <button type="button" class="btn-ghost" onclick="clearWatchlist()">Clear Watchlist</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Recent Searches</div>
+          <div class="settings-row-sub" id="searches-count-label">Loading…</div>
+        </div>
+        <div class="settings-row-action">
+          <button type="button" class="btn-ghost" onclick="clearSearches()">Clear</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Genre Preferences</div>
+          <div class="settings-row-sub" id="prefs-label">Loading…</div>
+        </div>
+        <div class="settings-row-action">
+          <button type="button" class="btn-ghost" onclick="resetOnboarding()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- About section -->
+    <div class="settings-section">
+      <div class="settings-section-title">About</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">AniScout</div>
+          <div class="settings-row-sub">Discover your next anime obsession</div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Version</div>
+          <div class="settings-row-sub">1.0.0</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const AVATAR_PALETTE = ['#E8272A','#E05C1A','#7C4DE8','#2A72E8','#2AA5B0','#1AA86B','#D4276E','#E0A01A'];
+
+    function usernameToInitials(name) {
+      const parts = name.trim().split(/[\s_\-]+/);
+      return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+    }
+    function usernameToColor(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    // ── Color picker ──────────────────────────────────────────────────────────
+    function buildColorPicker(currentColor) {
+      const row = document.getElementById('color-picker-row');
+      row.innerHTML = AVATAR_PALETTE.map(c => `
+        <button type="button" class="color-swatch${c === currentColor ? ' selected' : ''}"
+          style="background:${c}" title="${c}"
+          onclick="pickColor('${c}')"></button>`).join('');
+    }
+
+    function pickColor(color) {
+      const username = localStorage.getItem('aniscout_username') || '';
+      if (!username) return;
+      localStorage.setItem('aniscout_avatar_color_' + username, color);
+      document.getElementById('settings-avatar-xl').style.background = color;
+      document.querySelectorAll('.color-swatch').forEach(s => {
+        s.classList.toggle('selected', s.style.background === color || s.style.background === hexToRgb(color));
+      });
+      showToast('Avatar color updated');
+    }
+
+    // Convert hex to rgb string for comparison
+    function hexToRgb(hex) {
+      const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // ── Auth & page init ──────────────────────────────────────────────────────
+    let sb = null;
+    let currentUser = null;
+
+    (function initPage() {
+      const username = localStorage.getItem('aniscout_username');
+      renderCounts();
+
+      if (username) {
+        showLoggedIn(username);
+      } else {
+        showLoggedOut();
+      }
+
+      // Async: verify session
+      (async function() {
+        try {
+          const res = await fetch('/api/supabase-config');
+          const cfg = await res.json();
+          if (!cfg.url || !cfg.anonKey) return;
+          sb = supabase.createClient(cfg.url, cfg.anonKey);
+          const { data: { session } } = await sb.auth.getSession();
+          if (session) {
+            currentUser = session.user;
+          } else {
+            // Session gone — clear local state
+            localStorage.removeItem('aniscout_username');
+            localStorage.removeItem('aniscout_session');
+            showLoggedOut();
+          }
+        } catch { /* silent */ }
+      })();
+    })();
+
+    function showLoggedIn(username) {
+      const savedColor = localStorage.getItem('aniscout_avatar_color_' + username) || usernameToColor(username);
+      const initials = usernameToInitials(username);
+
+      document.getElementById('signin-prompt').style.display = 'none';
+      document.getElementById('profile-card').style.display  = 'flex';
+      document.getElementById('account-section').style.display = 'block';
+
+      const avatarEl = document.getElementById('settings-avatar-xl');
+      avatarEl.textContent = initials;
+      avatarEl.style.background = savedColor;
+
+      document.getElementById('settings-username-display').textContent = username;
+      document.getElementById('settings-username-sub').textContent = username;
+
+      buildColorPicker(savedColor);
+    }
+
+    function showLoggedOut() {
+      document.getElementById('signin-prompt').style.display = 'block';
+      document.getElementById('profile-card').style.display  = 'none';
+      document.getElementById('account-section').style.display = 'none';
+    }
+
+    function renderCounts() {
+      // History
+      try {
+        const hist = JSON.parse(localStorage.getItem('aniscout_recent') || '[]');
+        document.getElementById('history-count-label').textContent = hist.length
+          ? `${hist.length} title${hist.length !== 1 ? 's' : ''} in history`
+          : 'No history yet';
+      } catch { document.getElementById('history-count-label').textContent = 'No history yet'; }
+
+      // Watchlist
+      try {
+        const wl = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+        document.getElementById('watchlist-count-label').textContent = wl.length
+          ? `${wl.length} title${wl.length !== 1 ? 's' : ''} saved`
+          : 'Watchlist is empty';
+      } catch { document.getElementById('watchlist-count-label').textContent = 'Watchlist is empty'; }
+
+      // Searches
+      try {
+        const s = JSON.parse(localStorage.getItem('aniscout_searches') || '[]');
+        document.getElementById('searches-count-label').textContent = s.length
+          ? `${s.length} recent search${s.length !== 1 ? 'es' : ''}`
+          : 'No recent searches';
+      } catch { document.getElementById('searches-count-label').textContent = 'No recent searches'; }
+
+      // Prefs
+      try {
+        const prefs = JSON.parse(localStorage.getItem('aniscout_prefs') || 'null');
+        document.getElementById('prefs-label').textContent = prefs && prefs.genres && prefs.genres.length
+          ? prefs.genres.slice(0, 4).join(', ') + (prefs.genres.length > 4 ? ` +${prefs.genres.length - 4} more` : '')
+          : 'Not set — visit home page to set preferences';
+      } catch { document.getElementById('prefs-label').textContent = 'Not set'; }
+    }
+
+    // ── Data actions ──────────────────────────────────────────────────────────
+    function clearHistory() {
+      if (!confirm('Clear your entire watch history?')) return;
+      localStorage.removeItem('aniscout_recent');
+      renderCounts();
+      showToast('Watch history cleared');
+    }
+
+    function clearWatchlist() {
+      if (!confirm('Clear your entire watchlist? This cannot be undone.')) return;
+      localStorage.removeItem('aniscout_watchlist');
+      if (currentUser && sb) {
+        sb.from('watchlist').delete().eq('user_id', currentUser.id).then(() => {});
+      }
+      renderCounts();
+      showToast('Watchlist cleared');
+    }
+
+    function clearSearches() {
+      localStorage.removeItem('aniscout_searches');
+      renderCounts();
+      showToast('Recent searches cleared');
+    }
+
+    function resetOnboarding() {
+      localStorage.removeItem('aniscout_prefs');
+      localStorage.removeItem('aniscout_onboarded');
+      renderCounts();
+      showToast('Preferences reset — onboarding will show on next visit to Home');
+    }
+
+    // ── Sign out ──────────────────────────────────────────────────────────────
+    async function doSignOut() {
+      const username = localStorage.getItem('aniscout_username');
+      // Flush local watchlist to Supabase before clearing
+      if (currentUser && sb) {
+        try {
+          const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+          if (local.length) {
+            await sb.from('watchlist').upsert(local.map(a => ({
+              user_id: currentUser.id, username: username || '',
+              mal_id: a.malId, title: a.title, poster: a.poster || '',
+              score: a.score || 0, year: a.year || 0, status: a.status || 'plan_to_watch'
+            })), { onConflict: 'user_id,mal_id' });
+          }
+        } catch { /* silent */ }
+        try { await sb.auth.signOut(); } catch { /* silent */ }
+      }
+      localStorage.removeItem('aniscout_username');
+      localStorage.removeItem('aniscout_session');
+      localStorage.removeItem('aniscout_watchlist');
+      currentUser = null;
+      showLoggedOut();
+      renderCounts();
+      showToast('Signed out');
+    }
+  </script>
+
+  <script src="/assets/shared.js"></script>
+</body>
+</html>
