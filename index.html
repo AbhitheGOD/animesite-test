@@ -1746,6 +1746,10 @@
       localStorage.setItem('aniscout_watchlist', JSON.stringify(list));
     }
     function toggleWatchlist(btn) {
+      if (authInitialized && !currentUser) {
+        openUsernameModal();
+        return;
+      }
       const malId = parseInt(btn.dataset.malid);
       const title = btn.dataset.title;
       const poster = btn.dataset.poster;
@@ -1815,15 +1819,37 @@
           .select('*').eq('user_id', currentUser.id)
           .order('added_at', { ascending: false });
         if (error || !data) return;
-        const list = data.map(r => ({
-          malId: r.mal_id, title: r.title, poster: r.poster,
-          score: r.score || 0, year: r.year || 0, status: r.status || 'plan_to_watch'
-        }));
-        saveWatchlistData(list);
+
+        const local = getWatchlist();
+        const cloudIds = new Set(data.map(r => r.mal_id));
+        const localIds = new Set(local.map(a => a.malId));
+
+        // Push local-only items up to Supabase (catches items added before sync)
+        const localOnly = local.filter(a => !cloudIds.has(a.malId));
+        if (localOnly.length > 0) {
+          await sb.from('watchlist').upsert(localOnly.map(a => ({
+            user_id: currentUser.id, username: authUsername || '',
+            mal_id: a.malId, title: a.title, poster: a.poster || '',
+            score: a.score || 0, year: a.year || 0, status: a.status || 'plan_to_watch'
+          })), { onConflict: 'user_id,mal_id' });
+        }
+
+        // Merge cloud-only items into localStorage (don't wipe local items)
+        const merged = [...local];
+        data.forEach(r => {
+          if (!localIds.has(r.mal_id)) {
+            merged.push({
+              malId: r.mal_id, title: r.title, poster: r.poster || '',
+              score: r.score || 0, year: r.year || 0, status: r.status || 'plan_to_watch'
+            });
+          }
+        });
+
+        saveWatchlistData(merged);
         renderWatchlist();
         document.querySelectorAll('.watchlist-btn').forEach(btn => {
           const id = parseInt(btn.dataset.malid);
-          const saved = list.some(a => a.malId === id);
+          const saved = merged.some(a => a.malId === id);
           btn.innerHTML = saved
             ? '♥<span class="watchlist-tooltip">Saved</span>'
             : '♡<span class="watchlist-tooltip">Add to Watchlist</span>';
@@ -2477,6 +2503,7 @@
     let sb = null;
     let currentUser = null;
     let authUsername = null;
+    let authInitialized = false;
 
     function updateProfileButton() {
       const label = document.getElementById('nav-profile-label');
@@ -2527,9 +2554,12 @@
           authUsername = null;
           localStorage.removeItem('aniscout_username');
           localStorage.removeItem('aniscout_session');
+          saveWatchlistData([]);
+          renderWatchlist();
           updateProfileButton();
         }
       } catch { /* silent — auth features just won't work */ }
+      authInitialized = true;
     })();
 
     function usernameToEmail(name) {
