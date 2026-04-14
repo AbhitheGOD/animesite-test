@@ -593,6 +593,10 @@
     .watchparty-panel.fullscreen .wp-player-wrap {
       width: 100% !important;
     }
+    /* Prevent iframe from stealing clicks/keyboard when chat overlay is open */
+    .watchparty-panel.fullscreen.fs-chat-open #hb-iframe {
+      pointer-events: none;
+    }
     /* Ensure theater layout is applied in fullscreen even if theater class is absent */
     .watchparty-panel.fullscreen .watchparty-inner {
       padding: 0; flex-direction: row; gap: 0; align-items: stretch;
