@@ -2775,15 +2775,16 @@
       { emoji: '🎭', label: 'Drama',        value: 'Drama' },
     ];
 
-    (function buildObGenresGrid() {
+    function buildObGenresGrid() {
       const grid = document.getElementById('ob-genres-grid');
       if (!grid) return;
+      if (grid.children.length) return; // already built
       grid.innerHTML = OB_GENRES.map(g => `
         <button type="button" class="ob-genre-tile" data-genre="${g.value}" onclick="obToggleGenre(this)">
           <span class="ob-tile-emoji">${g.emoji}</span>
           <span class="ob-tile-label">${g.label}</span>
         </button>`).join('');
-    })();
+    }
 
     function obToggleGenre(tile) {
       tile.classList.toggle('selected');
@@ -2798,6 +2799,7 @@
       document.querySelectorAll('.onboarding-card').forEach(c => c.classList.add('ob-hidden'));
       const step = document.getElementById('ob-step-' + n);
       if (step) { step.classList.remove('ob-hidden'); step.style.animation = 'none'; requestAnimationFrame(() => { step.style.animation = ''; }); }
+      if (n === 2) buildObGenresGrid();
     }
 
     function obFinish() {
