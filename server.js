@@ -196,7 +196,11 @@ app.post('/api/hyperbeam', async (req, res) => {
     const response = await fetch('https://engine.hyperbeam.com/v0/vm', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${hbApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ start_url: 'https://www.youtube.com' }),
+      body: JSON.stringify({
+        start_url: 'https://www.youtube.com',
+        offline_timeout: 300,
+        max_duration_seconds: 21600,
+      }),
     });
     if (!response.ok) {
       const text = await response.text();

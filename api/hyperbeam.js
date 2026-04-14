@@ -34,7 +34,12 @@ export default async function handler(req, res) {
           Authorization: `Bearer ${hbApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ start_url: 'https://www.youtube.com' }),
+        body: JSON.stringify({
+          start_url: 'https://www.youtube.com',
+          // Auto-terminate: 5 min after last viewer leaves, 6 hr hard cap
+          offline_timeout: 300,
+          max_duration_seconds: 21600,
+        }),
       });
 
       if (!response.ok) {

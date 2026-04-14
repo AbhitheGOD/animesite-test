@@ -1282,6 +1282,7 @@
           const name = leftPresences[0]?.username || 'Someone';
           showPresenceToast(name, 'left the room');
           updateViewerCount();
+          autoCleanupIfEmpty();
         })
         .on('presence', { event: 'sync' }, () => {
           updateViewerCount();
@@ -1633,6 +1634,14 @@
       btn.textContent = 'Launching…';
       errEl.textContent = '';
       try {
+        // Kill any orphaned VM for this room before creating a new one
+        const { data: stale } = await sb.from('room_sessions')
+          .select('hyperbeam_session_id').eq('room_id', roomId).maybeSingle();
+        if (stale?.hyperbeam_session_id) {
+          await terminateHyperbeamSession(stale.hyperbeam_session_id);
+          await sb.from('room_sessions').delete().eq('room_id', roomId);
+        }
+
         const { data: { session: authSession } } = await sb.auth.getSession();
         const res = await fetch('/api/hyperbeam', {
           method: 'POST',
@@ -1672,22 +1681,42 @@
       }
     }
 
-    async function endWatchparty() {
-      if (!isAdmin) return;
-      if (!confirm('End the watch session for everyone?')) return;
-      // Try to terminate the Hyperbeam VM
-      if (wpSession?.hyperbeam_session_id) {
+    // ── Shared VM cleanup helper (any auth'd user can call) ───────────────────
+    async function terminateHyperbeamSession(sessionId) {
+      if (!sessionId) return;
+      try {
         const { data: { session: authSession } } = await sb.auth.getSession();
-        fetch('/api/hyperbeam', {
+        if (!authSession?.access_token) return;
+        await fetch('/api/hyperbeam', {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authSession?.access_token}`,
+            'Authorization': `Bearer ${authSession.access_token}`,
           },
-          body: JSON.stringify({ session_id: wpSession.hyperbeam_session_id }),
-        }).catch(() => {});
-      }
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+      } catch (_) {}
+    }
+
+    // Auto-terminate VM + DB row when no one is left watching
+    async function autoCleanupIfEmpty() {
+      if (!wpSession?.hyperbeam_session_id || !channel) return;
+      const state   = channel.presenceState();
+      const watchers = Object.values(state).flat().filter(p => p.watching).length;
+      if (watchers > 0) return;
+      // Everyone is gone — kill the VM and wipe the DB row
+      const sessionId = wpSession.hyperbeam_session_id;
+      wpSession = null;
+      await terminateHyperbeamSession(sessionId);
       await sb.from('room_sessions').delete().eq('room_id', roomId);
+    }
+
+    async function endWatchparty() {
+      if (!isAdmin) return;
+      if (!confirm('End the watch session for everyone?')) return;
+      const sessionId = wpSession?.hyperbeam_session_id;
+      await sb.from('room_sessions').delete().eq('room_id', roomId);
+      await terminateHyperbeamSession(sessionId);
       wpSession = null;
       if (wpFullscreen) {
         if (document.fullscreenElement) document.exitFullscreen();
@@ -2201,6 +2230,33 @@
       const lastId = allMsgs[allMsgs.length - 1].dataset.id;
       markRead(lastId);
     }, { passive: true });
+
+    // Cleanup VM when admin closes/refreshes the tab
+    window.addEventListener('pagehide', () => {
+      if (!wpSession?.hyperbeam_session_id) return;
+      const { data } = sb.auth.getSession();  // sync access — may be stale
+      // Grab token from localStorage directly (synchronous, works on pagehide)
+      let token = null;
+      try {
+        const raw = localStorage.getItem(
+          Object.keys(localStorage).find(k => k.includes('supabase') && k.includes('auth')) || ''
+        );
+        token = raw ? JSON.parse(raw)?.access_token : null;
+      } catch (_) {}
+      if (!token) return;
+      // sendBeacon keeps the request alive after the page unloads
+      const blob = new Blob(
+        [JSON.stringify({ session_id: wpSession.hyperbeam_session_id })],
+        { type: 'application/json' }
+      );
+      // We use fetch with keepalive as sendBeacon can't set Auth headers
+      fetch('/api/hyperbeam', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ session_id: wpSession.hyperbeam_session_id }),
+        keepalive: true,
+      }).catch(() => {});
+    });
 
     // ── Settings panel ────────────────────────────────────────────────────────
     function toggleSettings() {
