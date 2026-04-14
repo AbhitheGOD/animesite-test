@@ -200,18 +200,23 @@ async function chatWidgetShowRoomList() {
     if (data && data[0]) lastMsgs[r.id] = data[0];
   }));
 
-  body.innerHTML = _widgetRooms.map(function (r) {
+  const _accentPalette = ['#E8272A', '#F5A01A', '#7C3AED', '#0EA5E9', '#22c55e', '#ec4899'];
+  body.innerHTML = _widgetRooms.map(function (r, i) {
     const last = lastMsgs[r.id];
     const lastRead = parseInt(localStorage.getItem('aniscout_last_read_' + r.id) || '0');
     const hasUnread = last && new Date(last.created_at).getTime() > lastRead && last.username !== _widgetUsername;
     const preview = last ? last.username + ': ' + (last.content || '').slice(0, 35) : 'No messages yet';
     const safeName = r.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const accent = _accentPalette[i % _accentPalette.length];
+    const initial = r.name.charAt(0).toUpperCase();
     return '<div class="chat-widget-room-item" onclick="chatWidgetOpenRoom(\'' + r.id + '\', \'' + safeName + '\')">'
+      + '<div class="chat-widget-room-avatar" style="background:' + accent + ';box-shadow:0 4px 14px ' + accent + '44">' + initial + '</div>'
       + '<div style="flex:1;min-width:0">'
       + '<div class="chat-widget-room-item-name">' + r.name + '</div>'
       + '<div class="chat-widget-room-item-preview">' + preview + '</div>'
       + '</div>'
       + (hasUnread ? '<div class="chat-widget-unread-room-dot"></div>' : '')
+      + '<span class="chat-widget-room-arrow">›</span>'
       + '</div>';
   }).join('');
 
