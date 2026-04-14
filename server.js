@@ -176,6 +176,58 @@ app.get('/api/supabase-config', (req, res) => {
   });
 });
 
+// ── Hyperbeam VM sessions ────────────────────────────────────────────────────
+async function verifySupabaseToken(token) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey     = process.env.SUPABASE_ANON_KEY;
+  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { 'Authorization': `Bearer ${token}`, 'apikey': anonKey },
+  });
+  return userRes.ok;
+}
+
+app.post('/api/hyperbeam', async (req, res) => {
+  const hbApiKey = process.env.HYPERBEAM_API_KEY;
+  if (!hbApiKey) return res.status(500).json({ error: 'Hyperbeam API key not configured' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    if (!(await verifySupabaseToken(token))) return res.status(401).json({ error: 'Invalid session' });
+    const response = await fetch('https://engine.hyperbeam.com/v0/vm', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${hbApiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start_url: 'https://www.youtube.com' }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      return res.status(response.status).json({ error: text || 'Failed to create Hyperbeam session' });
+    }
+    const data = await response.json();
+    res.json({ session_id: data.session_id, embed_url: data.embed_url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/hyperbeam', async (req, res) => {
+  const hbApiKey = process.env.HYPERBEAM_API_KEY;
+  if (!hbApiKey) return res.status(500).json({ error: 'Hyperbeam API key not configured' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    if (!(await verifySupabaseToken(token))) return res.status(401).json({ error: 'Invalid session' });
+    const { session_id } = req.body || {};
+    if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+    const response = await fetch(
+      `https://engine.hyperbeam.com/v0/vm/${encodeURIComponent(session_id)}`,
+      { method: 'DELETE', headers: { 'Authorization': `Bearer ${hbApiKey}` } }
+    );
+    res.json({ ok: response.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /api/queue/suggest ──────────────────────────────────────────────────
 // Bypass RLS for room_queue inserts — verifies JWT + membership server-side,
 // then writes with the service role key so any room member can suggest.

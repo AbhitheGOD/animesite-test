@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/assets/shared.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
     :root {
       --red:    #E8272A;
@@ -366,8 +365,6 @@
       position: relative;
     }
     .wp-player-wrap iframe { width: 100%; height: 100%; display: block; border: none; }
-    .wp-player-wrap video  { width: 100%; height: 100%; display: none; background: #000; outline: none; }
-    .wp-player-wrap video.active { display: block; }
     .wp-info { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 2px; min-width: 0; }
     .wp-title {
       font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem;
@@ -381,7 +378,7 @@
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 20px; padding: 2px 9px; width: fit-content;
     }
-    .wp-source-icon { color: #ff0000; font-size: 0.6rem; }
+    .wp-source-icon { color: var(--red); font-size: 0.6rem; }
     .wp-status { font-size: 0.78rem; color: var(--muted); }
     .wp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
     .wp-btn {
@@ -464,20 +461,6 @@
       animation: spin 0.8s linear infinite;
     }
 
-    /* ── SEEK BAR ────────────────────────────────────────────────────────────── */
-    .wp-seek-wrap {
-      flex-shrink: 0; display: flex; align-items: center; gap: 8px;
-      padding: 6px 0 0;
-    }
-    .wp-seek-bar {
-      flex: 1; height: 4px; background: rgba(255,255,255,0.12);
-      border-radius: 2px; position: relative; cursor: pointer;
-      transition: height 0.12s;
-    }
-    .wp-seek-bar:hover { height: 6px; }
-    .wp-seek-bar.no-seek { cursor: default; }
-    .wp-seek-fill { height: 100%; background: var(--red); border-radius: 2px; pointer-events: none; width: 0%; }
-    .wp-seek-time { font-size: 0.68rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
     /* ── REACTIONS ────────────────────────────────────────────────────────────── */
     .wp-react-wrap { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
@@ -524,6 +507,8 @@
     }
     .wp-queue-remove:hover { background: rgba(232,39,42,0.1); }
     .wp-queue-empty { font-size: 0.78rem; color: var(--muted); }
+    .wp-suggest-section { display: none; }
+    .wp-suggest-btn { margin-top: 10px; }
 
     /* ── SYSTEM MESSAGES ─────────────────────────────────────────────────────── */
     .msg-system {
@@ -798,11 +783,17 @@
     <div class="modal-card">
       <div class="modal-label">Watch Together</div>
       <h2 class="modal-title" id="wp-modal-title">START A SESSION</h2>
-      <p class="modal-sub" id="wp-modal-sub">Search for an anime to watch the trailer, or paste any YouTube link.</p>
-      <input class="modal-search-input" id="wp-search-input" placeholder="Search anime or paste YouTube URL…" autocomplete="off" spellcheck="false" />
-      <div class="search-results" id="wp-search-results">
-        <div class="search-empty">Search above or paste a YouTube URL</div>
+      <p class="modal-sub" id="wp-modal-sub">Launch a shared browser window. Everyone in the room watches the same screen — YouTube, streams, anything.</p>
+      <!-- Admin: launch new session -->
+      <div id="wp-launch-section">
+        <button type="button" class="modal-btn" id="wp-launch-btn" onclick="startHyperbeamSession()">Launch Shared Browser</button>
       </div>
+      <!-- Member: suggest a URL -->
+      <div id="wp-suggest-section" class="wp-suggest-section">
+        <input class="modal-search-input" id="wp-search-input" placeholder="Paste a URL to suggest (e.g. youtube.com/watch?v=…)" autocomplete="off" spellcheck="false" />
+        <button type="button" class="modal-btn wp-suggest-btn" id="wp-suggest-btn" onclick="submitUrlSuggestion()">Suggest URL</button>
+      </div>
+      <div class="modal-err" id="wp-launch-err"></div>
       <button type="button" class="modal-close-btn" onclick="closeWatchpartyModal()">Cancel</button>
     </div>
   </div>
@@ -819,20 +810,11 @@
           <!-- LEFT: player + theater controls bar -->
           <div class="wp-left">
             <div class="wp-player-wrap" id="wp-player-wrap">
-              <div id="yt-player"></div>
-              <video id="html5-player" controls preload="metadata"></video>
+              <iframe id="hb-iframe" title="Shared Browser" allow="autoplay; camera; microphone; clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe>
               <div id="wp-buffer-overlay" class="wp-buffer-overlay"><div class="wp-buffer-spinner"></div></div>
-            </div>
-            <!-- Seek bar -->
-            <div class="wp-seek-wrap" id="wp-seek-wrap">
-              <span class="wp-seek-time" id="wp-seek-current">0:00</span>
-              <div class="wp-seek-bar" id="wp-seek-bar"><div class="wp-seek-fill" id="wp-seek-fill"></div></div>
-              <span class="wp-seek-time" id="wp-seek-duration">0:00</span>
             </div>
             <!-- Theater controls (only visible in theater mode) -->
             <div class="wp-theater-controls">
-              <button type="button" class="wp-btn wp-btn-primary wp-admin-ctrl" id="wp-play-btn-theater" onclick="wpTogglePlay()">▶ Play</button>
-              <button type="button" class="wp-btn wp-btn-ghost wp-mute-btn wp-nonadmin-ctrl" onclick="wpToggleMute()">🔊 Mute</button>
               <div class="wp-theater-meta">
                 <span class="wp-theater-title" id="wp-theater-title">Watch Session</span>
                 <span class="wp-theater-status" id="wp-status-theater">Syncing…</span>
@@ -851,17 +833,15 @@
           <!-- Normal mode info panel (hidden in theater mode) -->
           <div class="wp-info">
             <div class="wp-title" id="wp-title">Watch Session</div>
-            <div class="wp-source-badge"><span class="wp-source-icon">▶</span> YouTube only &middot; Tab sharing coming soon</div>
+            <div class="wp-source-badge"><span class="wp-source-icon">⬡</span> Powered by Hyperbeam &middot; Browse anything</div>
             <div class="wp-viewer-count" id="wp-viewer-count">
               <span class="wp-viewer-dot"></span>
               <span id="wp-viewer-num">1</span> watching
             </div>
             <div class="wp-status" id="wp-status">Syncing…</div>
             <div class="wp-actions">
-              <button type="button" class="wp-btn wp-btn-primary wp-admin-ctrl" id="wp-play-btn" onclick="wpTogglePlay()">▶ Play</button>
-              <button type="button" class="wp-btn wp-btn-ghost wp-mute-btn wp-nonadmin-ctrl" onclick="wpToggleMute()">🔊 Mute</button>
               <button type="button" class="wp-btn wp-btn-ghost" id="wp-theater-btn" onclick="wpToggleTheater()">⛶ Expand</button>
-              <button type="button" class="wp-btn wp-btn-ghost" onclick="openWatchpartyModalInMode('suggest')">+ Suggest</button>
+              <button type="button" class="wp-btn wp-btn-ghost" onclick="openWatchpartyModalInMode('suggest')">+ Suggest URL</button>
               <button type="button" class="wp-btn wp-btn-ghost wp-admin-ctrl" onclick="endWatchparty()">End Session</button>
               <button type="button" class="wp-btn wp-btn-ghost wp-nonadmin-ctrl" onclick="leaveWatchparty()">Leave</button>
             </div>
@@ -873,7 +853,7 @@
               <button type="button" class="wp-react-btn" onclick="sendReaction('👏')">👏</button>
             </div>
             <div class="wp-queue" id="wp-queue">
-              <div class="wp-queue-header">Up Next</div>
+              <div class="wp-queue-header">URL Suggestions</div>
               <div class="wp-queue-list" id="wp-queue-list">
                 <span class="wp-queue-empty">No suggestions yet.</span>
               </div>
@@ -945,19 +925,10 @@
     let membersMap    = {}; // userId -> { username } for seen-by rendering
 
     // watchparty
-    let ytPlayer     = null;
-    let ytAPIReady   = false;
-    let ytPendingId  = null; // videoId to load once YT API is ready
-    let wpPlayerReady = false;
-    let wpSession    = null; // current room_sessions row
-    let wpSyncing    = false; // true while applying remote state, blocks feedback loop
-    let wpTheater    = false; // theater (expanded) mode active
-    let wpMuted      = false; // local mute state
-    let recentMsgs   = []; // last 50 text messages for mini chat
-    let wpSeekTimer  = null;
+    let wpSession     = null; // current room_sessions row
+    let wpTheater     = false; // theater (expanded) mode active
+    let recentMsgs    = []; // last 50 text messages for mini chat
     let wpSearchTimer = null;
-    let wpTickInterval = null;
-    let wpPlayerType = 'youtube'; // 'youtube' | 'html5'
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
     async function init() {
@@ -1226,7 +1197,7 @@
           if (payload.eventType === 'DELETE') {
             showSystemMsg('📺 Watch session ended');
             wpSession = null;
-            stopWpTick();
+            document.getElementById('hb-iframe').src = '';
             if (wpTheater) {
               wpTheater = false;
               document.getElementById('watchparty-panel').classList.remove('theater');
@@ -1438,46 +1409,6 @@
 
     // ── Watchparty helpers ────────────────────────────────────────────────────
 
-    function fmtTime(s) {
-      s = Math.max(0, Math.floor(s));
-      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-    }
-
-    function showWpOverlay() {
-      document.getElementById('wp-buffer-overlay').classList.add('show');
-    }
-    function hideWpOverlay() {
-      document.getElementById('wp-buffer-overlay').classList.remove('show');
-    }
-
-    function startWpTick() {
-      stopWpTick();
-      wpTickInterval = setInterval(() => {
-        if (!wpPlayerReady) return;
-        try {
-          let cur = 0, dur = 0;
-          if (wpPlayerType === 'html5') {
-            const vid = document.getElementById('html5-player');
-            cur = vid.currentTime || 0; dur = vid.duration || 0;
-          } else if (ytPlayer) {
-            cur = ytPlayer.getCurrentTime() || 0; dur = ytPlayer.getDuration() || 0;
-          }
-          document.getElementById('wp-seek-current').textContent = fmtTime(cur);
-          document.getElementById('wp-seek-duration').textContent = fmtTime(dur);
-          document.getElementById('wp-seek-fill').style.width = dur > 0 ? `${(cur / dur) * 100}%` : '0%';
-        } catch {}
-      }, 500);
-    }
-    function stopWpTick() {
-      clearInterval(wpTickInterval);
-      wpTickInterval = null;
-    }
-    function resetSeekBar() {
-      document.getElementById('wp-seek-fill').style.width = '0%';
-      document.getElementById('wp-seek-current').textContent = '0:00';
-      document.getElementById('wp-seek-duration').textContent = '0:00';
-    }
-
     function showSystemMsg(text) {
       const area = document.getElementById('messages-area');
       const el = document.createElement('div');
@@ -1504,73 +1435,6 @@
       el.addEventListener('animationend', () => el.remove());
     }
 
-    // ── HTML5 player ──────────────────────────────────────────────────────────
-
-    function initHtml5Player(src) {
-      wpPlayerType = 'html5';
-      // Hide YT placeholder, show video element
-      document.getElementById('yt-player').style.display = 'none';
-      const vid = document.getElementById('html5-player');
-      vid.classList.add('active');
-      vid.src = src;
-      wpPlayerReady = true;
-
-      vid.onwaiting  = () => showWpOverlay();
-      vid.onplaying  = () => { hideWpOverlay(); startWpTick(); };
-      vid.onpause    = () => { hideWpOverlay(); stopWpTick(); };
-      vid.onseeking  = () => showWpOverlay();
-      vid.onseeked   = () => hideWpOverlay();
-
-      vid.onplaying = () => {
-        hideWpOverlay(); startWpTick();
-        if (wpSyncing || !wpSession || !isAdmin) return;
-        broadcastWpState('playing', vid.currentTime);
-        setWpPlayBtn(true);
-        setWpStatus('Playing — synced with room');
-      };
-      vid.onpause = () => {
-        hideWpOverlay(); stopWpTick();
-        if (wpSyncing || !wpSession || !isAdmin) return;
-        setTimeout(() => {
-          if (vid.paused) {
-            broadcastWpState('paused', vid.currentTime);
-            setWpPlayBtn(false);
-            setWpStatus('Paused');
-          }
-        }, 350);
-      };
-    }
-
-    function destroyHtml5Player() {
-      const vid = document.getElementById('html5-player');
-      vid.pause();
-      vid.src = '';
-      vid.onwaiting = vid.onplaying = vid.onpause = vid.onseeking = vid.onseeked = null;
-      vid.classList.remove('active');
-      document.getElementById('yt-player').style.display = '';
-    }
-
-    function html5ApplySession(session) {
-      const vid = document.getElementById('html5-player');
-      if (!vid || !wpPlayerReady) return;
-      const delta = (Date.now() - new Date(session.updated_at).getTime()) / 1000;
-      const target = session.position_seconds + (session.playback_state === 'playing' ? delta : 0);
-      wpSyncing = true;
-      showWpOverlay();
-      vid.currentTime = target;
-      if (session.playback_state === 'playing') {
-        vid.play().catch(() => {});
-        setWpPlayBtn(true);
-        setWpStatus('Playing — synced with room');
-      } else {
-        vid.pause();
-        hideWpOverlay();
-        setWpPlayBtn(false);
-        setWpStatus('Paused');
-      }
-      setTimeout(() => { wpSyncing = false; }, 2000);
-    }
-
     // ── Watch Queue ───────────────────────────────────────────────────────────
 
     let wpQueueMode = 'start'; // 'start' or 'suggest'
@@ -1590,7 +1454,7 @@
       el.innerHTML = items.map(item => {
         const isMine = item.suggested_by === currentUser?.id;
         const playBtn = isAdmin
-          ? `<button type="button" class="wp-queue-play" data-qid="${escAttr(item.id)}" data-vid="${escAttr(item.video_id)}" data-title="${escAttr(item.video_title)}">▶ Play</button>`
+          ? `<button type="button" class="wp-queue-play" onclick="openQueueUrl('${escAttr(item.id)}','${escAttr(item.video_id)}')">↗ Open URL</button>`
           : '';
         const removeBtn = (isMine || isAdmin)
           ? `<button type="button" class="wp-queue-remove" data-qid="${escAttr(item.id)}">✕</button>`
@@ -1603,7 +1467,7 @@
       }).join('');
     }
 
-    async function suggestToQueue(videoId, title) {
+    async function suggestToQueue(url, title) {
       closeWatchpartyModal();
       try {
         const { data: { session } } = await sb.auth.getSession();
@@ -1611,7 +1475,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            roomId, videoId, videoTitle: title,
+            roomId, videoId: url, videoTitle: title || url,
             username, accessToken: session?.access_token,
           }),
         });
@@ -1624,9 +1488,20 @@
       }
     }
 
-    async function playFromQueue(queueId, videoId, title) {
+    async function submitUrlSuggestion() {
+      const input = document.getElementById('wp-search-input');
+      let url = (input.value || '').trim();
+      if (!url) { showToast('Paste a URL first.'); return; }
+      // Prepend https:// if missing so it's a valid URL
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      await suggestToQueue(url, url);
+    }
+
+    async function openQueueUrl(queueId, url) {
       if (!isAdmin) return;
-      await startWatchparty(videoId, title);
+      try { await navigator.clipboard.writeText(url); } catch {}
+      showToast('URL copied — paste it into the shared browser.');
+      // Optionally remove from queue after opening
       await sb.from('room_queue').delete().eq('id', queueId);
       loadQueue();
     }
@@ -1639,278 +1514,131 @@
 
     function openWatchpartyModalInMode(mode) {
       wpQueueMode = mode;
-      const title = document.getElementById('wp-modal-title');
-      const sub   = document.getElementById('wp-modal-sub');
+      const title   = document.getElementById('wp-modal-title');
+      const sub     = document.getElementById('wp-modal-sub');
+      const launch  = document.getElementById('wp-launch-section');
+      const suggest = document.getElementById('wp-suggest-section');
+      const errEl   = document.getElementById('wp-launch-err');
+      if (errEl) errEl.textContent = '';
       if (mode === 'suggest') {
-        title.textContent = 'SUGGEST A VIDEO';
-        sub.textContent   = 'Search for an anime trailer or paste a YouTube link to add to the queue.';
+        title.textContent = 'SUGGEST A URL';
+        sub.textContent   = 'Paste any URL and the admin can open it in the shared browser.';
+        launch.style.display  = 'none';
+        suggest.style.display = 'block';
       } else {
         title.textContent = 'START A SESSION';
-        sub.textContent   = 'Search for an anime to watch the trailer, or paste any YouTube link.';
+        sub.textContent   = 'Launch a shared browser window. Everyone in the room watches the same screen — YouTube, streams, anything.';
+        launch.style.display  = 'block';
+        suggest.style.display = 'none';
       }
       document.getElementById('modal-watchparty').classList.add('open');
-      document.getElementById('wp-search-input').value = '';
-      document.getElementById('wp-search-results').innerHTML = '<div class="search-empty">Search above or paste a YouTube URL</div>';
-      setTimeout(() => document.getElementById('wp-search-input').focus(), 50);
+      const inp = document.getElementById('wp-search-input');
+      if (inp) inp.value = '';
     }
 
-    // ── Watchparty ────────────────────────────────────────────────────────────
+    // ── Watchparty (Hyperbeam) ────────────────────────────────────────────────
 
-    // YouTube IFrame API calls this when ready
-    window.onYouTubeIframeAPIReady = function() {
-      ytAPIReady = true;
-      if (ytPendingId) { createYTPlayer(ytPendingId); ytPendingId = null; }
-    };
-
-    function initYTPlayer(videoId) {
-      if (!ytAPIReady) { ytPendingId = videoId; return; }
-      if (ytPlayer) { ytPlayer.loadVideoById(videoId); return; }
-      createYTPlayer(videoId);
-    }
-
-    function createYTPlayer(videoId) {
-      const oldEl = document.getElementById('yt-player');
-      const freshEl = document.createElement('div');
-      freshEl.id = 'yt-player';
-      oldEl.replaceWith(freshEl);
-      wpPlayerReady = false;
-      ytPlayer = new YT.Player('yt-player', {
-        videoId,
-        width: '100%', height: '100%',
-        playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1, iv_load_policy: 3 },
-        events: {
-          onReady: () => { wpPlayerReady = true; },
-          onStateChange: onPlayerStateChange
-        }
-      });
-    }
-
-    function onPlayerStateChange(e) {
-      // Buffering overlay applies to everyone, regardless of session/sync state
-      if (e.data === YT.PlayerState.BUFFERING) { showWpOverlay(); return; }
-      if (e.data === YT.PlayerState.PLAYING)   { hideWpOverlay(); startWpTick(); }
-      if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) { hideWpOverlay(); stopWpTick(); }
-
-      if (wpSyncing || !wpSession) return;
-
-      if (!isAdmin) {
-        // Non-admins can't control playback — snap back to session state after a beat
-        if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.PLAYING) {
-          clearTimeout(wpSeekTimer);
-          wpSeekTimer = setTimeout(() => {
-            if (!wpSession || !ytPlayer || !wpPlayerReady) return;
-            const delta = (Date.now() - new Date(wpSession.updated_at).getTime()) / 1000;
-            const targetPos = wpSession.position_seconds + (wpSession.playback_state === 'playing' ? delta : 0);
-            wpSyncing = true;
-            ytPlayer.seekTo(targetPos, true);
-            if (wpSession.playback_state === 'playing') ytPlayer.playVideo();
-            else ytPlayer.pauseVideo();
-            setTimeout(() => { wpSyncing = false; }, 2000);
-          }, 600);
-        }
-        return;
-      }
-
-      if (e.data === YT.PlayerState.PLAYING) {
-        clearTimeout(wpSeekTimer);
-        broadcastWpState('playing', ytPlayer.getCurrentTime());
-        setWpPlayBtn(true);
-        setWpStatus('Playing — synced with room');
-      } else if (e.data === YT.PlayerState.PAUSED) {
-        clearTimeout(wpSeekTimer);
-        wpSeekTimer = setTimeout(() => {
-          if (ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.PAUSED) {
-            broadcastWpState('paused', ytPlayer.getCurrentTime());
-            setWpPlayBtn(false);
-            setWpStatus('Paused');
-          }
-        }, 350);
-      }
-    }
-
-    async function broadcastWpState(state, position) {
-      if (!isAdmin) return;
-      await sb.from('room_sessions').upsert({
-        room_id: roomId,
-        video_id: wpSession.video_id,
-        video_title: wpSession.video_title,
-        playback_state: state,
-        position_seconds: position,
-        started_by: wpSession.started_by || currentUser.id,
-        updated_by: currentUser.id,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'room_id' });
+    function loadHyperbeamIframe(embedUrl) {
+      const iframe = document.getElementById('hb-iframe');
+      iframe.src = embedUrl;
+      setWpStatus('Shared browser active');
     }
 
     function applyRemoteSession(session) {
-      const isHtml5 = isDirectVideoUrl(session.video_id);
-
-      // Load player if video changed or no player exists yet
-      if ((!ytPlayer && !isHtml5) || (isHtml5 && !document.getElementById('html5-player').classList.contains('active')) || (wpSession?.video_id !== session.video_id)) {
-        setWpTitle(session.video_title || 'Watch Session');
-        openWatchpartyPanel();
-        if (isHtml5) {
-          if (wpPlayerType !== 'html5') destroyHtml5Player();
-          wpPlayerType = 'html5';
-          initHtml5Player(session.video_id);
-          wpSession = session;
-          html5ApplySession(session);
-        } else {
-          if (wpPlayerType === 'html5') destroyHtml5Player();
-          wpPlayerType = 'youtube';
-          initYTPlayer(session.video_id);
-          wpSession = session;
-        }
-        return;
-      }
-      // Skip if we triggered this update ourselves
-      if (session.updated_by === currentUser.id) return;
-
-      if (isHtml5) { html5ApplySession(session); return; }
-
-      const delta = (Date.now() - new Date(session.updated_at).getTime()) / 1000;
-      const targetPos = session.position_seconds + (session.playback_state === 'playing' ? delta : 0);
-
-      // If both are already playing and close enough in time, skip the seek to
-      // avoid a re-broadcast ping-pong loop (seek → PLAYING event → broadcast → ...)
-      if (session.playback_state === 'playing' &&
-          ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
-        const diff = Math.abs(ytPlayer.getCurrentTime() - targetPos);
-        if (diff < 4) {
-          setWpPlayBtn(true);
-          setWpStatus('Playing — synced with room');
-          return;
-        }
-      }
-
-      wpSyncing = true;
-      showWpOverlay();
-      ytPlayer.seekTo(targetPos, true);
-      if (session.playback_state === 'playing') {
-        ytPlayer.playVideo();
-        setWpPlayBtn(true);
-        setWpStatus('Playing — synced with room');
-        // overlay clears when PLAYING event fires
-      } else {
-        ytPlayer.pauseVideo();
-        hideWpOverlay();
-        setWpPlayBtn(false);
-        setWpStatus('Paused');
-      }
-      setTimeout(() => { wpSyncing = false; }, 2000);
+      if (!session?.video_id) return;
+      // If already showing this session, nothing to do
+      if (wpSession?.video_id === session.video_id) return;
+      wpSession = session;
+      setWpTitle(session.video_title || 'Shared Browser');
+      openWatchpartyPanel();
+      loadHyperbeamIframe(session.video_id);
     }
 
     async function loadSession() {
       const { data } = await sb.from('room_sessions').select('*').eq('room_id', roomId).maybeSingle();
       if (!data) return;
       wpSession = data;
-      setWpTitle(data.video_title || 'Watch Session');
+      setWpTitle(data.video_title || 'Shared Browser');
       setWpStatus('Joining session…');
       openWatchpartyPanel();
-      if (isDirectVideoUrl(data.video_id)) {
-        wpPlayerType = 'html5';
-        initHtml5Player(data.video_id);
-        html5ApplySession(data);
-      } else {
-        wpPlayerType = 'youtube';
-        initYTPlayer(data.video_id);
-      }
+      loadHyperbeamIframe(data.video_id);
     }
 
-    function isDirectVideoUrl(id) {
-      return /^https?:\/\//i.test(id) && /\.(mp4|webm|ogg|mkv|mov)(\?.*)?$/i.test(id);
-    }
+    async function startHyperbeamSession() {
+      if (!isAdmin) return;
+      const btn   = document.getElementById('wp-launch-btn');
+      const errEl = document.getElementById('wp-launch-err');
+      btn.disabled = true;
+      btn.textContent = 'Launching…';
+      errEl.textContent = '';
+      try {
+        const { data: { session: authSession } } = await sb.auth.getSession();
+        const res = await fetch('/api/hyperbeam', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authSession?.access_token}`,
+          },
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to create session');
 
-    async function startWatchparty(videoId, title) {
-      closeWatchpartyModal();
-      // Tear down previous HTML5 player if switching types
-      if (wpPlayerType === 'html5') destroyHtml5Player();
-      wpPlayerType = isDirectVideoUrl(videoId) ? 'html5' : 'youtube';
+        const { session_id, embed_url } = json;
+        const dbSession = {
+          room_id: roomId,
+          video_id: embed_url,
+          video_title: 'Shared Browser',
+          playback_state: 'playing',
+          position_seconds: 0,
+          started_by: currentUser.id,
+          updated_by: currentUser.id,
+          updated_at: new Date().toISOString(),
+          hyperbeam_session_id: session_id,
+        };
+        const { error: dbErr } = await sb.from('room_sessions').upsert(dbSession, { onConflict: 'room_id' });
+        if (dbErr) throw new Error(dbErr.message);
 
-      const session = {
-        room_id: roomId,
-        video_id: videoId,
-        video_title: title,
-        playback_state: 'paused',
-        position_seconds: 0,
-        started_by: currentUser.id,
-        updated_by: currentUser.id,
-        updated_at: new Date().toISOString()
-      };
-      const { error } = await sb.from('room_sessions').upsert(session, { onConflict: 'room_id' });
-      if (error) { showToast('Could not start session: ' + error.message); return; }
-      wpSession = session;
-      setWpTitle(title);
-      setWpStatus('Starting…');
-      openWatchpartyPanel();
-      if (wpPlayerType === 'html5') {
-        initHtml5Player(videoId);
-      } else {
-        initYTPlayer(videoId);
+        wpSession = dbSession;
+        closeWatchpartyModal();
+        setWpTitle('Shared Browser');
+        setWpStatus('Shared browser active');
+        openWatchpartyPanel();
+        loadHyperbeamIframe(embed_url);
+      } catch (err) {
+        errEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Launch Shared Browser';
       }
     }
 
     async function endWatchparty() {
       if (!isAdmin) return;
       if (!confirm('End the watch session for everyone?')) return;
+      // Try to terminate the Hyperbeam VM
+      if (wpSession?.hyperbeam_session_id) {
+        const { data: { session: authSession } } = await sb.auth.getSession();
+        fetch('/api/hyperbeam', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authSession?.access_token}`,
+          },
+          body: JSON.stringify({ session_id: wpSession.hyperbeam_session_id }),
+        }).catch(() => {});
+      }
       await sb.from('room_sessions').delete().eq('room_id', roomId);
       wpSession = null;
-      ytPlayer = null;
-      wpPlayerReady = false;
-      stopWpTick();
-      if (wpPlayerType === 'html5') destroyHtml5Player();
-      wpPlayerType = 'youtube';
       if (wpTheater) {
         wpTheater = false;
         document.getElementById('watchparty-panel').classList.remove('theater');
       }
-      const oldEl = document.getElementById('yt-player');
-      const freshEl = document.createElement('div');
-      freshEl.id = 'yt-player';
-      oldEl.replaceWith(freshEl);
+      document.getElementById('hb-iframe').src = '';
       closeWatchpartyPanel();
-    }
-
-    function wpTogglePlay() {
-      if (!isAdmin) { showToast('Only the room admin can control playback.'); return; }
-      if (!wpPlayerReady) return;
-      if (wpPlayerType === 'html5') {
-        const vid = document.getElementById('html5-player');
-        if (vid.paused) vid.play().catch(() => {}); else vid.pause();
-        return;
-      }
-      if (!ytPlayer) return;
-      const state = ytPlayer.getPlayerState();
-      if (state === YT.PlayerState.PLAYING) {
-        ytPlayer.pauseVideo();
-      } else {
-        ytPlayer.playVideo();
-      }
-    }
-
-    function wpToggleMute() {
-      if (!wpPlayerReady) return;
-      wpMuted = !wpMuted;
-      if (wpPlayerType === 'html5') {
-        document.getElementById('html5-player').muted = wpMuted;
-      } else if (ytPlayer) {
-        if (wpMuted) ytPlayer.mute(); else ytPlayer.unMute();
-      }
-      document.querySelectorAll('.wp-mute-btn').forEach(b => b.textContent = wpMuted ? '🔇 Unmute' : '🔊 Mute');
     }
 
     function leaveWatchparty() {
       wpSession = null;
-      ytPlayer = null;
-      wpPlayerReady = false;
-      wpMuted = false;
-      stopWpTick();
-      if (wpPlayerType === 'html5') destroyHtml5Player();
-      wpPlayerType = 'youtube';
-      const oldEl = document.getElementById('yt-player');
-      const freshEl = document.createElement('div');
-      freshEl.id = 'yt-player';
-      oldEl.replaceWith(freshEl);
+      document.getElementById('hb-iframe').src = '';
       closeWatchpartyPanel();
     }
 
@@ -1919,13 +1647,6 @@
       const nonAdminEls = document.querySelectorAll('.wp-nonadmin-ctrl');
       adminEls.forEach(el => el.style.display = isAdmin ? '' : 'none');
       nonAdminEls.forEach(el => el.style.display = isAdmin ? 'none' : '');
-      document.getElementById('wp-seek-bar').classList.toggle('no-seek', !isAdmin);
-    }
-
-    function setWpPlayBtn(playing) {
-      const label = playing ? '⏸ Pause' : '▶ Play';
-      document.getElementById('wp-play-btn').textContent = label;
-      document.getElementById('wp-play-btn-theater').textContent = label;
     }
 
     function setWpTitle(title) {
@@ -2004,9 +1725,6 @@
     }
 
     function closeWatchpartyPanel() {
-      stopWpTick();
-      resetSeekBar();
-      hideWpOverlay();
       document.getElementById('watchparty-panel').classList.remove('open');
       const btn = document.getElementById('nav-watch-btn');
       btn.classList.remove('active');
@@ -2035,124 +1753,6 @@
       clearTimeout(wpSearchTimer);
     }
 
-    function extractYouTubeId(input) {
-      const urlMatch = input.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
-      if (urlMatch) return urlMatch[1];
-      if (/^[a-zA-Z0-9_-]{11}$/.test(input.trim())) return input.trim();
-      return null;
-    }
-
-    function extractDirectVideoUrl(input) {
-      try {
-        const url = new URL(input.trim());
-        if (/\.(mp4|webm|ogg|mkv|mov)(\?.*)?$/i.test(url.pathname)) return url.href;
-      } catch {}
-      return null;
-    }
-
-    document.getElementById('wp-search-input').addEventListener('input', function() {
-      clearTimeout(wpSearchTimer);
-      const q = this.value.trim();
-      if (!q) {
-        document.getElementById('wp-search-results').innerHTML = '<div class="search-empty">Search above or paste a YouTube URL</div>';
-        return;
-      }
-      // YouTube URL / ID shortcut
-      const ytId = extractYouTubeId(q);
-      if (ytId) {
-        const resultsEl = document.getElementById('wp-search-results');
-        resultsEl.innerHTML = '<div class="search-empty"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto"></div></div>';
-        (async () => {
-          let title = 'YouTube Video';
-          try {
-            const oe = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}&format=json`);
-            if (oe.ok) { const j = await oe.json(); title = j.title || title; }
-          } catch {}
-          const actionLabel = wpQueueMode === 'suggest' ? 'Suggest' : 'Watch';
-          const actionFn    = wpQueueMode === 'suggest'
-            ? `suggestToQueue('${escAttr(ytId)}', '${escAttr(title)}')`
-            : `startWatchparty('${escAttr(ytId)}', '${escAttr(title)}')`;
-          resultsEl.innerHTML = `
-            <div class="search-result-item">
-              <div class="result-info">
-                <div class="result-title">${escHtml(title)}</div>
-                <div class="result-meta" style="font-family:monospace;font-size:0.78rem">${escHtml(ytId)}</div>
-              </div>
-              <button type="button" class="result-share" onclick="${actionFn}">${escHtml(actionLabel)}</button>
-            </div>`;
-        })();
-        return;
-      }
-      // Direct video URL
-      const directUrl = extractDirectVideoUrl(q);
-      if (directUrl) {
-        const label   = decodeURIComponent(directUrl.split('/').pop().split('?')[0]) || 'Video';
-        const actionLabel = wpQueueMode === 'suggest' ? 'Suggest' : 'Watch';
-        const actionFn    = wpQueueMode === 'suggest'
-          ? `suggestToQueue('${escAttr(directUrl)}', '${escAttr(label)}')`
-          : `startWatchparty('${escAttr(directUrl)}', '${escAttr(label)}')`;
-        document.getElementById('wp-search-results').innerHTML = `
-          <div class="search-result-item">
-            <div class="result-info">
-              <div class="result-title">${escHtml(label)}</div>
-              <div class="result-meta">Direct video link</div>
-            </div>
-            <button type="button" class="result-share" onclick="${actionFn}">${escHtml(actionLabel)}</button>
-          </div>`;
-        return;
-      }
-      if (q.length < 2) return;
-      document.getElementById('wp-search-results').innerHTML = '<div class="search-empty"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto"></div></div>';
-      wpSearchTimer = setTimeout(() => runWpSearch(q), 320);
-    });
-
-    async function runWpSearch(q) {
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-        const results = await res.json();
-        const el = document.getElementById('wp-search-results');
-        if (!results.length) { el.innerHTML = '<div class="search-empty">No results found.</div>'; return; }
-        const btnLabel = wpQueueMode === 'suggest' ? 'Suggest' : 'Trailer';
-        el.innerHTML = results.map((a, i) => {
-          const meta = [a.year, a.score ? `★${parseFloat(a.score).toFixed(1)}` : null].filter(Boolean).join(' · ');
-          return `
-            <div class="search-result-item" data-wp-idx="${i}">
-              ${a.poster ? `<img class="result-poster" src="${escHtml(a.poster)}" alt="" loading="lazy" onerror="this.style.display='none'" />` : ''}
-              <div class="result-info">
-                <div class="result-title">${escHtml(a.title || 'Unknown')}</div>
-                <div class="result-meta">${escHtml(meta)}</div>
-              </div>
-              <button class="result-share" data-mal-id="${escAttr(String(a.malId))}" data-title="${escAttr(a.title || 'Unknown')}">${escHtml(btnLabel)}</button>
-            </div>`;
-        }).join('');
-      } catch {
-        document.getElementById('wp-search-results').innerHTML = '<div class="search-empty" style="color:var(--red)">Search failed. Try again.</div>';
-      }
-    }
-
-    document.getElementById('wp-search-results').addEventListener('click', async e => {
-      const btn = e.target.closest('[data-mal-id]');
-      if (!btn) return;
-      const malId = btn.dataset.malId;
-      const title = btn.dataset.title;
-      const origLabel = btn.textContent;
-      btn.textContent = '…';
-      btn.disabled = true;
-      try {
-        const res = await fetch(`/api/anime?id=${malId}`);
-        const data = await res.json();
-        const ytId = data?.trailer?.youtube_id;
-        if (!ytId) { showToast('No trailer available for this anime.'); btn.textContent = origLabel; btn.disabled = false; return; }
-        if (wpQueueMode === 'suggest') {
-          suggestToQueue(ytId, title);
-        } else {
-          startWatchparty(ytId, title);
-        }
-      } catch {
-        showToast('Could not load trailer. Try again.');
-        btn.textContent = origLabel; btn.disabled = false;
-      }
-    });
 
     // ── Seen by (read receipts) ───────────────────────────────────────────────
     async function loadReads() {
@@ -2445,33 +2045,10 @@
       if (item) transferAdmin(parseInt(item.dataset.idx));
     });
     document.getElementById('wp-queue-list').addEventListener('click', e => {
-      const playBtn   = e.target.closest('.wp-queue-play');
       const removeBtn = e.target.closest('.wp-queue-remove');
-      if (playBtn)   playFromQueue(playBtn.dataset.qid, playBtn.dataset.vid, playBtn.dataset.title);
       if (removeBtn) removeFromQueue(removeBtn.dataset.qid);
     });
 
-    document.getElementById('wp-seek-bar').addEventListener('click', e => {
-      if (!isAdmin || !wpPlayerReady) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      if (wpPlayerType === 'html5') {
-        const vid = document.getElementById('html5-player');
-        const dur = vid.duration || 0;
-        if (!dur) return;
-        const pos = pct * dur;
-        vid.currentTime = pos;
-        broadcastWpState(vid.paused ? 'paused' : 'playing', pos);
-        return;
-      }
-      if (!ytPlayer) return;
-      const dur = ytPlayer.getDuration() || 0;
-      if (!dur) return;
-      const pos = pct * dur;
-      ytPlayer.seekTo(pos, true);
-      const isPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-      broadcastWpState(isPlaying ? 'playing' : 'paused', pos);
-    });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') { closeAnimeModal(); closeLightbox(); closeTransferModal(); closeWatchpartyModal(); }
