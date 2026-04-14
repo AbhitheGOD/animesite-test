@@ -565,6 +565,52 @@
     }
     .wp-mini-send-btn:hover { opacity: 0.85; }
 
+    /* ── FULLSCREEN MODE ─────────────────────────────────────────────────────── */
+    .watchparty-panel.fullscreen {
+      position: fixed !important; inset: 0 !important; z-index: 9999;
+      max-height: none !important;
+    }
+    .watchparty-panel.fullscreen .watchparty-inner {
+      height: 100%;
+    }
+    /* Mini chat becomes an absolute overlay sliding in from the right */
+    .watchparty-panel.fullscreen .wp-mini-chat {
+      position: absolute; top: 0; right: 0; bottom: 0;
+      width: 300px; flex-shrink: 0;
+      background: rgba(8,8,14,0.92);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-left: 1px solid rgba(255,255,255,0.08);
+      box-shadow: -8px 0 32px rgba(0,0,0,0.45);
+      transform: translateX(105%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      z-index: 20;
+    }
+    .watchparty-panel.fullscreen.fs-chat-open .wp-mini-chat {
+      transform: translateX(0);
+    }
+    /* Player fills full width since mini-chat is out of flow */
+    .watchparty-panel.fullscreen .wp-player-wrap {
+      width: 100% !important;
+    }
+    /* Ensure theater layout is applied in fullscreen even if theater class is absent */
+    .watchparty-panel.fullscreen .watchparty-inner {
+      padding: 0; flex-direction: row; gap: 0; align-items: stretch;
+    }
+    .watchparty-panel.fullscreen .wp-theater-controls { display: flex; }
+    .watchparty-panel.fullscreen .wp-info { display: none; }
+    /* Controls bar sits above the chat overlay */
+    .watchparty-panel.fullscreen .wp-theater-controls {
+      position: relative; z-index: 21;
+    }
+    /* Chat + FS buttons — hidden by default, shown only when needed */
+    .wp-chat-toggle-btn { display: none; }
+    .watchparty-panel.fullscreen .wp-chat-toggle-btn { display: inline-flex; }
+    .wp-fs-exit-btn { display: none; }
+    .watchparty-panel.fullscreen .wp-fs-exit-btn { display: inline-flex; }
+    .wp-fs-enter-btn { display: inline-flex; }
+    .watchparty-panel.fullscreen .wp-fs-enter-btn { display: none; }
+
     /* ── SEEN BY ─────────────────────────────────────────────────────────────── */
     .seen-by {
       display: flex; gap: 3px; margin-top: 5px;
@@ -824,6 +870,9 @@
               <button type="button" class="wp-react-btn" onclick="sendReaction('😂')">😂</button>
               <button type="button" class="wp-react-btn" onclick="sendReaction('😮')">😮</button>
               <button type="button" class="wp-react-btn" onclick="sendReaction('👏')">👏</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-chat-toggle-btn" id="wp-chat-toggle-btn" onclick="wpToggleFsChat()">💬 Chat</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-fs-enter-btn" id="wp-fs-enter-btn" onclick="wpToggleFullscreen()">⛶ Fullscreen</button>
+              <button type="button" class="wp-btn wp-btn-ghost wp-fs-exit-btn" id="wp-fs-exit-btn" onclick="wpToggleFullscreen()">⤢ Exit Fullscreen</button>
               <button type="button" class="wp-btn wp-btn-ghost wp-admin-ctrl" onclick="endWatchparty()">End Session</button>
               <button type="button" class="wp-btn wp-btn-ghost wp-nonadmin-ctrl" onclick="leaveWatchparty()">Leave</button>
               <button type="button" class="wp-btn wp-btn-ghost" onclick="wpToggleTheater()">✕ Exit</button>
@@ -841,6 +890,7 @@
             <div class="wp-status" id="wp-status">Syncing…</div>
             <div class="wp-actions">
               <button type="button" class="wp-btn wp-btn-ghost" id="wp-theater-btn" onclick="wpToggleTheater()">⛶ Expand</button>
+              <button type="button" class="wp-btn wp-btn-ghost" onclick="wpEnterFullscreen()">⛶ Fullscreen</button>
               <button type="button" class="wp-btn wp-btn-ghost" onclick="openWatchpartyModalInMode('suggest')">+ Suggest URL</button>
               <button type="button" class="wp-btn wp-btn-ghost wp-admin-ctrl" onclick="endWatchparty()">End Session</button>
               <button type="button" class="wp-btn wp-btn-ghost wp-nonadmin-ctrl" onclick="leaveWatchparty()">Leave</button>
@@ -927,6 +977,8 @@
     // watchparty
     let wpSession     = null; // current room_sessions row
     let wpTheater     = false; // theater (expanded) mode active
+    let wpFullscreen  = false; // true fullscreen mode active
+    let wpFsChat      = false; // fullscreen overlay chat open
     let recentMsgs    = []; // last 50 text messages for mini chat
     let wpSearchTimer = null;
 
@@ -1198,6 +1250,11 @@
             showSystemMsg('📺 Watch session ended');
             wpSession = null;
             document.getElementById('hb-iframe').src = '';
+            if (wpFullscreen) {
+              if (document.fullscreenElement) document.exitFullscreen();
+              wpFullscreen = false; wpFsChat = false;
+              document.getElementById('watchparty-panel').classList.remove('fullscreen', 'fs-chat-open');
+            }
             if (wpTheater) {
               wpTheater = false;
               document.getElementById('watchparty-panel').classList.remove('theater');
@@ -1628,6 +1685,11 @@
       }
       await sb.from('room_sessions').delete().eq('room_id', roomId);
       wpSession = null;
+      if (wpFullscreen) {
+        if (document.fullscreenElement) document.exitFullscreen();
+        wpFullscreen = false; wpFsChat = false;
+        document.getElementById('watchparty-panel').classList.remove('fullscreen', 'fs-chat-open');
+      }
       if (wpTheater) {
         wpTheater = false;
         document.getElementById('watchparty-panel').classList.remove('theater');
@@ -1638,6 +1700,11 @@
 
     function leaveWatchparty() {
       wpSession = null;
+      if (wpFullscreen) {
+        if (document.fullscreenElement) document.exitFullscreen();
+        wpFullscreen = false; wpFsChat = false;
+        document.getElementById('watchparty-panel').classList.remove('fullscreen', 'fs-chat-open');
+      }
       document.getElementById('hb-iframe').src = '';
       closeWatchpartyPanel();
     }
@@ -1667,17 +1734,85 @@
         document.getElementById('wp-theater-btn').textContent = '⛶ Collapse';
         populateMiniChat();
       } else {
+        // Exiting theater also exits fullscreen
+        if (wpFullscreen) {
+          if (document.fullscreenElement) document.exitFullscreen();
+          wpFullscreen = false;
+          wpFsChat = false;
+          panel.classList.remove('fullscreen', 'fs-chat-open');
+        }
         panel.classList.remove('theater');
         document.getElementById('wp-theater-btn').textContent = '⛶ Expand';
       }
     }
+
+    // ── Fullscreen ────────────────────────────────────────────────────────────
+    function wpEnterFullscreen() {
+      // Called from normal mode — enter theater first, then go fullscreen
+      if (!wpTheater) {
+        wpTheater = true;
+        const panel = document.getElementById('watchparty-panel');
+        panel.classList.add('theater');
+        document.getElementById('wp-theater-btn').textContent = '⛶ Collapse';
+        populateMiniChat();
+      }
+      wpToggleFullscreen();
+    }
+
+    function wpToggleFullscreen() {
+      const panel = document.getElementById('watchparty-panel');
+      if (!wpFullscreen) {
+        // Enter fullscreen — ensure theater mode is on
+        if (!wpTheater) {
+          wpTheater = true;
+          panel.classList.add('theater');
+          document.getElementById('wp-theater-btn').textContent = '⛶ Collapse';
+          populateMiniChat();
+        }
+        document.documentElement.requestFullscreen().catch(() => {});
+        wpFullscreen = true;
+        panel.classList.add('fullscreen');
+      } else {
+        if (document.fullscreenElement) document.exitFullscreen();
+        wpFullscreen = false;
+        wpFsChat = false;
+        panel.classList.remove('fullscreen', 'fs-chat-open');
+      }
+    }
+
+    function wpToggleFsChat() {
+      if (!wpFullscreen) return;
+      wpFsChat = !wpFsChat;
+      const panel = document.getElementById('watchparty-panel');
+      const btn   = document.getElementById('wp-chat-toggle-btn');
+      if (wpFsChat) {
+        panel.classList.add('fs-chat-open');
+        btn.textContent = '✕ Chat';
+        populateMiniChat();
+      } else {
+        panel.classList.remove('fs-chat-open');
+        btn.textContent = '💬 Chat';
+      }
+    }
+
+    // Sync fullscreen state if user exits via Esc key or browser UI
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && wpFullscreen) {
+        wpFullscreen = false;
+        wpFsChat = false;
+        const panel = document.getElementById('watchparty-panel');
+        panel.classList.remove('fullscreen', 'fs-chat-open');
+        const btn = document.getElementById('wp-chat-toggle-btn');
+        if (btn) btn.textContent = '💬 Chat';
+      }
+    });
 
     // ── Mini chat ─────────────────────────────────────────────────────────────
     function pushMiniMsg(msg) {
       if (msg.type !== 'text' || !msg.content) return;
       recentMsgs.push(msg);
       if (recentMsgs.length > 50) recentMsgs.shift();
-      if (wpTheater) appendMiniChatMsg(msg);
+      if (wpTheater || wpFullscreen) appendMiniChatMsg(msg);
     }
 
     function appendMiniChatMsg(msg) {
