@@ -28,7 +28,7 @@
     ::-webkit-scrollbar-track { background: var(--dark); }
     ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
 
-    /* NAV */
+    /* ── NAV ─────────────────────────────────────────────────────────────────── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
@@ -47,120 +47,234 @@
     .nav-back:hover { color: var(--text); }
     .nav-back svg { width: 16px; height: 16px; }
 
-    /* PAGE */
+    /* ── PAGE ─────────────────────────────────────────────────────────────────── */
     .page-wrap {
-      max-width: 720px; margin: 0 auto;
-      padding: 96px 40px 80px;
+      max-width: 680px; margin: 0 auto;
+      padding: 80px 24px 80px;
     }
-    .page-title { font-size: 3rem; color: var(--text); margin-bottom: 8px; }
-    .page-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 48px; }
 
-    /* PROFILE CARD */
-    .profile-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 32px;
-      display: flex; align-items: center; gap: 24px;
+    /* ── PROFILE HERO ─────────────────────────────────────────────────────────── */
+    .profile-hero {
+      position: relative; border-radius: 24px; overflow: hidden;
       margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    .profile-hero-bg {
+      position: absolute; inset: 0;
+      background: var(--surface);
+    }
+    .profile-hero-glow {
+      position: absolute; inset: 0;
+      opacity: 0;
+      background: radial-gradient(ellipse 60% 80% at 20% 50%, rgba(232,39,42,0.18) 0%, transparent 70%);
+      transition: opacity 0.6s ease;
+    }
+    .profile-hero.loaded .profile-hero-glow { opacity: 1; }
+    .profile-hero-content {
+      position: relative; z-index: 1;
+      padding: 32px;
+      display: flex; align-items: center; gap: 24px;
     }
     .profile-avatar-xl {
-      width: 72px; height: 72px; border-radius: 50%;
+      width: 80px; height: 80px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem; font-weight: 800; color: #fff;
+      font-size: 1.75rem; font-weight: 800; color: #fff;
       flex-shrink: 0; letter-spacing: 0;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,255,255,0.08);
+      transition: box-shadow 0.3s;
     }
     .profile-info { flex: 1; min-width: 0; }
-    .profile-name { font-size: 1.5rem; font-weight: 700; color: var(--text); }
-    .profile-handle { font-size: 0.85rem; color: var(--muted); }
-
-    /* COLOR PICKER */
-    .color-picker-row {
-      display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;
+    .profile-name { font-size: 1.55rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 6px;
+      padding: 3px 10px; border-radius: 100px;
+      background: rgba(232,39,42,0.1); border: 1px solid rgba(232,39,42,0.22);
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--red);
     }
+    .profile-badge svg { width: 10px; height: 10px; }
+
+    /* Color picker */
+    .color-section { padding: 0 32px 28px; position: relative; z-index: 1; }
+    .color-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px;
+    }
+    .color-picker-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .color-swatch {
-      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.15s, border-color 0.15s;
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; outline: 2px solid transparent;
+      transition: transform 0.15s, outline-color 0.15s, outline-offset 0.15s;
     }
     .color-swatch:hover { transform: scale(1.2); }
-    .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+    .color-swatch.selected { outline-color: rgba(255,255,255,0.7); outline-offset: 3px; transform: scale(1.1); }
 
-    /* SECTION */
+    /* Stats strip */
+    .stats-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--border);
+      position: relative; z-index: 1;
+    }
+    .stat-item {
+      padding: 16px; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem; letter-spacing: 0.04em;
+      color: var(--text); line-height: 1;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); margin-top: 3px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    /* ── SECTION CARDS ────────────────────────────────────────────────────────── */
     .settings-section {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 20px; overflow: hidden; margin-bottom: 12px;
     }
-    .settings-section-title {
-      padding: 16px 24px; font-size: 0.7rem; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--muted); border-bottom: 1px solid var(--border);
+    .settings-section-header {
+      padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border);
     }
+    .section-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-icon svg { width: 15px; height: 15px; }
+    .section-icon.blue  { background: rgba(42,114,232,0.15); color: #5B9EF5; }
+    .section-icon.red   { background: rgba(232,39,42,0.12); color: var(--red); }
+    .section-icon.green { background: rgba(26,168,107,0.12); color: #3DD68C; }
+    .section-icon.purple{ background: rgba(124,77,232,0.12); color: #A07CF5; }
+    .settings-section-title {
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted);
+    }
+
     .settings-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      padding: 15px 20px; border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
     }
     .settings-row:last-child { border-bottom: none; }
-    .settings-row-label { font-size: 0.92rem; font-weight: 500; color: var(--text); }
-    .settings-row-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
-    .settings-row-action {
-      flex-shrink: 0; margin-left: 16px;
-    }
+    .settings-row:hover { background: rgba(255,255,255,0.02); }
 
-    /* BUTTONS */
+    .row-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .row-icon {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    }
+    .row-icon svg { width: 16px; height: 16px; color: var(--muted); }
+
+    .settings-row-label { font-size: 0.9rem; font-weight: 500; color: var(--text); }
+    .settings-row-sub { font-size: 0.77rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── BUTTONS ──────────────────────────────────────────────────────────────── */
     .btn-ghost {
-      padding: 8px 18px; border-radius: 8px;
+      padding: 7px 16px; border-radius: 8px;
       background: transparent; border: 1px solid var(--border);
       color: var(--muted); font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem; font-weight: 600; cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      white-space: nowrap; flex-shrink: 0;
     }
-    .btn-ghost:hover { border-color: rgba(255,255,255,0.22); color: var(--text); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.22); color: var(--text); background: rgba(255,255,255,0.04); }
     .btn-danger {
-      padding: 8px 18px; border-radius: 8px;
-      background: rgba(232,39,42,0.08); border: 1px solid rgba(232,39,42,0.25);
+      padding: 7px 16px; border-radius: 8px;
+      background: rgba(232,39,42,0.08); border: 1px solid rgba(232,39,42,0.22);
       color: var(--red); font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem; font-weight: 600; cursor: pointer;
-      transition: background 0.2s;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      white-space: nowrap; flex-shrink: 0;
     }
-    .btn-danger:hover { background: rgba(232,39,42,0.18); }
+    .btn-danger:hover { background: rgba(232,39,42,0.18); border-color: rgba(232,39,42,0.4); }
 
-    /* SIGN-IN PROMPT */
+    /* ── SIGN-IN PROMPT ───────────────────────────────────────────────────────── */
     .signin-prompt {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 48px 32px;
+      border-radius: 24px; padding: 56px 32px;
       text-align: center; margin-bottom: 12px;
     }
-    .signin-icon { font-size: 2.5rem; margin-bottom: 16px; }
-    .signin-title { font-size: 1.5rem; color: var(--text); margin-bottom: 8px; }
-    .signin-sub { font-size: 0.9rem; color: var(--muted); margin-bottom: 24px; }
+    .signin-icon-wrap {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .signin-icon-wrap svg { width: 32px; height: 32px; color: var(--muted); }
+    .signin-title { font-size: 1.6rem; color: var(--text); margin-bottom: 8px; }
+    .signin-sub { font-size: 0.9rem; color: var(--muted); margin-bottom: 28px; max-width: 320px; margin-left: auto; margin-right: auto; line-height: 1.6; }
     .btn-primary-full {
-      display: inline-block; padding: 12px 32px;
+      display: inline-block; padding: 13px 36px;
       background: var(--red); border: none; border-radius: 10px;
       color: #fff; font-family: 'DM Sans', sans-serif;
       font-size: 0.95rem; font-weight: 700; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(232,39,42,0.3);
-      transition: opacity 0.2s, transform 0.15s; text-decoration: none;
+      box-shadow: 0 4px 24px rgba(232,39,42,0.3);
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s; text-decoration: none;
     }
-    .btn-primary-full:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary-full:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(232,39,42,0.4); }
 
-    /* TOAST */
+    /* ── PAGE HEADER ──────────────────────────────────────────────────────────── */
+    .page-header { padding: 80px 0 28px; }
+    .page-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--red);
+    }
+    .page-eyebrow svg { width: 12px; height: 12px; }
+    .page-title { font-size: 3.2rem; color: var(--text); line-height: 1; }
+
+    /* ── VERSION ROW ──────────────────────────────────────────────────────────── */
+    .version-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 5px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.75rem; font-weight: 600; color: var(--muted);
+      font-family: 'DM Sans', monospace;
+    }
+
+    /* ── TOAST ────────────────────────────────────────────────────────────────── */
     .toast {
       position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
-      background: var(--raised); border: 1px solid var(--border);
+      background: var(--raised); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 10px; padding: 10px 22px;
-      font-size: 0.9rem; color: var(--text);
-      box-shadow: 0 8px 28px rgba(0,0,0,0.5);
-      z-index: 500; opacity: 0; pointer-events: none;
-      transition: opacity 0.25s ease;
+      font-size: 0.88rem; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      z-index: 500; opacity: 0; pointer-events: none; white-space: nowrap;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      transform: translateX(-50%) translateY(6px);
     }
-    .toast.show { opacity: 1; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── DIVIDER ──────────────────────────────────────────────────────────────── */
+    .section-group-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--muted); padding: 20px 4px 8px;
+    }
+
+    /* ── REVEAL ───────────────────────────────────────────────────────────────── */
+    .fade-up {
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 0.5s cubic-bezier(0.25,0.46,0.45,0.94),
+                  transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    }
+    .fade-up.visible { opacity: 1; transform: none; }
+    .hidden { display: none !important; }
 
     @media (max-width: 600px) {
-      .page-wrap { padding: 88px 20px 60px; }
       nav { padding: 0 20px; }
-      .profile-card { flex-direction: column; align-items: flex-start; }
+      .page-wrap { padding: 72px 16px 60px; }
+      .page-header { padding: 72px 0 20px; }
+      .page-title { font-size: 2.6rem; }
+      .profile-hero-content { flex-direction: column; align-items: flex-start; }
+      .stats-strip { grid-template-columns: repeat(3,1fr); }
+      .stat-item { padding: 14px 8px; }
+      .color-section { padding: 0 20px 24px; }
       .settings-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .settings-row-action { margin-left: 0; }
+      .settings-row .btn-ghost,
+      .settings-row .btn-danger { margin-left: 48px; }
     }
   </style>
 </head>
@@ -175,106 +289,190 @@
   </nav>
 
   <div class="page-wrap">
-    <h1 class="page-title">SETTINGS</h1>
-    <p class="page-sub">Manage your account, preferences, and data.</p>
 
-    <!-- Sign-in prompt (shown when logged out) -->
-    <div class="signin-prompt" id="signin-prompt">
-      <div class="signin-icon">👤</div>
-      <div class="signin-title">Not signed in</div>
-      <p class="signin-sub">Sign in to manage your profile, sync your watchlist, and join rooms.</p>
+    <div class="page-header fade-up">
+      <div class="page-eyebrow">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 4v2.5l1.5 1"/></svg>
+        Your Account
+      </div>
+      <h1 class="page-title">SETTINGS</h1>
+    </div>
+
+    <!-- ── Sign-in prompt ─────────────────────────────────────────────────── -->
+    <div class="signin-prompt fade-up hidden" id="signin-prompt">
+      <div class="signin-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <div class="signin-title">NOT SIGNED IN</div>
+      <p class="signin-sub">Sign in to manage your profile, sync your watchlist, and join watch rooms.</p>
       <a href="/" class="btn-primary-full">Sign In on Home Page</a>
     </div>
 
-    <!-- Profile card (shown when logged in) -->
-    <div class="profile-card" id="profile-card">
-      <div class="profile-avatar-xl" id="settings-avatar-xl"></div>
-      <div class="profile-info">
-        <div class="profile-name" id="settings-username-display">—</div>
-        <div class="profile-handle">AniScout member</div>
+    <!-- ── Profile hero ──────────────────────────────────────────────────── -->
+    <div class="profile-hero fade-up hidden" id="profile-card">
+      <div class="profile-hero-bg"></div>
+      <div class="profile-hero-glow" id="hero-glow"></div>
+
+      <div class="profile-hero-content">
+        <div class="profile-avatar-xl" id="settings-avatar-xl"></div>
+        <div class="profile-info">
+          <div class="profile-name" id="settings-username-display">—</div>
+          <div class="profile-badge">
+            <svg viewBox="0 0 10 10" fill="currentColor"><path d="M5 0L6.12 3.38H9.51L6.88 5.47 7.94 9 5 6.91 2.06 9 3.12 5.47.49 3.38H3.88Z"/></svg>
+            AniScout Member
+          </div>
+        </div>
+      </div>
+
+      <div class="color-section">
+        <div class="color-label">Avatar Color</div>
         <div class="color-picker-row" id="color-picker-row"></div>
       </div>
-    </div>
 
-    <!-- Account section -->
-    <div class="settings-section" id="account-section">
-      <div class="settings-section-title">Account</div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Username</div>
-          <div class="settings-row-sub" id="settings-username-sub">—</div>
+      <div class="stats-strip" id="stats-strip">
+        <div class="stat-item">
+          <div class="stat-num" id="stat-watchlist">—</div>
+          <div class="stat-label">Watchlist</div>
         </div>
-      </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Sign Out</div>
-          <div class="settings-row-sub">Sign out of your account on this device</div>
+        <div class="stat-item">
+          <div class="stat-num" id="stat-history">—</div>
+          <div class="stat-label">History</div>
         </div>
-        <div class="settings-row-action">
-          <button type="button" class="btn-danger" id="signout-btn" onclick="doSignOut()">Sign Out</button>
+        <div class="stat-item">
+          <div class="stat-num" id="stat-searches">—</div>
+          <div class="stat-label">Searches</div>
         </div>
       </div>
     </div>
 
-    <!-- Data section -->
-    <div class="settings-section">
-      <div class="settings-section-title">Your Data</div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Watch History</div>
-          <div class="settings-row-sub" id="history-count-label">Loading…</div>
+    <!-- ── Account section ───────────────────────────────────────────────── -->
+    <div class="section-group-label fade-up hidden" id="account-section-label">Account</div>
+    <div class="settings-section fade-up hidden" id="account-section">
+      <div class="settings-section-header">
+        <div class="section-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7"/></svg>
         </div>
-        <div class="settings-row-action">
-          <button type="button" class="btn-ghost" onclick="clearHistory()">Clear History</button>
+        <span class="settings-section-title">Account</span>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Username</div>
+            <div class="settings-row-sub" id="settings-username-sub">—</div>
+          </div>
         </div>
       </div>
       <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Watchlist</div>
-          <div class="settings-row-sub" id="watchlist-count-label">Loading…</div>
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Sign Out</div>
+            <div class="settings-row-sub">Sign out of your account on this device</div>
+          </div>
         </div>
-        <div class="settings-row-action">
-          <button type="button" class="btn-ghost" onclick="clearWatchlist()">Clear Watchlist</button>
-        </div>
-      </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Recent Searches</div>
-          <div class="settings-row-sub" id="searches-count-label">Loading…</div>
-        </div>
-        <div class="settings-row-action">
-          <button type="button" class="btn-ghost" onclick="clearSearches()">Clear</button>
-        </div>
-      </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Genre Preferences</div>
-          <div class="settings-row-sub" id="prefs-label">Loading…</div>
-        </div>
-        <div class="settings-row-action">
-          <button type="button" class="btn-ghost" onclick="resetOnboarding()">Reset</button>
-        </div>
+        <button type="button" class="btn-danger" id="signout-btn" onclick="doSignOut()">Sign Out</button>
       </div>
     </div>
 
-    <!-- About section -->
-    <div class="settings-section">
-      <div class="settings-section-title">About</div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">AniScout</div>
-          <div class="settings-row-sub">Discover your next anime obsession</div>
+    <!-- ── Data section ───────────────────────────────────────────────────── -->
+    <div class="section-group-label fade-up">Data &amp; Privacy</div>
+    <div class="settings-section fade-up">
+      <div class="settings-section-header">
+        <div class="section-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg>
         </div>
+        <span class="settings-section-title">Your Data</span>
       </div>
       <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Version</div>
-          <div class="settings-row-sub">1.0.0</div>
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Watch History</div>
+            <div class="settings-row-sub" id="history-count-label">Loading…</div>
+          </div>
         </div>
+        <button type="button" class="btn-ghost" onclick="clearHistory()">Clear</button>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Watchlist</div>
+            <div class="settings-row-sub" id="watchlist-count-label">Loading…</div>
+          </div>
+        </div>
+        <button type="button" class="btn-ghost" onclick="clearWatchlist()">Clear</button>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Recent Searches</div>
+            <div class="settings-row-sub" id="searches-count-label">Loading…</div>
+          </div>
+        </div>
+        <button type="button" class="btn-ghost" onclick="clearSearches()">Clear</button>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Genre Preferences</div>
+            <div class="settings-row-sub" id="prefs-label">Loading…</div>
+          </div>
+        </div>
+        <button type="button" class="btn-ghost" onclick="resetOnboarding()">Reset</button>
       </div>
     </div>
 
-  </div>
+    <!-- ── About section ──────────────────────────────────────────────────── -->
+    <div class="section-group-label fade-up">About</div>
+    <div class="settings-section fade-up">
+      <div class="settings-section-header">
+        <div class="section-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <span class="settings-section-title">About</span>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2l-.5-2.5-2.5-.5z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">AniScout</div>
+            <div class="settings-row-sub">Discover your next anime obsession</div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <div>
+            <div class="settings-row-label">Version</div>
+            <div class="settings-row-sub">Web app — latest build</div>
+          </div>
+        </div>
+        <span class="version-badge">v1.0.0</span>
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
 
   <div class="toast" id="toast"></div>
 
@@ -311,17 +509,37 @@
       const username = localStorage.getItem('aniscout_username') || '';
       if (!username) return;
       localStorage.setItem('aniscout_avatar_color_' + username, color);
-      document.getElementById('settings-avatar-xl').style.background = color;
+      const avatarEl = document.getElementById('settings-avatar-xl');
+      avatarEl.style.background = color;
+      avatarEl.style.boxShadow = `0 8px 32px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,255,255,0.08), 0 0 40px ${color}40`;
+      // Update hero glow
+      const glow = document.getElementById('hero-glow');
+      if (glow) glow.style.background = `radial-gradient(ellipse 60% 80% at 20% 50%, ${color}30 0%, transparent 70%)`;
       document.querySelectorAll('.color-swatch').forEach(s => {
         s.classList.toggle('selected', s.style.background === color || s.style.background === hexToRgb(color));
       });
       showToast('Avatar color updated');
     }
 
-    // Convert hex to rgb string for comparison
     function hexToRgb(hex) {
       const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
       return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    // ── Stats strip ───────────────────────────────────────────────────────────
+    function updateStats() {
+      try {
+        const wl = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+        document.getElementById('stat-watchlist').textContent = wl.length;
+      } catch { document.getElementById('stat-watchlist').textContent = '0'; }
+      try {
+        const h = JSON.parse(localStorage.getItem('aniscout_recent') || '[]');
+        document.getElementById('stat-history').textContent = h.length;
+      } catch { document.getElementById('stat-history').textContent = '0'; }
+      try {
+        const s = JSON.parse(localStorage.getItem('aniscout_searches') || '[]');
+        document.getElementById('stat-searches').textContent = s.length;
+      } catch { document.getElementById('stat-searches').textContent = '0'; }
     }
 
     // ── Auth & page init ──────────────────────────────────────────────────────
@@ -349,41 +567,56 @@
           if (session) {
             currentUser = session.user;
           } else {
-            // Session gone — clear local state
             localStorage.removeItem('aniscout_username');
             localStorage.removeItem('aniscout_session');
             showLoggedOut();
           }
         } catch { /* silent */ }
       })();
+
+      // Scroll-reveal
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
     })();
 
     function showLoggedIn(username) {
       const savedColor = localStorage.getItem('aniscout_avatar_color_' + username) || usernameToColor(username);
       const initials = usernameToInitials(username);
 
-      document.getElementById('signin-prompt').style.display = 'none';
-      document.getElementById('profile-card').style.display  = 'flex';
-      document.getElementById('account-section').style.display = 'block';
+      document.getElementById('signin-prompt').classList.add('hidden');
+      document.getElementById('profile-card').classList.remove('hidden');
+      document.getElementById('account-section').classList.remove('hidden');
+      document.getElementById('account-section-label').classList.remove('hidden');
 
       const avatarEl = document.getElementById('settings-avatar-xl');
       avatarEl.textContent = initials;
       avatarEl.style.background = savedColor;
+      avatarEl.style.boxShadow = `0 8px 32px rgba(0,0,0,0.5), 0 0 0 3px rgba(255,255,255,0.08), 0 0 40px ${savedColor}40`;
+
+      // Tint hero glow with avatar color
+      const glow = document.getElementById('hero-glow');
+      if (glow) glow.style.background = `radial-gradient(ellipse 60% 80% at 20% 50%, ${savedColor}30 0%, transparent 70%)`;
 
       document.getElementById('settings-username-display').textContent = username;
       document.getElementById('settings-username-sub').textContent = username;
 
       buildColorPicker(savedColor);
+      updateStats();
+
+      // Trigger glow
+      setTimeout(() => document.getElementById('profile-card').classList.add('loaded'), 100);
     }
 
     function showLoggedOut() {
-      document.getElementById('signin-prompt').style.display = 'block';
-      document.getElementById('profile-card').style.display  = 'none';
-      document.getElementById('account-section').style.display = 'none';
+      document.getElementById('signin-prompt').classList.remove('hidden');
+      document.getElementById('profile-card').classList.add('hidden');
+      document.getElementById('account-section').classList.add('hidden');
+      document.getElementById('account-section-label').classList.add('hidden');
     }
 
     function renderCounts() {
-      // History
       try {
         const hist = JSON.parse(localStorage.getItem('aniscout_recent') || '[]');
         document.getElementById('history-count-label').textContent = hist.length
@@ -391,7 +624,6 @@
           : 'No history yet';
       } catch { document.getElementById('history-count-label').textContent = 'No history yet'; }
 
-      // Watchlist
       try {
         const wl = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
         document.getElementById('watchlist-count-label').textContent = wl.length
@@ -399,7 +631,6 @@
           : 'Watchlist is empty';
       } catch { document.getElementById('watchlist-count-label').textContent = 'Watchlist is empty'; }
 
-      // Searches
       try {
         const s = JSON.parse(localStorage.getItem('aniscout_searches') || '[]');
         document.getElementById('searches-count-label').textContent = s.length
@@ -407,7 +638,6 @@
           : 'No recent searches';
       } catch { document.getElementById('searches-count-label').textContent = 'No recent searches'; }
 
-      // Prefs
       try {
         const prefs = JSON.parse(localStorage.getItem('aniscout_prefs') || 'null');
         document.getElementById('prefs-label').textContent = prefs && prefs.genres && prefs.genres.length
@@ -420,7 +650,7 @@
     function clearHistory() {
       if (!confirm('Clear your entire watch history?')) return;
       localStorage.removeItem('aniscout_recent');
-      renderCounts();
+      renderCounts(); updateStats();
       showToast('Watch history cleared');
     }
 
@@ -430,13 +660,13 @@
       if (currentUser && sb) {
         sb.from('watchlist').delete().eq('user_id', currentUser.id).then(() => {});
       }
-      renderCounts();
+      renderCounts(); updateStats();
       showToast('Watchlist cleared');
     }
 
     function clearSearches() {
       localStorage.removeItem('aniscout_searches');
-      renderCounts();
+      renderCounts(); updateStats();
       showToast('Recent searches cleared');
     }
 
@@ -450,7 +680,6 @@
     // ── Sign out ──────────────────────────────────────────────────────────────
     async function doSignOut() {
       const username = localStorage.getItem('aniscout_username');
-      // Flush local watchlist to Supabase before clearing
       if (currentUser && sb) {
         try {
           const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
