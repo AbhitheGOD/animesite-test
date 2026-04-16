@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile & Security — AniScout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'sans-serif'],
+            display: ['Bebas Neue', 'sans-serif'],
+          },
+          colors: {
+            dark:    '#08080E',
+            surface: '#111119',
+            raised:  '#18182A',
+          },
+          backdropBlur: { xs: '2px' },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Noise grain overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.3;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+
+    /* Gradient text utility */
+    .grad-text {
+      background: linear-gradient(135deg, #22d3ee 0%, #a855f7 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Gradient border using pseudo-element */
+    .grad-border {
+      position: relative;
+    }
+    .grad-border::before {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.4), rgba(168,85,247,0.4));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #08080E; }
+    ::-webkit-scrollbar-thumb { background: #a855f7; border-radius: 3px; }
+
+    /* Nav active glow */
+    .nav-item-active {
+      background: linear-gradient(135deg, rgba(34,211,238,0.1), rgba(168,85,247,0.1));
+      border-left: 2px solid #22d3ee;
+    }
+
+    /* Input focus ring */
+    .glass-input:focus {
+      outline: none;
+      box-shadow: 0 0 0 1px rgba(34,211,238,0.5), 0 0 16px rgba(34,211,238,0.12);
+      border-color: rgba(34,211,238,0.5);
+    }
+
+    /* Glow button */
+    .btn-glow:hover {
+      box-shadow: 0 0 24px rgba(34,211,238,0.35), 0 0 48px rgba(168,85,247,0.2);
+    }
+    .btn-danger-glow:hover {
+      box-shadow: 0 0 24px rgba(239,68,68,0.4);
+    }
+
+    /* Avatar ring animation */
+    @keyframes spin-ring {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .avatar-ring-spin { animation: spin-ring 4s linear infinite; }
+
+    /* Toggle switch */
+    .toggle-track { transition: background 0.2s; }
+    .toggle-thumb { transition: transform 0.2s; }
+    input:checked + .toggle-track { background: linear-gradient(135deg, #22d3ee, #a855f7); }
+    input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
+
+    /* Validation dot */
+    .val-rule { transition: color 0.2s; }
+    .val-rule.pass { color: #4ade80; }
+    .val-rule.fail { color: rgba(255,255,255,0.35); }
+
+    /* Fade-in animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .section-panel { animation: fadeUp 0.3s ease forwards; }
+
+    /* Toast */
+    #toast {
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      transform: translateX(-50%) translateY(8px);
+    }
+    #toast.show { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; }
+  </style>
+</head>
+<body class="bg-dark text-white font-sans min-h-screen">
+
+  <!-- ── NAV ──────────────────────────────────────────────────────────────────── -->
+  <nav class="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-8
+              bg-dark/90 backdrop-blur-xl border-b border-white/[0.07]">
+    <a href="/" class="font-display text-2xl tracking-widest">
+      ANI<span class="text-red-500">SCOUT</span>
+    </a>
+    <a href="/" class="flex items-center gap-2 text-white/50 text-sm hover:text-white transition-colors">
+      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+      Back
+    </a>
+  </nav>
+
+  <!-- ── MAIN LAYOUT ───────────────────────────────────────────────────────────── -->
+  <div class="max-w-5xl mx-auto px-6 pt-24 pb-16 flex gap-6 min-h-screen">
+
+    <!-- ── LEFT SIDEBAR ─────────────────────────────────────────────────────── -->
+    <aside class="w-56 flex-shrink-0 pt-2">
+      <!-- User mini-card -->
+      <div class="grad-border rounded-2xl mb-6">
+        <div class="bg-surface rounded-2xl p-4 flex flex-col items-center text-center gap-2">
+          <div id="sb-avatar-mini"
+               class="w-14 h-14 rounded-full flex items-center justify-center text-xl font-black text-white shadow-lg"
+               style="background:#7C4DE8">?</div>
+          <div id="sb-username-mini" class="font-semibold text-sm text-white/90 truncate max-w-full">Loading…</div>
+          <div class="text-[0.65rem] font-bold tracking-widest uppercase grad-text">AniScout</div>
+        </div>
+      </div>
+
+      <!-- Nav items -->
+      <nav class="flex flex-col gap-1">
+        <button onclick="switchTab('profile')" id="nav-profile"
+                class="nav-item nav-item-active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white/90 transition-all duration-200 text-left">
+          <i data-lucide="user" class="w-4 h-4 flex-shrink-0"></i> Profile
+        </button>
+        <button onclick="switchTab('security')" id="nav-security"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white/50 hover:text-white/80 hover:bg-white/5 transition-all duration-200 text-left">
+          <i data-lucide="lock" class="w-4 h-4 flex-shrink-0"></i> Security
+        </button>
+        <button onclick="switchTab('preferences')" id="nav-preferences"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-white/50 hover:text-white/80 hover:bg-white/5 transition-all duration-200 text-left">
+          <i data-lucide="settings" class="w-4 h-4 flex-shrink-0"></i> Preferences
+        </button>
+      </nav>
+
+      <!-- Danger zone -->
+      <div class="mt-auto pt-8">
+        <button onclick="doSignOut()"
+                class="btn-danger-glow w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-400/80 border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200">
+          <i data-lucide="log-out" class="w-4 h-4 flex-shrink-0"></i> Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── RIGHT CONTENT ─────────────────────────────────────────────────────── -->
+    <main class="flex-1 min-w-0 pt-2">
+
+      <!-- Page header -->
+      <div class="mb-8">
+        <p class="text-xs font-bold tracking-[0.18em] uppercase text-cyan-400/70 mb-1">Account</p>
+        <h1 class="font-display text-5xl tracking-wide grad-text" id="page-heading">PROFILE</h1>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <!-- PROFILE PANEL                                                        -->
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <div id="panel-profile" class="section-panel flex flex-col gap-5">
+
+        <!-- Avatar card -->
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+            <h2 class="text-xs font-bold tracking-[0.15em] uppercase text-white/40 mb-5">Avatar</h2>
+            <div class="flex items-center gap-6">
+              <!-- Avatar ring + circle -->
+              <div class="relative flex-shrink-0">
+                <!-- Spinning gradient ring -->
+                <div class="avatar-ring-spin absolute inset-0 rounded-full"
+                     style="background: conic-gradient(from 0deg, #22d3ee, #a855f7, #22d3ee);
+                            padding: 2px; border-radius: 50%;"></div>
+                <!-- Inner bg to hide ring body -->
+                <div class="absolute inset-[3px] rounded-full bg-surface z-10"></div>
+                <!-- Avatar itself -->
+                <div id="profile-avatar"
+                     class="relative z-20 w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black text-white cursor-pointer overflow-hidden"
+                     style="background: #7C4DE8;">
+                  <span id="profile-initials">?</span>
+                  <!-- Upload overlay -->
+                  <div id="avatar-overlay"
+                       class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200 z-30"
+                       onclick="document.getElementById('avatar-file').click()">
+                    <i data-lucide="camera" class="w-6 h-6 text-white mb-1"></i>
+                    <span class="text-[0.6rem] font-bold uppercase tracking-wider text-white/80">Upload</span>
+                  </div>
+                </div>
+                <input type="file" id="avatar-file" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)" />
+              </div>
+
+              <!-- Avatar info -->
+              <div>
+                <p class="text-sm font-semibold text-white/80 mb-1">Profile Picture</p>
+                <p class="text-xs text-white/40 leading-relaxed max-w-xs">
+                  Hover the circle to upload a custom image.<br/>
+                  PNG, JPG, GIF — max 2MB.
+                </p>
+                <!-- Color swatches -->
+                <div class="flex gap-2 mt-3" id="swatch-row"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info card -->
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+            <h2 class="text-xs font-bold tracking-[0.15em] uppercase text-white/40 mb-5">Info</h2>
+            <div class="flex flex-col gap-4">
+              <!-- Username -->
+              <div>
+                <label class="block text-xs font-semibold text-white/60 mb-2 tracking-wide">Username</label>
+                <div class="relative">
+                  <i data-lucide="at-sign" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30"></i>
+                  <input id="username-input" type="text" placeholder="your_username" maxlength="24"
+                         class="glass-input w-full bg-raised/60 border border-white/10 rounded-xl pl-10 pr-4 py-3
+                                text-sm text-white placeholder-white/25 transition-all duration-200" />
+                </div>
+              </div>
+              <!-- Bio -->
+              <div>
+                <label class="block text-xs font-semibold text-white/60 mb-2 tracking-wide">Bio</label>
+                <textarea id="bio-input" rows="3" placeholder="Tell the community a bit about yourself…" maxlength="160"
+                          class="glass-input w-full bg-raised/60 border border-white/10 rounded-xl px-4 py-3
+                                 text-sm text-white placeholder-white/25 resize-none transition-all duration-200"></textarea>
+                <div class="flex justify-end mt-1">
+                  <span id="bio-counter" class="text-[0.65rem] text-white/25">0 / 160</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save button -->
+        <div class="flex justify-end">
+          <button onclick="saveProfile()"
+                  class="btn-glow flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm
+                         bg-gradient-to-r from-cyan-500 to-purple-500 text-white
+                         hover:from-cyan-400 hover:to-purple-400 transition-all duration-200">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            Save Profile
+          </button>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <!-- SECURITY PANEL                                                       -->
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <div id="panel-security" class="section-panel hidden flex flex-col gap-5">
+
+        <!-- Current session card -->
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+            <h2 class="text-xs font-bold tracking-[0.15em] uppercase text-white/40 mb-4">Active Session</h2>
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-green-500/10 border border-green-500/20">
+                <i data-lucide="shield-check" class="w-4 h-4 text-green-400"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-white/85">Session Active</p>
+                <p class="text-xs text-white/40">Signed in as <span id="sec-username" class="text-cyan-400">—</span></p>
+              </div>
+              <div class="ml-auto">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[0.65rem] font-bold tracking-wider uppercase">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                  Active
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Change PIN card -->
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-500/10 border border-purple-500/20">
+                <i data-lucide="key-round" class="w-4 h-4 text-purple-400"></i>
+              </div>
+              <div>
+                <h2 class="text-sm font-semibold text-white/90">Change Access PIN</h2>
+                <p class="text-xs text-white/35">Must be exactly 6 alphanumeric characters (A–Z, 0–9)</p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+
+              <!-- Current PIN -->
+              <div>
+                <label class="block text-xs font-semibold text-white/60 mb-2 tracking-wide">Current PIN</label>
+                <div class="relative">
+                  <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30"></i>
+                  <input id="current-pin" type="password" placeholder="••••••" maxlength="6"
+                         autocomplete="current-password" pattern="[a-zA-Z0-9]{6}"
+                         class="glass-input w-full bg-raised/60 border border-white/10 rounded-xl pl-10 pr-12 py-3
+                                text-sm text-white placeholder-white/20 font-mono tracking-widest transition-all duration-200" />
+                  <button type="button" onclick="toggleVisibility('current-pin', 'eye-current')"
+                          class="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    <i data-lucide="eye" id="eye-current" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- New PIN -->
+              <div>
+                <label class="block text-xs font-semibold text-white/60 mb-2 tracking-wide">New PIN</label>
+                <div class="relative">
+                  <i data-lucide="lock-open" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30"></i>
+                  <input id="new-pin" type="password" placeholder="••••••" maxlength="6"
+                         autocomplete="new-password" pattern="[a-zA-Z0-9]{6}"
+                         oninput="validatePIN()"
+                         class="glass-input w-full bg-raised/60 border border-white/10 rounded-xl pl-10 pr-12 py-3
+                                text-sm text-white placeholder-white/20 font-mono tracking-widest transition-all duration-200" />
+                  <button type="button" onclick="toggleVisibility('new-pin', 'eye-new')"
+                          class="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    <i data-lucide="eye" id="eye-new" class="w-4 h-4"></i>
+                  </button>
+                </div>
+
+                <!-- Real-time validation rules -->
+                <div class="mt-3 flex flex-col gap-1.5" id="pin-rules">
+                  <div class="val-rule fail flex items-center gap-2 text-xs" id="rule-length">
+                    <i data-lucide="circle" class="w-3 h-3 flex-shrink-0" id="icon-length"></i>
+                    Exactly 6 characters
+                  </div>
+                  <div class="val-rule fail flex items-center gap-2 text-xs" id="rule-alpha">
+                    <i data-lucide="circle" class="w-3 h-3 flex-shrink-0" id="icon-alpha"></i>
+                    Contains at least one letter (A–Z)
+                  </div>
+                  <div class="val-rule fail flex items-center gap-2 text-xs" id="rule-num">
+                    <i data-lucide="circle" class="w-3 h-3 flex-shrink-0" id="icon-num"></i>
+                    Contains at least one number (0–9)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Confirm PIN -->
+              <div>
+                <label class="block text-xs font-semibold text-white/60 mb-2 tracking-wide">Confirm New PIN</label>
+                <div class="relative">
+                  <i data-lucide="check-circle" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30"></i>
+                  <input id="confirm-pin" type="password" placeholder="••••••" maxlength="6"
+                         autocomplete="new-password" pattern="[a-zA-Z0-9]{6}"
+                         oninput="validateConfirm()"
+                         class="glass-input w-full bg-raised/60 border border-white/10 rounded-xl pl-10 pr-12 py-3
+                                text-sm text-white placeholder-white/20 font-mono tracking-widest transition-all duration-200" />
+                  <button type="button" onclick="toggleVisibility('confirm-pin', 'eye-confirm')"
+                          class="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    <i data-lucide="eye" id="eye-confirm" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                <p id="confirm-msg" class="text-xs mt-2 hidden"></p>
+              </div>
+
+            </div>
+
+            <!-- Save PIN button -->
+            <div class="flex justify-end mt-6">
+              <button onclick="savePIN()"
+                      class="btn-glow flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm
+                             bg-gradient-to-r from-cyan-500 to-purple-500 text-white
+                             hover:from-cyan-400 hover:to-purple-400 transition-all duration-200
+                             disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                      id="save-pin-btn" disabled>
+                <i data-lucide="shield" class="w-4 h-4"></i>
+                Update PIN
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 2FA notice card -->
+        <div class="rounded-2xl border border-cyan-500/15 bg-cyan-500/5 p-5 flex gap-4">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 flex-shrink-0 mt-0.5">
+            <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-cyan-300 mb-1">About Access PIN</p>
+            <p class="text-xs text-white/40 leading-relaxed">
+              Your PIN is a secondary lock for sensitive actions. It must be exactly
+              <strong class="text-white/70">6 alphanumeric characters</strong> — mix of letters and numbers only.
+              Keep it unique from your passwords.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <!-- PREFERENCES PANEL                                                    -->
+      <!-- ════════════════════════════════════════════════════════════════════ -->
+      <div id="panel-preferences" class="section-panel hidden flex flex-col gap-5">
+
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+            <h2 class="text-xs font-bold tracking-[0.15em] uppercase text-white/40 mb-5">Playback</h2>
+            <div class="flex flex-col divide-y divide-white/[0.05]">
+              <div class="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                <div>
+                  <p class="text-sm font-medium text-white/85">Autoplay Next Episode</p>
+                  <p class="text-xs text-white/35 mt-0.5">Automatically queue the next episode</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" id="pref-autoplay" checked onchange="savePref('autoplay', this.checked)" />
+                  <div class="toggle-track w-11 h-6 rounded-full bg-white/10 relative peer-checked:bg-gradient-to-r peer-checked:from-cyan-500 peer-checked:to-purple-500 transition-all duration-200">
+                    <div class="toggle-thumb absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 peer-checked:translate-x-5"></div>
+                  </div>
+                </label>
+              </div>
+              <div class="flex items-center justify-between py-4">
+                <div>
+                  <p class="text-sm font-medium text-white/85">Show Subtitles by Default</p>
+                  <p class="text-xs text-white/35 mt-0.5">Enable subtitles when starting playback</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" id="pref-subs" onchange="savePref('subs', this.checked)" />
+                  <div class="toggle-track w-11 h-6 rounded-full bg-white/10 relative transition-all duration-200">
+                    <div class="toggle-thumb absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+            <h2 class="text-xs font-bold tracking-[0.15em] uppercase text-white/40 mb-5">Notifications</h2>
+            <div class="flex flex-col divide-y divide-white/[0.05]">
+              <div class="flex items-center justify-between py-4 first:pt-0">
+                <div>
+                  <p class="text-sm font-medium text-white/85">New Episode Alerts</p>
+                  <p class="text-xs text-white/35 mt-0.5">Get notified when watchlist shows update</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" id="pref-notif-ep" checked onchange="savePref('notif_ep', this.checked)" />
+                  <div class="toggle-track w-11 h-6 rounded-full bg-white/10 relative transition-all duration-200">
+                    <div class="toggle-thumb absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"></div>
+                  </div>
+                </label>
+              </div>
+              <div class="flex items-center justify-between py-4 last:pb-0">
+                <div>
+                  <p class="text-sm font-medium text-white/85">Watch Room Invites</p>
+                  <p class="text-xs text-white/35 mt-0.5">Notify when friends invite you to a room</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="sr-only peer" id="pref-notif-room" checked onchange="savePref('notif_room', this.checked)" />
+                  <div class="toggle-track w-11 h-6 rounded-full bg-white/10 relative transition-all duration-200">
+                    <div class="toggle-thumb absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grad-border rounded-2xl">
+          <div class="bg-surface/80 backdrop-blur-xl rounded-2xl p-6">
+            <h2 class="text-xs font-bold tracking-[0.15em] uppercase text-white/40 mb-5">Content</h2>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-white/85">Show Mature Content</p>
+                <p class="text-xs text-white/35 mt-0.5">Display 18+ rated titles in discovery</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" class="sr-only peer" id="pref-mature" onchange="savePref('mature', this.checked)" />
+                <div class="toggle-track w-11 h-6 rounded-full bg-white/10 relative transition-all duration-200">
+                  <div class="toggle-thumb absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200"></div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reset prefs -->
+        <div class="flex justify-between items-center rounded-2xl border border-white/[0.06] bg-surface/40 px-5 py-4">
+          <div>
+            <p class="text-sm font-medium text-white/70">Reset Genre Preferences</p>
+            <p class="text-xs text-white/35 mt-0.5">Onboarding will show again on next visit to Home</p>
+          </div>
+          <button onclick="resetOnboarding()"
+                  class="btn-danger-glow flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold
+                         text-red-400/80 border border-red-500/20 bg-red-500/5
+                         hover:bg-red-500/10 hover:text-red-400 transition-all duration-200">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            Reset
+          </button>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ── TOAST ──────────────────────────────────────────────────────────────── -->
+  <div id="toast" class="fixed bottom-8 left-1/2 z-[999] opacity-0 pointer-events-none
+                          bg-raised border border-white/10 rounded-xl px-5 py-3
+                          text-sm font-medium text-white shadow-2xl whitespace-nowrap">
+  </div>
+
+  <script>
+    // ── Lucide init ───────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+
+    // ── Constants ─────────────────────────────────────────────────────────────
+    const AVATAR_PALETTE = ['#E8272A','#E05C1A','#7C4DE8','#2A72E8','#2AA5B0','#1AA86B','#D4276E','#E0A01A'];
+    const TABS = ['profile', 'security', 'preferences'];
+
+    // ── Utilities ─────────────────────────────────────────────────────────────
+    function usernameToInitials(name) {
+      const parts = name.trim().split(/[\s_\-]+/);
+      return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+    }
+    function usernameToColor(name) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+      return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+    }
+
+    function showToast(msg, type = 'default') {
+      const t = document.getElementById('toast');
+      const colors = {
+        success: 'border-green-500/30 text-green-300',
+        error:   'border-red-500/30 text-red-300',
+        default: 'border-white/10 text-white',
+      };
+      // Reset classes
+      t.className = `fixed bottom-8 left-1/2 z-[999] pointer-events-none
+                     bg-raised border rounded-xl px-5 py-3
+                     text-sm font-medium shadow-2xl whitespace-nowrap
+                     ${colors[type] || colors.default}`;
+      t.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(8px)';
+      t.textContent = msg;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          t.style.opacity = '1';
+          t.style.transform = 'translateX(-50%) translateY(0)';
+        });
+      });
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateX(-50%) translateY(8px)';
+      }, 2600);
+    }
+
+    // ── Tab switching ─────────────────────────────────────────────────────────
+    const HEADINGS = { profile: 'PROFILE', security: 'SECURITY', preferences: 'PREFERENCES' };
+    function switchTab(tab) {
+      TABS.forEach(t => {
+        const panel = document.getElementById('panel-' + t);
+        const btn   = document.getElementById('nav-' + t);
+        if (t === tab) {
+          panel.classList.remove('hidden');
+          btn.classList.add('nav-item-active');
+          btn.classList.remove('text-white/50', 'hover:text-white/80', 'hover:bg-white/5');
+          btn.classList.add('text-white/90');
+        } else {
+          panel.classList.add('hidden');
+          btn.classList.remove('nav-item-active');
+          btn.classList.remove('text-white/90');
+          btn.classList.add('text-white/50', 'hover:text-white/80', 'hover:bg-white/5');
+        }
+      });
+      document.getElementById('page-heading').textContent = HEADINGS[tab] || tab.toUpperCase();
+      // Re-run lucide for any newly visible icons
+      lucide.createIcons();
+    }
+
+    // ── Avatar / Color ────────────────────────────────────────────────────────
+    function buildSwatches(currentColor) {
+      const row = document.getElementById('swatch-row');
+      row.innerHTML = AVATAR_PALETTE.map(c => `
+        <button type="button" onclick="pickColor('${c}')"
+                style="background:${c}; width:22px; height:22px; border-radius:50%;
+                       border: 2px solid ${c === currentColor ? '#fff' : 'transparent'};
+                       outline: ${c === currentColor ? '2px solid rgba(255,255,255,0.5)' : 'none'};
+                       outline-offset: 2px; cursor:pointer; transition: transform 0.15s;"
+                onmouseover="this.style.transform='scale(1.25)'"
+                onmouseout="this.style.transform='scale(1)'"></button>`).join('');
+    }
+
+    function pickColor(color) {
+      const username = localStorage.getItem('aniscout_username') || '';
+      if (!username) return;
+      localStorage.setItem('aniscout_avatar_color_' + username, color);
+      document.getElementById('profile-avatar').style.background = color;
+      document.getElementById('sb-avatar-mini').style.background = color;
+      buildSwatches(color);
+      showToast('Avatar color updated', 'success');
+    }
+
+    function handleAvatarUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { showToast('Image too large — max 2MB', 'error'); return; }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const avatar = document.getElementById('profile-avatar');
+        avatar.style.backgroundImage = `url(${ev.target.result})`;
+        avatar.style.backgroundSize = 'cover';
+        avatar.style.backgroundPosition = 'center';
+        document.getElementById('profile-initials').style.display = 'none';
+        showToast('Avatar preview updated', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── Bio counter ───────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('bio-input').addEventListener('input', function() {
+        document.getElementById('bio-counter').textContent = `${this.value.length} / 160`;
+      });
+    });
+
+    // ── PIN validation ────────────────────────────────────────────────────────
+    // Pattern: exactly 6 alphanumeric chars [a-zA-Z0-9]{6}
+    const PIN_RE      = /^[a-zA-Z0-9]{6}$/;
+    const HAS_LETTER  = /[a-zA-Z]/;
+    const HAS_NUMBER  = /[0-9]/;
+
+    function setRule(id, iconId, pass) {
+      const el   = document.getElementById(id);
+      const icon = document.getElementById(iconId);
+      el.classList.toggle('pass', pass);
+      el.classList.toggle('fail', !pass);
+      icon.setAttribute('data-lucide', pass ? 'check-circle-2' : 'circle');
+      lucide.createIcons({ nodes: [icon] });
+    }
+
+    function validatePIN() {
+      const val = document.getElementById('new-pin').value;
+      const lenOk    = val.length === 6;
+      const alphaOk  = HAS_LETTER.test(val);
+      const numOk    = HAS_NUMBER.test(val);
+      const valid    = PIN_RE.test(val) && alphaOk && numOk;
+
+      setRule('rule-length', 'icon-length', lenOk);
+      setRule('rule-alpha',  'icon-alpha',  alphaOk);
+      setRule('rule-num',    'icon-num',    numOk);
+
+      validateConfirm();
+      updateSavePinBtn(valid);
+      return valid;
+    }
+
+    function validateConfirm() {
+      const newVal  = document.getElementById('new-pin').value;
+      const confVal = document.getElementById('confirm-pin').value;
+      const msg     = document.getElementById('confirm-msg');
+      if (!confVal) { msg.classList.add('hidden'); return; }
+      msg.classList.remove('hidden');
+      if (newVal === confVal) {
+        msg.textContent = '✓ PINs match';
+        msg.className = 'text-xs mt-2 text-green-400';
+      } else {
+        msg.textContent = '✗ PINs do not match';
+        msg.className = 'text-xs mt-2 text-red-400';
+      }
+    }
+
+    function updateSavePinBtn(pinValid) {
+      const newVal  = document.getElementById('new-pin').value;
+      const confVal = document.getElementById('confirm-pin').value;
+      const curVal  = document.getElementById('current-pin').value;
+      const canSave = pinValid && newVal === confVal && curVal.length > 0;
+      const btn = document.getElementById('save-pin-btn');
+      btn.disabled = !canSave;
+    }
+
+    // Also recheck when current/confirm changes
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('current-pin').addEventListener('input', () => updateSavePinBtn(
+        PIN_RE.test(document.getElementById('new-pin').value) &&
+        HAS_LETTER.test(document.getElementById('new-pin').value) &&
+        HAS_NUMBER.test(document.getElementById('new-pin').value)
+      ));
+      document.getElementById('confirm-pin').addEventListener('input', () => {
+        validateConfirm();
+        updateSavePinBtn(
+          PIN_RE.test(document.getElementById('new-pin').value) &&
+          HAS_LETTER.test(document.getElementById('new-pin').value) &&
+          HAS_NUMBER.test(document.getElementById('new-pin').value)
+        );
+      });
+    });
+
+    // ── Show/Hide toggle ─────────────────────────────────────────────────────
+    function toggleVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      icon.setAttribute('data-lucide', isHidden ? 'eye-off' : 'eye');
+      lucide.createIcons({ nodes: [icon] });
+    }
+
+    // ── Save handlers ─────────────────────────────────────────────────────────
+    function saveProfile() {
+      const username = document.getElementById('username-input').value.trim();
+      const bio      = document.getElementById('bio-input').value.trim();
+      if (username) {
+        localStorage.setItem('aniscout_username', username);
+        document.getElementById('sb-username-mini').textContent = username;
+        document.getElementById('sb-avatar-mini').textContent = usernameToInitials(username);
+        document.getElementById('settings-avatar-xl')?.textContent && (document.getElementById('settings-avatar-xl').textContent = usernameToInitials(username));
+      }
+      if (bio) localStorage.setItem('aniscout_bio', bio);
+      showToast('Profile saved', 'success');
+    }
+
+    function savePIN() {
+      const cur  = document.getElementById('current-pin').value;
+      const nw   = document.getElementById('new-pin').value;
+      const conf = document.getElementById('confirm-pin').value;
+      if (!validatePIN()) { showToast('PIN does not meet requirements', 'error'); return; }
+      if (nw !== conf) { showToast('PINs do not match', 'error'); return; }
+      // Store (hashed in a real app — storing raw here for demo only)
+      const stored = localStorage.getItem('aniscout_pin');
+      if (stored && stored !== cur) { showToast('Current PIN is incorrect', 'error'); return; }
+      localStorage.setItem('aniscout_pin', nw);
+      document.getElementById('current-pin').value = '';
+      document.getElementById('new-pin').value = '';
+      document.getElementById('confirm-pin').value = '';
+      document.getElementById('confirm-msg').classList.add('hidden');
+      ['rule-length','rule-alpha','rule-num'].forEach(id => {
+        document.getElementById(id).classList.remove('pass');
+        document.getElementById(id).classList.add('fail');
+      });
+      updateSavePinBtn(false);
+      showToast('Access PIN updated', 'success');
+    }
+
+    function savePref(key, val) {
+      const prefs = JSON.parse(localStorage.getItem('aniscout_ui_prefs') || '{}');
+      prefs[key] = val;
+      localStorage.setItem('aniscout_ui_prefs', JSON.stringify(prefs));
+      showToast('Preference saved', 'success');
+    }
+
+    function resetOnboarding() {
+      localStorage.removeItem('aniscout_prefs');
+      localStorage.removeItem('aniscout_onboarded');
+      showToast('Genre preferences reset', 'success');
+    }
+
+    // ── Auth & page init ──────────────────────────────────────────────────────
+    let sb = null, currentUser = null;
+
+    (function initPage() {
+      const username = localStorage.getItem('aniscout_username') || '';
+      const bio      = localStorage.getItem('aniscout_bio') || '';
+      const color    = username ? (localStorage.getItem('aniscout_avatar_color_' + username) || usernameToColor(username)) : '#7C4DE8';
+      const initials = username ? usernameToInitials(username) : '?';
+
+      // Mini sidebar card
+      document.getElementById('sb-avatar-mini').textContent = initials;
+      document.getElementById('sb-avatar-mini').style.background = color;
+      document.getElementById('sb-username-mini').textContent = username || 'Guest';
+
+      // Profile section
+      document.getElementById('profile-avatar').style.background = color;
+      document.getElementById('profile-initials').textContent = initials;
+      document.getElementById('username-input').value = username;
+      document.getElementById('bio-input').value = bio;
+      document.getElementById('bio-counter').textContent = `${bio.length} / 160`;
+
+      // Security
+      document.getElementById('sec-username').textContent = username || '—';
+
+      // Build swatches
+      buildSwatches(color);
+
+      // Load prefs
+      const prefs = JSON.parse(localStorage.getItem('aniscout_ui_prefs') || '{}');
+      if (prefs.autoplay === false) document.getElementById('pref-autoplay').checked = false;
+      if (prefs.subs)        document.getElementById('pref-subs').checked = true;
+      if (prefs.notif_ep === false) document.getElementById('pref-notif-ep').checked = false;
+      if (prefs.notif_room === false) document.getElementById('pref-notif-room').checked = false;
+      if (prefs.mature)      document.getElementById('pref-mature').checked = true;
+
+      // Async: verify Supabase session
+      (async () => {
+        try {
+          const res = await fetch('/api/supabase-config');
+          const cfg = await res.json();
+          if (!cfg.url || !cfg.anonKey) return;
+          sb = supabase.createClient(cfg.url, cfg.anonKey);
+          const { data: { session } } = await sb.auth.getSession();
+          if (!session) {
+            localStorage.removeItem('aniscout_username');
+          } else {
+            currentUser = session.user;
+          }
+        } catch { /* silent */ }
+      })();
+    })();
+
+    async function doSignOut() {
+      const username = localStorage.getItem('aniscout_username');
+      if (currentUser && sb) {
+        try {
+          const local = JSON.parse(localStorage.getItem('aniscout_watchlist') || '[]');
+          if (local.length) {
+            await sb.from('watchlist').upsert(local.map(a => ({
+              user_id: currentUser.id, username: username || '',
+              mal_id: a.malId, title: a.title, poster: a.poster || '',
+              score: a.score || 0, year: a.year || 0, status: a.status || 'plan_to_watch'
+            })), { onConflict: 'user_id,mal_id' });
+          }
+        } catch { /* silent */ }
+        try { await sb.auth.signOut(); } catch { /* silent */ }
+      }
+      localStorage.removeItem('aniscout_username');
+      localStorage.removeItem('aniscout_session');
+      currentUser = null;
+      showToast('Signed out', 'default');
+      setTimeout(() => { window.location.href = '/'; }, 700);
+    }
+  </script>
+
+  <script src="/assets/shared.js"></script>
+</body>
+</html>
