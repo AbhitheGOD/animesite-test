@@ -1709,8 +1709,8 @@
       wpSelectedMode = mode;
       document.getElementById('wp-mode-hb').classList.toggle('active', mode === 'hyperbeam');
       document.getElementById('wp-mode-yt').classList.toggle('active', mode === 'youtube');
-      document.getElementById('wp-launch-section').style.display     = mode === 'hyperbeam' ? '' : 'none';
-      document.getElementById('wp-launch-yt-section').style.display  = mode === 'youtube'   ? '' : 'none';
+      document.getElementById('wp-launch-section').style.display    = mode === 'hyperbeam' ? 'block' : 'none';
+      document.getElementById('wp-launch-yt-section').style.display = mode === 'youtube'   ? 'block' : 'none';
       document.getElementById('wp-launch-err').textContent = '';
     }
 
