@@ -364,7 +364,8 @@
       background: #000; border-radius: 10px; overflow: hidden;
       position: relative;
     }
-    .wp-player-wrap iframe { width: 100%; height: 100%; display: block; border: none; }
+    .wp-player-wrap iframe { width: 100%; height: 100%; display: block; border: none; position: absolute; top: 0; left: 0; }
+    #yt-iframe { display: none; }
     .wp-info { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 2px; min-width: 0; }
     .wp-title {
       font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem;
@@ -593,8 +594,9 @@
     .watchparty-panel.fullscreen .wp-player-wrap {
       width: 100% !important;
     }
-    /* Prevent iframe from stealing clicks/keyboard when chat overlay is open */
-    .watchparty-panel.fullscreen.fs-chat-open #hb-iframe {
+    /* Prevent iframes from stealing clicks/keyboard when chat overlay is open */
+    .watchparty-panel.fullscreen.fs-chat-open #hb-iframe,
+    .watchparty-panel.fullscreen.fs-chat-open #yt-iframe {
       pointer-events: none;
     }
     /* Ensure theater layout is applied in fullscreen even if theater class is absent */
@@ -756,6 +758,32 @@
       text-align: left; cursor: pointer; border-radius: 7px; transition: background 0.15s;
     }
     .profile-drop-logout:hover { background: rgba(232,39,42,0.1); }
+
+    /* ── MODAL BTN / ERR ─────────────────────────────────────────────────────── */
+    .modal-btn {
+      width: 100%; padding: 13px; background: var(--red); border: none;
+      border-radius: 10px; color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s; margin-bottom: 8px;
+    }
+    .modal-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+    .modal-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .modal-err { color: var(--red); font-size: 0.85rem; margin-bottom: 12px; min-height: 20px; }
+
+    /* ── WATCHPARTY MODE PICKER ──────────────────────────────────────────────── */
+    .wp-mode-picker { display: flex; gap: 10px; margin-bottom: 20px; }
+    .wp-mode-card {
+      flex: 1; padding: 14px 12px; border-radius: 12px;
+      background: var(--raised); border: 2px solid var(--border);
+      cursor: pointer; transition: border-color 0.2s, background 0.15s;
+      text-align: center; display: flex; flex-direction: column; gap: 5px;
+    }
+    .wp-mode-card:hover { border-color: rgba(232,39,42,0.35); }
+    .wp-mode-card.active { border-color: var(--red); background: rgba(232,39,42,0.08); }
+    .wp-mode-card-icon { font-size: 1.5rem; line-height: 1; }
+    .wp-mode-card-label { font-weight: 700; font-size: 0.85rem; color: var(--text); }
+    .wp-mode-card-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+    #wp-launch-yt-section { display: none; }
   </style>
 </head>
 <body>
@@ -833,10 +861,28 @@
     <div class="modal-card">
       <div class="modal-label">Watch Together</div>
       <h2 class="modal-title" id="wp-modal-title">START A SESSION</h2>
-      <p class="modal-sub" id="wp-modal-sub">Launch a shared browser window. Everyone in the room watches the same screen — YouTube, streams, anything.</p>
-      <!-- Admin: launch new session -->
+      <p class="modal-sub" id="wp-modal-sub">Choose a mode to watch together with your room.</p>
+      <!-- Mode picker (admin, start mode only) -->
+      <div id="wp-mode-picker" class="wp-mode-picker">
+        <div class="wp-mode-card active" id="wp-mode-hb" onclick="selectWpMode('hyperbeam')">
+          <div class="wp-mode-card-icon">⬡</div>
+          <div class="wp-mode-card-label">Shared Browser</div>
+          <div class="wp-mode-card-desc">Everyone controls the same browser — YouTube, streams, anything.</div>
+        </div>
+        <div class="wp-mode-card" id="wp-mode-yt" onclick="selectWpMode('youtube')">
+          <div class="wp-mode-card-icon">▶</div>
+          <div class="wp-mode-card-label">YouTube Player</div>
+          <div class="wp-mode-card-desc">Paste a YouTube link and watch together in the room.</div>
+        </div>
+      </div>
+      <!-- Admin: launch Hyperbeam session -->
       <div id="wp-launch-section">
         <button type="button" class="modal-btn" id="wp-launch-btn" onclick="startHyperbeamSession()">Launch Shared Browser</button>
+      </div>
+      <!-- Admin: launch YouTube session -->
+      <div id="wp-launch-yt-section">
+        <input class="modal-search-input" id="wp-yt-input" placeholder="Paste YouTube URL (e.g. youtube.com/watch?v=…)" autocomplete="off" spellcheck="false" />
+        <button type="button" class="modal-btn" id="wp-launch-yt-btn" onclick="startYouTubeSession()">Start YouTube Session</button>
       </div>
       <!-- Member: suggest a URL -->
       <div id="wp-suggest-section" class="wp-suggest-section">
@@ -861,6 +907,7 @@
           <div class="wp-left">
             <div class="wp-player-wrap" id="wp-player-wrap">
               <iframe id="hb-iframe" title="Shared Browser" allow="autoplay; camera; microphone; clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe>
+              <iframe id="yt-iframe" title="YouTube Player" allow="autoplay; fullscreen" allowfullscreen></iframe>
               <div id="wp-buffer-overlay" class="wp-buffer-overlay"><div class="wp-buffer-spinner"></div></div>
             </div>
             <!-- Theater controls (only visible in theater mode) -->
@@ -886,7 +933,7 @@
           <!-- Normal mode info panel (hidden in theater mode) -->
           <div class="wp-info">
             <div class="wp-title" id="wp-title">Watch Session</div>
-            <div class="wp-source-badge"><span class="wp-source-icon">⬡</span> Powered by Hyperbeam &middot; Browse anything</div>
+            <div class="wp-source-badge" id="wp-source-badge"><span class="wp-source-icon">⬡</span> Powered by Hyperbeam &middot; Browse anything</div>
             <div class="wp-viewer-count" id="wp-viewer-count">
               <span class="wp-viewer-dot"></span>
               <span id="wp-viewer-num">1</span> watching
@@ -979,12 +1026,13 @@
     let membersMap    = {}; // userId -> { username } for seen-by rendering
 
     // watchparty
-    let wpSession     = null; // current room_sessions row
-    let wpTheater     = false; // theater (expanded) mode active
-    let wpFullscreen  = false; // true fullscreen mode active
-    let wpFsChat      = false; // fullscreen overlay chat open
-    let recentMsgs    = []; // last 50 text messages for mini chat
-    let wpSearchTimer = null;
+    let wpSession      = null;  // current room_sessions row
+    let wpTheater      = false; // theater (expanded) mode active
+    let wpFullscreen   = false; // true fullscreen mode active
+    let wpFsChat       = false; // fullscreen overlay chat open
+    let recentMsgs     = [];    // last 50 text messages for mini chat
+    let wpSearchTimer  = null;
+    let wpSelectedMode = 'hyperbeam'; // 'hyperbeam' | 'youtube' (modal picker state)
 
     // ── Bootstrap ─────────────────────────────────────────────────────────────
     async function init() {
@@ -1254,6 +1302,8 @@
             showSystemMsg('📺 Watch session ended');
             wpSession = null;
             document.getElementById('hb-iframe').src = '';
+            document.getElementById('yt-iframe').src  = '';
+            showHbPlayer();
             if (wpFullscreen) {
               if (document.fullscreenElement) document.exitFullscreen();
               wpFullscreen = false; wpFsChat = false;
@@ -1576,54 +1626,172 @@
 
     function openWatchpartyModalInMode(mode) {
       wpQueueMode = mode;
-      const title   = document.getElementById('wp-modal-title');
-      const sub     = document.getElementById('wp-modal-sub');
-      const launch  = document.getElementById('wp-launch-section');
-      const suggest = document.getElementById('wp-suggest-section');
-      const errEl   = document.getElementById('wp-launch-err');
+      const title      = document.getElementById('wp-modal-title');
+      const sub        = document.getElementById('wp-modal-sub');
+      const picker     = document.getElementById('wp-mode-picker');
+      const launchHb   = document.getElementById('wp-launch-section');
+      const launchYt   = document.getElementById('wp-launch-yt-section');
+      const suggest    = document.getElementById('wp-suggest-section');
+      const errEl      = document.getElementById('wp-launch-err');
       if (errEl) errEl.textContent = '';
       if (mode === 'suggest') {
-        title.textContent = 'SUGGEST A URL';
-        sub.textContent   = 'Paste any URL and the admin can open it in the shared browser.';
-        launch.style.display  = 'none';
-        suggest.style.display = 'block';
+        title.textContent      = 'SUGGEST A URL';
+        sub.textContent        = 'Paste any URL and the admin can open it in the shared browser.';
+        picker.style.display   = 'none';
+        launchHb.style.display = 'none';
+        launchYt.style.display = 'none';
+        suggest.style.display  = 'block';
       } else {
-        title.textContent = 'START A SESSION';
-        sub.textContent   = 'Launch a shared browser window. Everyone in the room watches the same screen — YouTube, streams, anything.';
-        launch.style.display  = 'block';
-        suggest.style.display = 'none';
+        title.textContent      = 'START A SESSION';
+        sub.textContent        = 'Choose a mode to watch together with your room.';
+        picker.style.display   = 'flex';
+        suggest.style.display  = 'none';
+        selectWpMode(wpSelectedMode); // restore whichever mode was last picked
       }
       document.getElementById('modal-watchparty').classList.add('open');
-      const inp = document.getElementById('wp-search-input');
-      if (inp) inp.value = '';
+      const inp   = document.getElementById('wp-search-input');
+      const ytInp = document.getElementById('wp-yt-input');
+      if (inp)   inp.value   = '';
+      if (ytInp) ytInp.value = '';
     }
 
-    // ── Watchparty (Hyperbeam) ────────────────────────────────────────────────
+    // ── Watchparty — player helpers ───────────────────────────────────────────
+
+    function showHbPlayer() {
+      document.getElementById('hb-iframe').style.display = 'block';
+      document.getElementById('yt-iframe').style.display = 'none';
+    }
+
+    function showYtPlayer() {
+      document.getElementById('hb-iframe').style.display = 'none';
+      document.getElementById('yt-iframe').style.display = 'block';
+    }
+
+    function setSourceBadge(type) {
+      const el = document.getElementById('wp-source-badge');
+      if (!el) return;
+      if (type === 'youtube') {
+        el.innerHTML = '<span class="wp-source-icon">▶</span> YouTube Player';
+      } else {
+        el.innerHTML = '<span class="wp-source-icon">⬡</span> Powered by Hyperbeam &middot; Browse anything';
+      }
+    }
 
     function loadHyperbeamIframe(embedUrl) {
-      const iframe = document.getElementById('hb-iframe');
-      iframe.src = embedUrl;
+      showHbPlayer();
+      setSourceBadge('hyperbeam');
+      document.getElementById('hb-iframe').src = embedUrl;
       setWpStatus('Shared browser active');
+    }
+
+    function loadYouTubeIframe(videoId) {
+      showYtPlayer();
+      setSourceBadge('youtube');
+      document.getElementById('yt-iframe').src =
+        `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&rel=0`;
+      setWpStatus('YouTube session active');
+    }
+
+    function extractYouTubeId(url) {
+      const patterns = [
+        /[?&]v=([a-zA-Z0-9_-]{11})/,
+        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /embed\/([a-zA-Z0-9_-]{11})/,
+      ];
+      for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+      }
+      return null;
+    }
+
+    function selectWpMode(mode) {
+      wpSelectedMode = mode;
+      document.getElementById('wp-mode-hb').classList.toggle('active', mode === 'hyperbeam');
+      document.getElementById('wp-mode-yt').classList.toggle('active', mode === 'youtube');
+      document.getElementById('wp-launch-section').style.display     = mode === 'hyperbeam' ? '' : 'none';
+      document.getElementById('wp-launch-yt-section').style.display  = mode === 'youtube'   ? '' : 'none';
+      document.getElementById('wp-launch-err').textContent = '';
+    }
+
+    async function startYouTubeSession() {
+      if (!isAdmin) return;
+      const input = document.getElementById('wp-yt-input');
+      const btn   = document.getElementById('wp-launch-yt-btn');
+      const errEl = document.getElementById('wp-launch-err');
+      let url = (input.value || '').trim();
+      if (!url) { errEl.textContent = 'Paste a YouTube URL first.'; return; }
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+      const videoId = extractYouTubeId(url);
+      if (!videoId) { errEl.textContent = 'Could not find a YouTube video ID in that URL.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Starting…';
+      errEl.textContent = '';
+
+      try {
+        // Clean up any existing session first
+        const { data: stale } = await sb.from('room_sessions')
+          .select('hyperbeam_session_id').eq('room_id', roomId).maybeSingle();
+        if (stale?.hyperbeam_session_id) {
+          await terminateHyperbeamSession(stale.hyperbeam_session_id);
+        }
+        await sb.from('room_sessions').delete().eq('room_id', roomId);
+
+        const dbSession = {
+          room_id: roomId,
+          video_id: `yt:${videoId}`,
+          video_title: 'YouTube Session',
+          playback_state: 'playing',
+          position_seconds: 0,
+          started_by: currentUser.id,
+          updated_by: currentUser.id,
+          updated_at: new Date().toISOString(),
+          hyperbeam_session_id: null,
+        };
+        const { error: dbErr } = await sb.from('room_sessions').upsert(dbSession, { onConflict: 'room_id' });
+        if (dbErr) throw new Error(dbErr.message);
+
+        wpSession = dbSession;
+        closeWatchpartyModal();
+        setWpTitle('YouTube Session');
+        openWatchpartyPanel();
+        loadYouTubeIframe(videoId);
+      } catch (err) {
+        errEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Start YouTube Session';
+      }
     }
 
     function applyRemoteSession(session) {
       if (!session?.video_id) return;
-      // If already showing this session, nothing to do
       if (wpSession?.video_id === session.video_id) return;
       wpSession = session;
-      setWpTitle(session.video_title || 'Shared Browser');
+      const isYt = session.video_id.startsWith('yt:');
+      setWpTitle(session.video_title || (isYt ? 'YouTube Session' : 'Shared Browser'));
       openWatchpartyPanel();
-      loadHyperbeamIframe(session.video_id);
+      if (isYt) {
+        loadYouTubeIframe(session.video_id.slice(3));
+      } else {
+        loadHyperbeamIframe(session.video_id);
+      }
     }
 
     async function loadSession() {
       const { data } = await sb.from('room_sessions').select('*').eq('room_id', roomId).maybeSingle();
       if (!data) return;
       wpSession = data;
-      setWpTitle(data.video_title || 'Shared Browser');
+      const isYt = data.video_id?.startsWith('yt:');
+      setWpTitle(data.video_title || (isYt ? 'YouTube Session' : 'Shared Browser'));
       setWpStatus('Joining session…');
       openWatchpartyPanel();
-      loadHyperbeamIframe(data.video_id);
+      if (isYt) {
+        loadYouTubeIframe(data.video_id.slice(3));
+      } else {
+        loadHyperbeamIframe(data.video_id);
+      }
     }
 
     async function startHyperbeamSession() {
@@ -1728,6 +1896,8 @@
         document.getElementById('watchparty-panel').classList.remove('theater');
       }
       document.getElementById('hb-iframe').src = '';
+      document.getElementById('yt-iframe').src  = '';
+      showHbPlayer();
       closeWatchpartyPanel();
     }
 
@@ -1739,6 +1909,8 @@
         document.getElementById('watchparty-panel').classList.remove('fullscreen', 'fs-chat-open');
       }
       document.getElementById('hb-iframe').src = '';
+      document.getElementById('yt-iframe').src  = '';
+      showHbPlayer();
       closeWatchpartyPanel();
     }
 
